@@ -1,0 +1,9 @@
+.resizer {
+    cursor: ew-resize;
+    width: 5px;
+    background-color: #ccc;
+}
+
+.full-height-minus-bar {
+    height: calc(100vh - 64px); /* Adjust based on the height of the bottom bar */
+}
