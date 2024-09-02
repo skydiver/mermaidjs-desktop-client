@@ -1,53 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MermaidJS Editor</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css">
     <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="flex flex-col h-screen m-0">
+    <style>
+        #monaco-editor {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen m-0">
     <div class="flex flex-grow full-height-minus-bar">
-      <div id="editor" class="w-1/4 p-4 flex flex-col">
-        <h2 class="text-xl font-bold mb-2">MermaidJS Editor</h2>
-<textarea
-  id="mermaid-input"
-  class="flex-grow p-2 border border-gray-300 rounded-md font-mono text-sm resize-none outline-none"
->
-graph TD
-    A[Client] --> B[Load Balancer]
-    B --> C[Server1]
-    B --> D[Server2]
-</textarea>
-      </div>
+        <div id="editor" class="w-1/4 p-4 flex flex-col">
+            <h2 class="text-xl font-bold mb-2">MermaidJS Editor</h2>
+            <div id="monaco-editor" class="flex-grow"></div>
+        </div>
 
-      <div class="resizer" id="resizer"></div>
+        <div class="resizer" id="resizer"></div>
 
-      <div id="rendered-diagram-container" class="w-3/4 p-4 flex flex-col">
-        <h2 class="text-xl font-bold mb-2">Rendered Diagram</h2>
-        <div
-          id="rendered-diagram"
-          class="flex-grow p-2 border border-gray-300 rounded-md overflow-auto"
-        ></div>
-      </div>
+        <div id="rendered-diagram-container" class="w-3/4 p-4 flex flex-col">
+            <h2 class="text-xl font-bold mb-2">Rendered Diagram</h2>
+            <div id="rendered-diagram" class="flex-grow p-2 border border-gray-300 rounded-md overflow-auto"></div>
+        </div>
     </div>
 
-    <div
-      class="bottom-bar w-full p-4 bg-gray-100 border-t border-gray-300 flex justify-end space-x-4"
-    >
-      <button id="open-file-btn" class="bg-green-500 text-white px-4 py-2 rounded-md">
-        Open Diagram
-      </button>
-      <button id="save-file-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md">
-        Save Diagram
-      </button>
-      <button id="full-screen-btn" class="bg-yellow-500 text-white px-4 py-2 rounded-md">
-        Full Screen
-      </button>
-      <button class="bg-gray-500 text-white px-4 py-2 rounded-md">Reset</button>
+    <div class="bottom-bar w-full p-4 bg-gray-100 border-t border-gray-300 flex justify-end space-x-4">
+        <button id="open-file-btn" class="bg-green-500 text-white px-4 py-2 rounded-md">Open Diagram</button>
+        <button id="save-file-btn" class="bg-blue-500 text-white px-4 py-2 rounded-md">Save Diagram</button>
+        <button id="full-screen-btn" class="bg-yellow-500 text-white px-4 py-2 rounded-md">Full Screen</button>
+        <button class="bg-gray-500 text-white px-4 py-2 rounded-md">Reset</button>
     </div>
 
-    <script src="./script.js" type="module"></script>
-  </body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/loader.min.js"></script>
+    <script src="./monaco-setup.js"></script>
+    <script src="./script.js"></script>
+</body>
 </html>
