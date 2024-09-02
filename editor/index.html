@@ -4,23 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MermaidJS Editor</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body class="flex flex-col h-screen m-0">
     <div class="flex flex-grow full-height-minus-bar">
       <div id="editor" class="w-1/4 p-4 flex flex-col">
         <h2 class="text-xl font-bold mb-2">MermaidJS Editor</h2>
-        <textarea
-          id="mermaid-input"
-          class="flex-grow p-2 border border-gray-300 rounded-md font-mono text-sm"
-        >
+<textarea
+  id="mermaid-input"
+  class="flex-grow p-2 border border-gray-300 rounded-md font-mono text-sm resize-none outline-none"
+>
 graph TD
     A[Client] --> B[Load Balancer]
     B --> C[Server1]
     B --> D[Server2]
-</textarea
-        >
+</textarea>
       </div>
 
       <div class="resizer" id="resizer"></div>
@@ -49,6 +48,6 @@ graph TD
       <button class="bg-gray-500 text-white px-4 py-2 rounded-md">Reset</button>
     </div>
 
-    <script src="script.js" type="module"></script>
+    <script src="./script.js" type="module"></script>
   </body>
 </html>

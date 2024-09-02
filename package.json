@@ -6,6 +6,6 @@
     "start": "electron ."
   },
   "devDependencies": {
-    "electron": "^latest_version"
+    "electron": "^32.0.1"
   }
 }
