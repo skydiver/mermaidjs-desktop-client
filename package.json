@@ -1,11 +1,13 @@
 {
-  "name": "mermaidjs-electron",
+  "name": "mermaid-desktop",
   "version": "1.0.0",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder"
   },
   "devDependencies": {
-    "electron": "^32.0.1"
+    "electron": "^32.0.1",
+    "electron-builder": "^25.0.5"
   }
 }
