@@ -1,10 +1,18 @@
 {
-  "name": "mermaid-desktop",
-  "version": "1.0.0",
+  "name": "mermaidjs-desktop-client",
+  "version": "0.1.0",
+  "description": "A desktop client for MermaidJS built with Electron",
+  "homepage": "https://github.com/skydiver/mermaidjs-desktop-client",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skydiver/mermaidjs-desktop-client.git"
+  },
+  "license": "MIT",
+  "author": "Martín M.",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "start": "electron ."
   },
   "devDependencies": {
     "electron": "^32.0.1",
