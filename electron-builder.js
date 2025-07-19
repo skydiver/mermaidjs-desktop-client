@@ -29,6 +29,7 @@ module.exports = {
   //   icon: "assets/icon.ico"
   // },
   // linux: {
+  //   category: 'Utility',
   //   target: [
   //     "AppImage",
   //     "deb",
