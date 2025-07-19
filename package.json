@@ -8,7 +8,10 @@
     "url": "https://github.com/skydiver/mermaidjs-desktop-client.git"
   },
   "license": "MIT",
-  "author": "Martín M.",
+  "author": {
+    "name": "Martín M.",
+    "email": "notprovided@example.net"
+  },
   "main": "main.js",
   "scripts": {
     "build": "electron-builder",
