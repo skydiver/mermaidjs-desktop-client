@@ -1,6 +1,6 @@
 module.exports = {
   appId: 'dev.skydiver.mermaid-desktop',
-  productName: 'MermaidJS Desktop Clinet',
+  productName: 'MermaidJS Desktop Client',
   directories: {
     buildResources: 'assets',
   },
