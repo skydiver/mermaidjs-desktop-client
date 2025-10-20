@@ -1,6 +1,7 @@
 import { indentWithTab } from "@codemirror/commands";
 import { StreamLanguage } from "@codemirror/language";
-import { EditorState } from "@codemirror/state";
+import type { StringStream } from "@codemirror/language";
+import { EditorState, type Extension } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
 import { EditorView, basicSetup } from "codemirror";
 import mermaid from "mermaid";
@@ -53,16 +54,28 @@ const MERMAID_KEYWORDS = [
   "opt",
   "par",
   "and",
-];
+  "and",
+] as const;
+
+type MermaidKeyword = (typeof MERMAID_KEYWORDS)[number];
+type PreviewScheduler = (doc: string) => void;
+
+interface WindowStatePayload {
+  width?: number;
+  height?: number;
+  x?: number;
+  y?: number;
+  maximized: boolean;
+}
 
 const MERMAID_LANGUAGE = createMermaidLanguage();
 const EDITOR_THEME = createEditorTheme();
 
 window.addEventListener("DOMContentLoaded", bootstrap);
 
-async function bootstrap() {
-  const host = document.querySelector("#editor-host");
-  const previewElement = document.querySelector("#preview-host");
+async function bootstrap(): Promise<void> {
+  const host = document.querySelector<HTMLDivElement>("#editor-host");
+  const previewElement = document.querySelector<HTMLDivElement>("#preview-host");
   if (!host || !previewElement) {
     return;
   }
@@ -88,7 +101,11 @@ async function bootstrap() {
   schedulePreviewRender(editor.state.doc.toString());
 }
 
-function createEditor(host, initialDoc, schedulePreviewRender) {
+function createEditor(
+  host: HTMLElement,
+  initialDoc: string,
+  schedulePreviewRender: PreviewScheduler
+): EditorView {
   const state = EditorState.create({
     doc: initialDoc,
     extensions: [
@@ -111,9 +128,9 @@ function createEditor(host, initialDoc, schedulePreviewRender) {
   });
 }
 
-function createPreview(previewEl) {
+function createPreview(previewEl: HTMLElement): PreviewScheduler {
   let latestToken = 0;
-  const debouncedRender = debounce(async (source, token) => {
+  const debouncedRender = debounce(async (source: string, token: number) => {
     if (token !== latestToken) {
       return;
     }
@@ -134,22 +151,24 @@ function createPreview(previewEl) {
       previewEl.innerHTML = svg;
     } catch (error) {
       console.error("Mermaid render failed", error);
+      const details =
+        error instanceof Error ? error.message : String(error ?? "Unknown error");
       showPreviewError(
         previewEl,
         "Mermaid could not render this diagram.",
-        (error?.message || error || "Unknown error").toString()
+        details
       );
     }
   }, RENDER_DELAY);
 
-  return (source) => {
+  return (source: string) => {
     latestToken += 1;
     const currentToken = latestToken;
     debouncedRender(source, currentToken);
   };
 }
 
-function showPreviewMessage(previewEl, message) {
+function showPreviewMessage(previewEl: HTMLElement, message: string): void {
   previewEl.classList.add("preview-empty");
   previewEl.classList.remove("preview-error");
 
@@ -159,7 +178,11 @@ function showPreviewMessage(previewEl, message) {
   previewEl.replaceChildren(paragraph);
 }
 
-function showPreviewError(previewEl, message, details) {
+function showPreviewError(
+  previewEl: HTMLElement,
+  message: string,
+  details: string
+): void {
   previewEl.classList.remove("preview-empty");
   previewEl.classList.add("preview-error");
 
@@ -174,7 +197,7 @@ function showPreviewError(previewEl, message, details) {
   previewEl.replaceChildren(container);
 }
 
-async function loadSettingsStore() {
+async function loadSettingsStore(): Promise<Store | null> {
   try {
     return await Store.load(SETTINGS_STORE_NAME);
   } catch (error) {
@@ -183,7 +206,12 @@ async function loadSettingsStore() {
   }
 }
 
-async function setupWindowPersistence(store, appWindow) {
+type AppWindow = ReturnType<typeof getCurrentWindow>;
+
+async function setupWindowPersistence(
+  store: Store,
+  appWindow: AppWindow
+): Promise<void> {
   const debouncedPersist = debounce(
     () => persistWindowState(store, appWindow),
     WINDOW_PERSIST_DELAY
@@ -205,7 +233,10 @@ async function setupWindowPersistence(store, appWindow) {
   });
 }
 
-async function persistWindowState(store, appWindow) {
+async function persistWindowState(
+  store: Store,
+  appWindow: AppWindow
+): Promise<void> {
   try {
     const [size, position, maximized] = await Promise.all([
       appWindow.outerSize(),
@@ -213,7 +244,7 @@ async function persistWindowState(store, appWindow) {
       appWindow.isMaximized(),
     ]);
 
-    const windowState = {
+    const windowState: WindowStatePayload = {
       width: size ? Math.round(size.width) : undefined,
       height: size ? Math.round(size.height) : undefined,
       x: position ? Math.round(position.x) : undefined,
@@ -228,13 +259,15 @@ async function persistWindowState(store, appWindow) {
   }
 }
 
-function createMermaidLanguage() {
-  const keywordSet = new Set(MERMAID_KEYWORDS.map((word) => word.toLowerCase()));
+function createMermaidLanguage(): Extension {
+  const keywordSet = new Set(
+    MERMAID_KEYWORDS.map((word: MermaidKeyword) => word.toLowerCase())
+  );
   const arrowPattern = /--?>|<--?|==>|<==|-\.-|\.->|==/;
   const operatorPattern = /[-+*/=<>!]+/;
 
   return StreamLanguage.define({
-    token(stream) {
+    token(stream: StringStream) {
       if (stream.eatSpace()) {
         return null;
       }
@@ -246,7 +279,8 @@ function createMermaidLanguage() {
 
       const next = stream.peek();
       if (next === '"' || next === "'") {
-        readQuoted(stream, stream.next());
+        stream.next();
+        readQuoted(stream, next);
         return "string";
       }
 
@@ -285,10 +319,13 @@ function createMermaidLanguage() {
   });
 }
 
-function readQuoted(stream, quote) {
+function readQuoted(stream: StringStream, quote: string): void {
   let escaped = false;
   while (!stream.eol()) {
     const ch = stream.next();
+    if (!ch) {
+      return;
+    }
     if (ch === quote && !escaped) {
       return;
     }
@@ -296,7 +333,7 @@ function readQuoted(stream, quote) {
   }
 }
 
-function createEditorTheme() {
+function createEditorTheme(): Extension {
   return EditorView.theme({
     "&": {
       borderRadius: "8px",
@@ -322,9 +359,12 @@ function createEditorTheme() {
   });
 }
 
-function debounce(fn, wait) {
-  let timeoutId;
-  return (...args) => {
+function debounce<T extends (...args: any[]) => unknown>(
+  fn: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: number | undefined;
+  return (...args: Parameters<T>) => {
     window.clearTimeout(timeoutId);
     timeoutId = window.setTimeout(() => fn(...args), wait);
   };

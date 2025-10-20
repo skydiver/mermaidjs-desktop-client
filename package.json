@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
+    "@types/node": "^24.8.1",
+    "typescript": "^5.9.3",
     "vite": "^7.1.10"
   },
   "dependencies": {

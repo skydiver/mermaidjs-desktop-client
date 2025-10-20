@@ -36,9 +36,15 @@ importers:
       '@tauri-apps/cli':
         specifier: ^2
         version: 2.8.4
+      '@types/node':
+        specifier: ^24.8.1
+        version: 24.8.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
       vite:
         specifier: ^7.1.10
-        version: 7.1.10
+        version: 7.1.10(@types/node@24.8.1)
 
 packages:
 
@@ -550,6 +556,9 @@ packages:
   '@types/geojson@7946.0.16':
     resolution: {integrity: sha512-6C8nqWur3j98U6+lXDfTUWIfgvZU+EumvpHKcYjujKH7woYyLj2sUmff0tRhrqM7BohUw7Pz3ZB1jj2gW9Fvmg==}
 
+  '@types/node@24.8.1':
+    resolution: {integrity: sha512-alv65KGRadQVfVcG69MuB4IzdYVpRwMG/mq8KWOaoOdyY617P5ivaDiMCGOFDWD2sAn5Q0mR3mRtUOgm99hL9Q==}
+
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
@@ -925,8 +934,16 @@ packages:
     resolution: {integrity: sha512-q5W7tVM71e2xjHZTlgfTDoPF/SmqKG5hddq9SzR49CH2hayqRKJtQ4mtRlSxKaJlR/+9rEM+mnBHf7I2/BQcpQ==}
     engines: {node: '>=6.10'}
 
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   ufo@1.6.1:
     resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
+
+  undici-types@7.14.0:
+    resolution: {integrity: sha512-QQiYxHuyZ9gQUIrmPo3IA+hUl4KYk8uSA7cHrcKd/l3p1OTpZcM0Tbp9x7FAtXdAYhlasd60ncPpgu6ihG6TOA==}
 
   uuid@11.1.0:
     resolution: {integrity: sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==}
@@ -1418,6 +1435,10 @@ snapshots:
 
   '@types/geojson@7946.0.16': {}
 
+  '@types/node@24.8.1':
+    dependencies:
+      undici-types: 7.14.0
+
   '@types/trusted-types@2.0.7':
     optional: true
 
@@ -1872,11 +1893,15 @@ snapshots:
 
   ts-dedent@2.2.0: {}
 
+  typescript@5.9.3: {}
+
   ufo@1.6.1: {}
+
+  undici-types@7.14.0: {}
 
   uuid@11.1.0: {}
 
-  vite@7.1.10:
+  vite@7.1.10(@types/node@24.8.1):
     dependencies:
       esbuild: 0.25.11
       fdir: 6.5.0(picomatch@4.0.3)
@@ -1885,6 +1910,7 @@ snapshots:
       rollup: 4.52.5
       tinyglobby: 0.2.15
     optionalDependencies:
+      '@types/node': 24.8.1
       fsevents: 2.3.3
 
   vscode-jsonrpc@8.2.0: {}
