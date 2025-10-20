@@ -4,6 +4,7 @@ import { keymap } from '@codemirror/view';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { basicSetup, EditorView } from 'codemirror';
 import mermaid from 'mermaid';
+import 'remixicon/fonts/remixicon.css';
 
 import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';

@@ -63,25 +63,26 @@ body.dark {
 .toolbar-right {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
 }
 
 .toolbar-button {
-  height: 28px;
-  padding: 0 0.75rem;
-  font-size: 0.85rem;
-  border-radius: 6px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 8px;
   border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   color: inherit;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .toolbar-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: default;
 }
 
@@ -91,13 +92,19 @@ body.dark .toolbar-button {
 }
 
 .toolbar-button:not(:disabled):hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15);
+  border-color: rgba(59, 130, 246, 0.45);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.2);
 }
 
 .toolbar-button:not(:disabled):active {
-  border-color: rgba(37, 99, 235, 0.4);
-  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.icon-button i {
+  font-size: 1.2rem;
+  line-height: 1;
+  pointer-events: none;
 }
 
 .panel {
