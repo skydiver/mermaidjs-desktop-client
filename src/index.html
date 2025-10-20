@@ -45,33 +45,36 @@
       </header>
 
       <main class="app-main">
-        <section class="panel editor-panel">
-          <div
-            id="editor-host"
-            class="editor-host"
-            role="textbox"
-            aria-label="Mermaid source editor"
-          >
-            <noscript>
-              <textarea class="editor-fallback" spellcheck="false">
+        <div class="workspace">
+          <section class="panel editor-panel" data-pane="editor">
+            <div
+              id="editor-host"
+              class="editor-host"
+              role="textbox"
+              aria-label="Mermaid source editor"
+            >
+              <noscript>
+                <textarea class="editor-fallback" spellcheck="false">
 graph TD
     A[Start] --> B{Is it working?}
     B -- Yes --> C[Great!]
     B -- Not yet --> D[Keep iterating]</textarea
+              >
+              </noscript>
+            </div>
+          </section>
+          <div class="divider" role="separator" aria-orientation="vertical"></div>
+          <section class="panel preview-panel" data-pane="preview">
+            <div
+              id="preview-host"
+              class="preview-host preview-empty"
+              aria-live="polite"
+              role="status"
             >
-            </noscript>
-          </div>
-        </section>
-        <section class="panel preview-panel">
-          <div
-            id="preview-host"
-            class="preview-host preview-empty"
-            aria-live="polite"
-            role="status"
-          >
-            <p class="preview-message">Rendered diagram will appear here.</p>
-          </div>
-        </section>
+              <p class="preview-message">Rendered diagram will appear here.</p>
+            </div>
+          </section>
+        </div>
       </main>
 
       <footer class="app-footer">

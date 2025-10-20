@@ -12,6 +12,7 @@ import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';
 import { createPreview } from './preview/render';
 import { loadSettingsStore, setupWindowPersistence } from './window/state';
+import { initHorizontalResize } from './workspace/resize';
 
 const DEFAULT_SNIPPET = `graph TD
     A[Start] --> B{Is it working?}
@@ -39,6 +40,10 @@ async function bootstrap(): Promise<void> {
   const openButton = document.querySelector<HTMLButtonElement>(
     '[data-action="open-diagram"]'
   );
+  const workspace = document.querySelector<HTMLDivElement>('.workspace');
+  const editorPane = document.querySelector<HTMLElement>('[data-pane="editor"]');
+  const previewPane = document.querySelector<HTMLElement>('[data-pane="preview"]');
+  const divider = document.querySelector<HTMLDivElement>('.divider');
 
   if (!host || !previewElement) {
     return;
@@ -64,6 +69,7 @@ async function bootstrap(): Promise<void> {
   host.dataset.editor = 'mounted';
   previewElement.dataset.preview = 'ready';
   schedulePreviewRender(editor.state.doc.toString());
+  initHorizontalResize(workspace, editorPane, previewPane, divider);
 
   if (newDiagramButton) {
     newDiagramButton.addEventListener('click', () => {
