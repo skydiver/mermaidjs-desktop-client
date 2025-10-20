@@ -81,6 +81,33 @@ body.dark {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
+.toolbar-button[data-tooltip] {
+  position: relative;
+}
+
+.toolbar-button[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.toolbar-button[data-tooltip]:hover::after,
+.toolbar-button[data-tooltip]:focus-visible::after {
+  opacity: 1;
+}
+
 .toolbar-button:disabled {
   opacity: 0.5;
   cursor: default;

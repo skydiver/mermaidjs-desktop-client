@@ -27,6 +27,10 @@ window.addEventListener('DOMContentLoaded', bootstrap);
 async function bootstrap(): Promise<void> {
   const host = document.querySelector<HTMLDivElement>('#editor-host');
   const previewElement = document.querySelector<HTMLDivElement>('#preview-host');
+  const newDiagramButton = document.querySelector<HTMLButtonElement>(
+    '[data-action="new-diagram"]'
+  );
+
   if (!host || !previewElement) {
     return;
   }
@@ -50,6 +54,15 @@ async function bootstrap(): Promise<void> {
   host.dataset.editor = 'mounted';
   previewElement.dataset.preview = 'ready';
   schedulePreviewRender(editor.state.doc.toString());
+
+  if (newDiagramButton) {
+    newDiagramButton.addEventListener('click', () => {
+      editor.dispatch({
+        changes: { from: 0, to: editor.state.doc.length, insert: DEFAULT_SNIPPET },
+      });
+      schedulePreviewRender(DEFAULT_SNIPPET);
+    });
+  }
 }
 
 function createEditor(
