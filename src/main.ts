@@ -2,7 +2,7 @@ import { indentWithTab } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { EditorView, basicSetup } from 'codemirror';
+import { basicSetup, EditorView } from 'codemirror';
 import mermaid from 'mermaid';
 
 import { createMermaidLanguage } from './editor/language';
@@ -64,7 +64,7 @@ function createEditor(
       EditorView.lineWrapping,
       EDITOR_THEME,
       keymap.of([indentWithTab]),
-      EditorView.updateListener.of(update => {
+      EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           schedulePreviewRender(update.state.doc.toString());
         }

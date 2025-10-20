@@ -1,51 +1,49 @@
-import { StreamLanguage } from "@codemirror/language";
-import type { Extension } from "@codemirror/state";
-import type { StringStream } from "@codemirror/language";
+import type { StringStream } from '@codemirror/language';
+import { StreamLanguage } from '@codemirror/language';
+import type { Extension } from '@codemirror/state';
 
 const MERMAID_KEYWORDS = [
-  "graph",
-  "flowchart",
-  "sequenceDiagram",
-  "classDiagram",
-  "stateDiagram",
-  "erDiagram",
-  "journey",
-  "gantt",
-  "pie",
-  "mindmap",
-  "timeline",
-  "gitGraph",
-  "quadrantChart",
-  "requirementDiagram",
-  "subgraph",
-  "end",
-  "click",
-  "linkStyle",
-  "style",
-  "class",
-  "direction",
-  "tb",
-  "td",
-  "lr",
-  "rl",
-  "bt",
-  "note",
-  "rect",
-  "call",
-  "section",
-  "loop",
-  "alt",
-  "opt",
-  "par",
-  "and",
+  'graph',
+  'flowchart',
+  'sequenceDiagram',
+  'classDiagram',
+  'stateDiagram',
+  'erDiagram',
+  'journey',
+  'gantt',
+  'pie',
+  'mindmap',
+  'timeline',
+  'gitGraph',
+  'quadrantChart',
+  'requirementDiagram',
+  'subgraph',
+  'end',
+  'click',
+  'linkStyle',
+  'style',
+  'class',
+  'direction',
+  'tb',
+  'td',
+  'lr',
+  'rl',
+  'bt',
+  'note',
+  'rect',
+  'call',
+  'section',
+  'loop',
+  'alt',
+  'opt',
+  'par',
+  'and',
 ] as const;
 
 export type MermaidKeyword = (typeof MERMAID_KEYWORDS)[number];
 
 export function createMermaidLanguage(): Extension {
-  const keywordSet = new Set(
-    MERMAID_KEYWORDS.map((word: MermaidKeyword) => word.toLowerCase())
-  );
+  const keywordSet = new Set(MERMAID_KEYWORDS.map((word: MermaidKeyword) => word.toLowerCase()));
   const arrowPattern = /--?>|<--?|==>|<==|-.\-|\.->|==/;
   const operatorPattern = /[-+*/=<>!]+/;
 
@@ -53,49 +51,49 @@ export function createMermaidLanguage(): Extension {
     token(stream: StringStream) {
       if (stream.eatSpace()) return null;
 
-      if (stream.match("%%")) {
+      if (stream.match('%%')) {
         stream.skipToEnd();
-        return "comment";
+        return 'comment';
       }
 
       const next = stream.peek();
-      if (next === "\"" || next === "'") {
+      if (next === '"' || next === "'") {
         stream.next();
         readQuoted(stream, next);
-        return "string";
+        return 'string';
       }
 
       if (stream.match(/[#.][A-Za-z_][\w-]*/)) {
-        return "attributeName";
+        return 'attributeName';
       }
 
       if (stream.match(arrowPattern) || stream.match(/:::/)) {
-        return "operator";
+        return 'operator';
       }
 
       if (stream.match(/[{}\[\]()]/)) {
-        return "bracket";
+        return 'bracket';
       }
 
       if (stream.match(operatorPattern)) {
-        return "operator";
+        return 'operator';
       }
 
       if (stream.match(/\d+(\.\d+)?/)) {
-        return "number";
+        return 'number';
       }
 
       if (stream.match(/[A-Za-z_][\w-]*/)) {
         const word = stream.current().toLowerCase();
-        return keywordSet.has(word) ? "keyword" : "variableName";
+        return keywordSet.has(word) ? 'keyword' : 'variableName';
       }
 
       stream.next();
       return null;
     },
     languageData: {
-      commentTokens: { line: "%%" },
-      closeBrackets: { brackets: "()[]{}\"'`" },
+      commentTokens: { line: '%%' },
+      closeBrackets: { brackets: '()[]{}"\'`' },
     },
   });
 }
@@ -106,6 +104,6 @@ function readQuoted(stream: StringStream, quote: string): void {
     const ch = stream.next();
     if (!ch) return;
     if (ch === quote && !escaped) return;
-    escaped = !escaped && ch === "\\";
+    escaped = !escaped && ch === '\\';
   }
 }

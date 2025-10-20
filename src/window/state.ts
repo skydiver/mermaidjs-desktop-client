@@ -1,10 +1,10 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Store } from "@tauri-apps/plugin-store";
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { Store } from '@tauri-apps/plugin-store';
 
-import { debounce } from "../utils/debounce";
+import { debounce } from '../utils/debounce';
 
-const SETTINGS_STORE_NAME = "settings.store";
-const WINDOW_STATE_KEY = "windowState";
+const SETTINGS_STORE_NAME = 'settings.store';
+const WINDOW_STATE_KEY = 'windowState';
 
 export interface WindowStatePayload {
   width?: number;
@@ -20,7 +20,7 @@ export async function loadSettingsStore(): Promise<Store | null> {
   try {
     return await Store.load(SETTINGS_STORE_NAME);
   } catch (error) {
-    console.error("Failed to load settings store", error);
+    console.error('Failed to load settings store', error);
     return null;
   }
 }
@@ -30,10 +30,7 @@ export async function setupWindowPersistence(
   appWindow: AppWindow,
   persistDelay: number
 ): Promise<void> {
-  const debouncedPersist = debounce(
-    () => persistWindowState(store, appWindow),
-    persistDelay
-  );
+  const debouncedPersist = debounce(() => persistWindowState(store, appWindow), persistDelay);
 
   const unlistenResize = await appWindow.onResized(() => debouncedPersist());
   const unlistenMove = await appWindow.onMoved(() => debouncedPersist());
@@ -41,16 +38,13 @@ export async function setupWindowPersistence(
   await appWindow.onCloseRequested(async (event) => {
     event.preventDefault();
     await persistWindowState(store, appWindow);
-    if (typeof unlistenResize === "function") unlistenResize();
-    if (typeof unlistenMove === "function") unlistenMove();
+    if (typeof unlistenResize === 'function') unlistenResize();
+    if (typeof unlistenMove === 'function') unlistenMove();
     await appWindow.close();
   });
 }
 
-export async function persistWindowState(
-  store: Store,
-  appWindow: AppWindow
-): Promise<void> {
+export async function persistWindowState(store: Store, appWindow: AppWindow): Promise<void> {
   try {
     const [size, position, maximized] = await Promise.all([
       appWindow.outerSize(),
@@ -69,6 +63,6 @@ export async function persistWindowState(
     await store.set(WINDOW_STATE_KEY, windowState);
     await store.save();
   } catch (error) {
-    console.warn("Persisting window state failed", error);
+    console.warn('Persisting window state failed', error);
   }
 }
