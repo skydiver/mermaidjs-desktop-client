@@ -92,7 +92,6 @@ async function persistWindowState(store, appWindow) {
 
     await store.set(WINDOW_STATE_KEY, windowState);
     await store.save();
-    console.debug("Window state saved", windowState);
   } catch (error) {
     console.warn("Persisting window state failed", error);
   }
@@ -150,27 +149,24 @@ window.addEventListener("DOMContentLoaded", async () => {
     console.error("Failed to load settings store", error);
   }
 
-  let unlistenResize;
-  let unlistenMove;
-  let unlistenClose;
-
   if (store) {
     const debouncedPersist = debounce(
       () => persistWindowState(store, appWindow),
       WINDOW_PERSIST_DELAY
     );
 
-    unlistenResize = await appWindow.onResized(() => debouncedPersist());
-    unlistenMove = await appWindow.onMoved(() => debouncedPersist());
+    const unlistenResize = await appWindow.onResized(() => debouncedPersist());
+    const unlistenMove = await appWindow.onMoved(() => debouncedPersist());
 
-    unlistenClose = await appWindow.onCloseRequested(async (event) => {
+    await appWindow.onCloseRequested(async (event) => {
       event.preventDefault();
       await persistWindowState(store, appWindow);
-      await Promise.all([
-        unlistenResize ? unlistenResize() : Promise.resolve(),
-        unlistenMove ? unlistenMove() : Promise.resolve(),
-        unlistenClose ? unlistenClose() : Promise.resolve(),
-      ]);
+      if (typeof unlistenResize === "function") {
+        unlistenResize();
+      }
+      if (typeof unlistenMove === "function") {
+        unlistenMove();
+      }
       await appWindow.close();
     });
   }
@@ -203,7 +199,4 @@ window.addEventListener("DOMContentLoaded", async () => {
   host.dataset.editor = "mounted";
   preview.dataset.preview = "ready";
   scheduleRender(view.state.doc.toString());
-
-  window.__editorView = view;
-  window.__settingsStore = store;
 });

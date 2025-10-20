@@ -24,25 +24,25 @@ pub fn run() {
                 .expect("failed to get main window");
 
             let store = StoreBuilder::new(app, SETTINGS_STORE_NAME).build()?;
-            let _ = store.reload();
+            if let Err(err) = store.reload() {
+                if !err.to_string().contains("No such file") {
+                    eprintln!("Unable to load settings store: {err}");
+                }
+            }
 
             if let Some(raw_state) = store.get(WINDOW_STATE_KEY) {
-                if let Ok(state) = serde_json::from_value::<WindowState>(raw_state.clone()) {
+                if let Ok(state) = serde_json::from_value::<WindowState>(raw_state) {
                     if let (Some(width), Some(height)) = (state.width, state.height) {
                         if width.is_finite() && height.is_finite() && width > 0.0 && height > 0.0 {
-                            let size = PhysicalSize::new(
-                                width.round() as u32,
-                                height.round() as u32,
-                            );
+                            let size =
+                                PhysicalSize::new(width.round() as u32, height.round() as u32);
                             let _ = window.set_size(Size::Physical(size));
                         }
                     }
                     if let (Some(x), Some(y)) = (state.x, state.y) {
                         if x.is_finite() && y.is_finite() {
-                            let position = PhysicalPosition::new(
-                                x.round() as i32,
-                                y.round() as i32,
-                            );
+                            let position =
+                                PhysicalPosition::new(x.round() as i32, y.round() as i32);
                             let _ = window.set_position(position);
                         }
                     }
@@ -54,8 +54,12 @@ pub fn run() {
                 }
             }
 
-            let _ = window.show();
-            let _ = window.set_focus();
+            if let Err(err) = window.show() {
+                eprintln!("Unable to show window: {err}");
+            }
+            if let Err(err) = window.set_focus() {
+                eprintln!("Unable to focus window: {err}");
+            }
 
             Ok(())
         })
