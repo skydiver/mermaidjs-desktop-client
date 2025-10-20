@@ -2,6 +2,8 @@ import { indentWithTab } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { save as showSaveDialog } from '@tauri-apps/plugin-dialog';
+import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { basicSetup, EditorView } from 'codemirror';
 import mermaid from 'mermaid';
 import 'remixicon/fonts/remixicon.css';
@@ -26,9 +28,13 @@ window.addEventListener('DOMContentLoaded', bootstrap);
 
 async function bootstrap(): Promise<void> {
   const host = document.querySelector<HTMLDivElement>('#editor-host');
-  const previewElement = document.querySelector<HTMLDivElement>('#preview-host');
+  const previewElement =
+    document.querySelector<HTMLDivElement>('#preview-host');
   const newDiagramButton = document.querySelector<HTMLButtonElement>(
     '[data-action="new-diagram"]'
+  );
+  const saveButton = document.querySelector<HTMLButtonElement>(
+    '[data-action="save-diagram"]'
   );
 
   if (!host || !previewElement) {
@@ -49,6 +55,7 @@ async function bootstrap(): Promise<void> {
 
   const schedulePreviewRender = createPreview(previewElement, RENDER_DELAY);
   const editor = createEditor(host, DEFAULT_SNIPPET, schedulePreviewRender);
+  let currentFilePath: string | null = null;
 
   editor.focus();
   host.dataset.editor = 'mounted';
@@ -61,6 +68,38 @@ async function bootstrap(): Promise<void> {
         changes: { from: 0, to: editor.state.doc.length, insert: DEFAULT_SNIPPET },
       });
       schedulePreviewRender(DEFAULT_SNIPPET);
+      currentFilePath = null;
+    });
+  }
+
+  if (saveButton) {
+    saveButton.addEventListener('click', async () => {
+      const documentContent = editor.state.doc.toString();
+      let targetPath = currentFilePath;
+
+      try {
+        if (!targetPath) {
+          targetPath = await showSaveDialog({
+            defaultPath: 'diagram.mmd',
+            filters: [
+              {
+                name: 'Mermaid Diagram',
+                extensions: ['mmd', 'mermaid', 'md'],
+              },
+              { name: 'All Files', extensions: ['*'] },
+            ],
+          });
+        }
+
+        if (!targetPath) {
+          return;
+        }
+
+        await writeTextFile(targetPath, documentContent);
+        currentFilePath = targetPath;
+      } catch (error) {
+        console.error('Failed to save diagram', error);
+      }
     });
   }
 }
