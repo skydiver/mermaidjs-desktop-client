@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@codemirror/commands':
+        specifier: ^6.9.0
+        version: 6.9.0
       '@codemirror/lang-markdown':
         specifier: ^6.4.0
         version: 6.4.0

@@ -1,9 +1,11 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, basicSetup } from "codemirror";
+import { keymap } from "@codemirror/view";
 import { markdown } from "@codemirror/lang-markdown";
 import mermaid from "mermaid";
 import { Store } from "@tauri-apps/plugin-store";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { indentWithTab } from "@codemirror/commands";
 
 const DEFAULT_SNIPPET = `graph TD
     A[Start] --> B{Is it working?}
@@ -183,6 +185,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       markdown(),
       EditorView.lineWrapping,
       EDITOR_THEME,
+      keymap.of([indentWithTab]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
           scheduleRender(update.state.doc.toString());
@@ -195,6 +198,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     parent: host,
     state,
   });
+
+  view.focus();
 
   host.dataset.editor = "mounted";
   preview.dataset.preview = "ready";
