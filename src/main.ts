@@ -2,8 +2,8 @@ import { indentWithTab } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { save as showSaveDialog } from '@tauri-apps/plugin-dialog';
-import { writeTextFile } from '@tauri-apps/plugin-fs';
+import { open as showOpenDialog, save as showSaveDialog } from '@tauri-apps/plugin-dialog';
+import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { basicSetup, EditorView } from 'codemirror';
 import mermaid from 'mermaid';
 import 'remixicon/fonts/remixicon.css';
@@ -35,6 +35,9 @@ async function bootstrap(): Promise<void> {
   );
   const saveButton = document.querySelector<HTMLButtonElement>(
     '[data-action="save-diagram"]'
+  );
+  const openButton = document.querySelector<HTMLButtonElement>(
+    '[data-action="open-diagram"]'
   );
 
   if (!host || !previewElement) {
@@ -69,6 +72,40 @@ async function bootstrap(): Promise<void> {
       });
       schedulePreviewRender(DEFAULT_SNIPPET);
       currentFilePath = null;
+    });
+  }
+
+  if (openButton) {
+    openButton.addEventListener('click', async () => {
+      try {
+        const selected = await showOpenDialog({
+          filters: [
+            {
+              name: 'Mermaid Diagram',
+              extensions: ['mmd', 'mermaid', 'md'],
+            },
+            { name: 'All Files', extensions: ['*'] },
+          ],
+        });
+
+        if (!selected) {
+          return;
+        }
+
+        const path = Array.isArray(selected) ? selected[0] : selected;
+        if (!path) {
+          return;
+        }
+
+        const fileContents = await readTextFile(path);
+        editor.dispatch({
+          changes: { from: 0, to: editor.state.doc.length, insert: fileContents },
+        });
+        schedulePreviewRender(fileContents);
+        currentFilePath = path;
+      } catch (error) {
+        console.error('Failed to open diagram', error);
+      }
     });
   }
 
