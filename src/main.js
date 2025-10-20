@@ -233,7 +233,6 @@ window.addEventListener("DOMContentLoaded", async () => {
   host.dataset.editor = "mounted";
   preview.dataset.preview = "ready";
   scheduleRender(view.state.doc.toString());
-  scheduleWindowStatePersist();
 
   window.__editorView = view;
   window.__settingsStore = store;
