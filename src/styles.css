@@ -122,6 +122,12 @@ body.dark .panel {
   min-height: 320px;
 }
 
+.preview-panel {
+  padding: 0;
+  overflow: hidden;
+  min-height: 320px;
+}
+
 .panel h2 {
   margin-top: 0;
   font-size: 1.1rem;
@@ -154,7 +160,6 @@ body.dark .placeholder {
 
 .preview-host {
   position: relative;
-  min-height: 320px;
   border-radius: 8px;
   border: 1px dashed rgba(15, 23, 42, 0.15);
   background: rgba(255, 255, 255, 0.92);
@@ -163,6 +168,9 @@ body.dark .placeholder {
   justify-content: center;
   padding: 1.5rem;
   overflow: auto;
+  flex: 1;
+  height: 100%;
+  min-height: 0;
 }
 
 body.dark .preview-host {
