@@ -4,7 +4,6 @@ import { markdown } from "@codemirror/lang-markdown";
 import mermaid from "mermaid";
 import { Store } from "@tauri-apps/plugin-store";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 
 const DEFAULT_SNIPPET = `graph TD
     A[Start] --> B{Is it working?}
@@ -75,34 +74,6 @@ function setPreviewError(previewEl, message, details) {
   previewEl.replaceChildren(container);
 }
 
-function isFiniteNumber(value) {
-  return typeof value === "number" && Number.isFinite(value);
-}
-
-async function applyWindowState(appWindow, state) {
-  if (!state || typeof state !== "object") {
-    return;
-  }
-
-  const { width, height, x, y, maximized } = state;
-
-  try {
-    if (isFiniteNumber(width) && isFiniteNumber(height)) {
-      await appWindow.setSize(new PhysicalSize(width, height));
-    }
-
-    if (isFiniteNumber(x) && isFiniteNumber(y)) {
-      await appWindow.setPosition(new PhysicalPosition(x, y));
-    }
-
-    if (maximized) {
-      await appWindow.maximize();
-    }
-  } catch (error) {
-    console.warn("Applying saved window state failed", error);
-  }
-}
-
 async function persistWindowState(store, appWindow) {
   try {
     const [size, position, maximized] = await Promise.all([
@@ -171,39 +142,38 @@ window.addEventListener("DOMContentLoaded", async () => {
     securityLevel: "strict",
   });
 
-  const store = await Store.load(SETTINGS_STORE_NAME);
-  try {
-    const storePath = await store.path();
-    console.debug("Using settings store at", storePath);
-  } catch (error) {
-    console.warn("Unable to determine store path", error);
-  }
   const appWindow = getCurrentWindow();
-
-  const scheduleWindowStatePersist = debounce(() => {
-    persistWindowState(store, appWindow);
-  }, WINDOW_PERSIST_DELAY);
-
+  let store;
   try {
-    const savedState = await store.get(WINDOW_STATE_KEY);
-    console.debug("Loaded window state", savedState);
-    await applyWindowState(appWindow, savedState);
+    store = await Store.load(SETTINGS_STORE_NAME);
   } catch (error) {
-    console.warn("Reading saved window state failed", error);
+    console.error("Failed to load settings store", error);
   }
 
-  await appWindow.onResized(() => scheduleWindowStatePersist());
-  await appWindow.onMoved(() => scheduleWindowStatePersist());
-  let closeUnlisten;
-  closeUnlisten = await appWindow.onCloseRequested(async (event) => {
-    event.preventDefault();
-    await persistWindowState(store, appWindow);
-    if (closeUnlisten) {
-      closeUnlisten();
-      closeUnlisten = undefined;
-    }
-    await appWindow.close();
-  });
+  let unlistenResize;
+  let unlistenMove;
+  let unlistenClose;
+
+  if (store) {
+    const debouncedPersist = debounce(
+      () => persistWindowState(store, appWindow),
+      WINDOW_PERSIST_DELAY
+    );
+
+    unlistenResize = await appWindow.onResized(() => debouncedPersist());
+    unlistenMove = await appWindow.onMoved(() => debouncedPersist());
+
+    unlistenClose = await appWindow.onCloseRequested(async (event) => {
+      event.preventDefault();
+      await persistWindowState(store, appWindow);
+      await Promise.all([
+        unlistenResize ? unlistenResize() : Promise.resolve(),
+        unlistenMove ? unlistenMove() : Promise.resolve(),
+        unlistenClose ? unlistenClose() : Promise.resolve(),
+      ]);
+      await appWindow.close();
+    });
+  }
 
   const scheduleRender = debounce((doc) => {
     const token = ++renderCounter;
