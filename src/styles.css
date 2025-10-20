@@ -1,0 +1,88 @@
+:root {
+  color-scheme: light dark;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #f5f7fb;
+  color: #1f2933;
+}
+
+body.dark {
+  background: #121620;
+  color: #f8fafc;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+
+.app-header,
+.app-footer {
+  padding: 1.5rem 2rem;
+  background: rgba(15, 23, 42, 0.05);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.app-footer {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  border-bottom: none;
+  font-size: 0.875rem;
+}
+
+.app-main {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  opacity: 0.8;
+}
+
+.panel {
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+body.dark .panel {
+  background: #1b2537;
+  border-color: rgba(148, 163, 184, 0.2);
+  box-shadow: none;
+}
+
+.panel h2 {
+  margin-top: 0;
+  font-size: 1.1rem;
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.5rem;
+  color: rgba(15, 23, 42, 0.75);
+}
+
+body.dark .placeholder {
+  color: rgba(226, 232, 240, 0.85);
+}
+
+@media (max-width: 640px) {
+  .app-main {
+    grid-template-columns: 1fr;
+  }
+}
