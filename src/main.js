@@ -1,7 +1,7 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, basicSetup } from "codemirror";
 import { keymap } from "@codemirror/view";
-import { markdown } from "@codemirror/lang-markdown";
+import { StreamLanguage } from "@codemirror/language";
 import mermaid from "mermaid";
 import { Store } from "@tauri-apps/plugin-store";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -16,6 +16,107 @@ const WINDOW_PERSIST_DELAY = 400;
 const SETTINGS_STORE_NAME = "settings.store";
 const WINDOW_STATE_KEY = "windowState";
 let renderCounter = 0;
+const MERMAID_KEYWORDS = new Set([
+  "graph",
+  "flowchart",
+  "sequenceDiagram",
+  "classDiagram",
+  "stateDiagram",
+  "erDiagram",
+  "journey",
+  "gantt",
+  "pie",
+  "mindmap",
+  "timeline",
+  "gitGraph",
+  "quadrantChart",
+  "requirementDiagram",
+  "subgraph",
+  "end",
+  "click",
+  "linkStyle",
+  "style",
+  "class",
+  "direction",
+  "tb",
+  "td",
+  "lr",
+  "rl",
+  "bt",
+  "note",
+  "rect",
+  "call",
+  "section",
+  "loop",
+  "alt",
+  "opt",
+  "par",
+  "and",
+]);
+
+const mermaidMode = StreamLanguage.define({
+  token(stream) {
+    if (stream.eatSpace()) {
+      return null;
+    }
+
+    if (stream.match("%%")) {
+      stream.skipToEnd();
+      return "comment";
+    }
+
+    if (stream.peek() === '"' || stream.peek() === "'") {
+      const quote = stream.next();
+      let escaped = false;
+      while (!stream.eol()) {
+        const ch = stream.next();
+        if (ch === quote && !escaped) {
+          break;
+        }
+        escaped = !escaped && ch === "\\";
+      }
+      return "string";
+    }
+
+    if (stream.match(/[#.][A-Za-z_][\w-]*/)) {
+      return "attributeName";
+    }
+
+    if (
+      stream.match(/--?>|<--?|==>|<==|-\.-|\.->|==/) ||
+      stream.match(/:::/)
+    ) {
+      return "operator";
+    }
+
+    if (stream.match(/[{}\[\]()]/)) {
+      return "bracket";
+    }
+
+    if (stream.match(/[-+*/=<>!]+/)) {
+      return "operator";
+    }
+
+    if (stream.match(/\d+(\.\d+)?/)) {
+      return "number";
+    }
+
+    if (stream.match(/[A-Za-z_][\w-]*/)) {
+      const word = stream.current().toLowerCase();
+      if (MERMAID_KEYWORDS.has(word)) {
+        return "keyword";
+      }
+      return "variableName";
+    }
+
+    stream.next();
+    return null;
+  },
+  languageData: {
+    commentTokens: { line: "%%" },
+    closeBrackets: { brackets: "()[]{}\"'`" },
+  },
+});
 
 const EDITOR_THEME = EditorView.theme({
   "&": {
@@ -182,7 +283,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     doc: DEFAULT_SNIPPET,
     extensions: [
       basicSetup,
-      markdown(),
+      mermaidMode,
       EditorView.lineWrapping,
       EDITOR_THEME,
       keymap.of([indentWithTab]),
