@@ -10,6 +10,11 @@
     "core:window:allow-maximize",
     "store:default",
     "dialog:default",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$HOME/**" }]
+    },
+    "fs:allow-write-text-file",
     "fs:default"
   ]
 }

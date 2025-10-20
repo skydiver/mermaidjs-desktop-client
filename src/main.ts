@@ -79,7 +79,7 @@ async function bootstrap(): Promise<void> {
 
       try {
         if (!targetPath) {
-          targetPath = await showSaveDialog({
+          const picked = await showSaveDialog({
             defaultPath: 'diagram.mmd',
             filters: [
               {
@@ -89,10 +89,12 @@ async function bootstrap(): Promise<void> {
               { name: 'All Files', extensions: ['*'] },
             ],
           });
-        }
 
-        if (!targetPath) {
-          return;
+          if (typeof picked === 'string') {
+            targetPath = picked;
+          } else {
+            return;
+          }
         }
 
         await writeTextFile(targetPath, documentContent);
