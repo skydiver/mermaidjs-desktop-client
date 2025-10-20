@@ -4,6 +4,10 @@
   font-size: 16px;
   line-height: 1.6;
   margin: 0;
+  --editor-bg: rgba(255, 255, 255, 0.95);
+  --editor-border: rgba(15, 23, 42, 0.15);
+  --editor-gutter: rgba(71, 85, 105, 0.85);
+  --editor-caret: #0f172a;
 }
 
 body {
@@ -16,6 +20,10 @@ body {
 body.dark {
   background: #121620;
   color: #f8fafc;
+  --editor-bg: rgba(17, 24, 39, 0.75);
+  --editor-border: rgba(148, 163, 184, 0.25);
+  --editor-gutter: rgba(148, 163, 184, 0.85);
+  --editor-caret: #f8fafc;
 }
 
 .app-shell {
@@ -71,14 +79,47 @@ body.dark .panel {
 .placeholder {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
+  justify-content: flex-start;
+  align-items: stretch;
   gap: 0.5rem;
   color: rgba(15, 23, 42, 0.75);
 }
 
 body.dark .placeholder {
   color: rgba(226, 232, 240, 0.85);
+}
+
+.field-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.editor-host {
+  min-height: 320px;
+}
+
+.editor-host .cm-editor {
+  height: 100%;
+}
+
+.editor-host .cm-scroller {
+  padding: 16px;
+}
+
+.editor-host .cm-activeLine {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+.editor-fallback {
+  width: 100%;
+  min-height: 320px;
+  resize: none;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--editor-border);
+  background: var(--editor-bg);
+  color: inherit;
 }
 
 @media (max-width: 640px) {

@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.martin.mermaidjs-desktop",
   "build": {
-    "frontendDist": "../src"
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
   },
   "app": {
     "withGlobalTauri": true,

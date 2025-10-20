@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MermaidJS Desktop</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
 
   <body>
@@ -17,7 +17,22 @@
       <main class="app-main">
         <section class="panel placeholder">
           <h2>Editor</h2>
-          <p>The diagram editor will live here.</p>
+          <label class="field-label" for="editor-host">Mermaid source</label>
+          <div
+            id="editor-host"
+            class="editor-host"
+            role="textbox"
+            aria-label="Mermaid source editor"
+          >
+            <noscript>
+              <textarea class="editor-fallback" spellcheck="false">
+graph TD
+    A[Start] --> B{Is it working?}
+    B -- Yes --> C[Great!]
+    B -- Not yet --> D[Keep iterating]</textarea
+            >
+            </noscript>
+          </div>
         </section>
         <section class="panel placeholder">
           <h2>Preview</h2>
@@ -29,5 +44,6 @@
         <span>Status: ready for the next steps.</span>
       </footer>
     </div>
+    <script type="module" src="./main.js"></script>
   </body>
 </html>
