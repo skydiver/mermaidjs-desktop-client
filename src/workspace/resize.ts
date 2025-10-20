@@ -46,7 +46,12 @@ export function initHorizontalResize(
     containerWidth = container.getBoundingClientRect().width;
     startEditorWidth = editorPane.getBoundingClientRect().width;
     divider.classList.add('dragging');
+
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', stopDragging);
+  });
+
+  divider.addEventListener('dblclick', () => {
+    setEditorWidth(DEFAULT_EDITOR_RATIO);
   });
 }
