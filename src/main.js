@@ -2,12 +2,18 @@ import { EditorState } from "@codemirror/state";
 import { EditorView, basicSetup } from "codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import mermaid from "mermaid";
+import { Store } from "@tauri-apps/plugin-store";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { PhysicalPosition, PhysicalSize } from "@tauri-apps/api/dpi";
 
 const DEFAULT_SNIPPET = `graph TD
     A[Start] --> B{Is it working?}
     B -- Yes --> C[Great!]
     B -- Not yet --> D[Keep iterating]`;
 const RENDER_DELAY = 300;
+const WINDOW_PERSIST_DELAY = 400;
+const SETTINGS_STORE_NAME = "settings.store";
+const WINDOW_STATE_KEY = "windowState";
 let renderCounter = 0;
 
 const EDITOR_THEME = EditorView.theme({
@@ -69,6 +75,58 @@ function setPreviewError(previewEl, message, details) {
   previewEl.replaceChildren(container);
 }
 
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+async function applyWindowState(appWindow, state) {
+  if (!state || typeof state !== "object") {
+    return;
+  }
+
+  const { width, height, x, y, maximized } = state;
+
+  try {
+    if (isFiniteNumber(width) && isFiniteNumber(height)) {
+      await appWindow.setSize(new PhysicalSize(width, height));
+    }
+
+    if (isFiniteNumber(x) && isFiniteNumber(y)) {
+      await appWindow.setPosition(new PhysicalPosition(x, y));
+    }
+
+    if (maximized) {
+      await appWindow.maximize();
+    }
+  } catch (error) {
+    console.warn("Applying saved window state failed", error);
+  }
+}
+
+async function persistWindowState(store, appWindow) {
+  try {
+    const [size, position, maximized] = await Promise.all([
+      appWindow.outerSize(),
+      appWindow.outerPosition(),
+      appWindow.isMaximized(),
+    ]);
+
+    const windowState = {
+      width: size ? Math.round(size.width) : undefined,
+      height: size ? Math.round(size.height) : undefined,
+      x: position ? Math.round(position.x) : undefined,
+      y: position ? Math.round(position.y) : undefined,
+      maximized: Boolean(maximized),
+    };
+
+    await store.set(WINDOW_STATE_KEY, windowState);
+    await store.save();
+    console.debug("Window state saved", windowState);
+  } catch (error) {
+    console.warn("Persisting window state failed", error);
+  }
+}
+
 async function renderMermaid(source, previewEl, token) {
   if (!previewEl) return;
 
@@ -100,7 +158,7 @@ async function renderMermaid(source, previewEl, token) {
   }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
   const host = document.querySelector("#editor-host");
   const preview = document.querySelector("#preview-host");
 
@@ -111,6 +169,40 @@ window.addEventListener("DOMContentLoaded", () => {
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: "strict",
+  });
+
+  const store = await Store.load(SETTINGS_STORE_NAME);
+  try {
+    const storePath = await store.path();
+    console.debug("Using settings store at", storePath);
+  } catch (error) {
+    console.warn("Unable to determine store path", error);
+  }
+  const appWindow = getCurrentWindow();
+
+  const scheduleWindowStatePersist = debounce(() => {
+    persistWindowState(store, appWindow);
+  }, WINDOW_PERSIST_DELAY);
+
+  try {
+    const savedState = await store.get(WINDOW_STATE_KEY);
+    console.debug("Loaded window state", savedState);
+    await applyWindowState(appWindow, savedState);
+  } catch (error) {
+    console.warn("Reading saved window state failed", error);
+  }
+
+  await appWindow.onResized(() => scheduleWindowStatePersist());
+  await appWindow.onMoved(() => scheduleWindowStatePersist());
+  let closeUnlisten;
+  closeUnlisten = await appWindow.onCloseRequested(async (event) => {
+    event.preventDefault();
+    await persistWindowState(store, appWindow);
+    if (closeUnlisten) {
+      closeUnlisten();
+      closeUnlisten = undefined;
+    }
+    await appWindow.close();
   });
 
   const scheduleRender = debounce((doc) => {
@@ -141,6 +233,8 @@ window.addEventListener("DOMContentLoaded", () => {
   host.dataset.editor = "mounted";
   preview.dataset.preview = "ready";
   scheduleRender(view.state.doc.toString());
+  scheduleWindowStatePersist();
 
   window.__editorView = view;
+  window.__settingsStore = store;
 });
