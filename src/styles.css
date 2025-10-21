@@ -191,11 +191,13 @@ body.dark .toolbar-menu-item:focus-visible {
   pointer-events: none;
   z-index: 10;
   transition: opacity 0.15s ease;
+  transition-delay: 0s;
 }
 
 .toolbar-button[data-tooltip]:hover::after,
 .toolbar-button[data-tooltip]:focus-visible::after {
   opacity: 1;
+  transition-delay: 1s;
 }
 
 .toolbar-button:disabled {
