@@ -16,6 +16,10 @@ interface RenderedDiagram {
   height: number;
 }
 
+const PNG_MIN_BASE = 512;
+const PNG_MIN_DOUBLE = 1024;
+const EXPORT_PADDING = 10;
+
 export function createExportHandler({ editor, getPath }: ExportDiagramOptions) {
   return async (format: ExportFormat) => {
     const documentContent = editor.state.doc.toString().trim();
@@ -85,8 +89,8 @@ async function renderDiagram(source: string): Promise<RenderedDiagram> {
   const renderId = `export-${Date.now()}`;
   const container = document.createElement('div');
   container.style.position = 'absolute';
-  container.style.width = '0';
-  container.style.height = '0';
+  container.style.left = '-9999px';
+  container.style.top = '-9999px';
   container.style.overflow = 'hidden';
   container.style.pointerEvents = 'none';
   container.style.visibility = 'hidden';
@@ -94,7 +98,20 @@ async function renderDiagram(source: string): Promise<RenderedDiagram> {
 
   try {
     const { svg } = await mermaid.render(renderId, source, undefined, container);
-    return normalizeSvg(svg);
+    let svgElement = container.querySelector('svg');
+
+    if (!svgElement) {
+      const tempWrapper = document.createElement('div');
+      tempWrapper.innerHTML = svg;
+      const parsed = tempWrapper.querySelector('svg');
+      if (!parsed) {
+        throw new Error('Mermaid render did not produce an SVG element.');
+      }
+      container.appendChild(parsed);
+      svgElement = parsed;
+    }
+
+    return normalizeSvg(svgElement);
   } finally {
     container.remove();
     const leftover = document.getElementById(renderId);
@@ -102,42 +119,26 @@ async function renderDiagram(source: string): Promise<RenderedDiagram> {
   }
 }
 
-function normalizeSvg(source: string): RenderedDiagram {
-  const parser = new DOMParser();
-  const parsed = parser.parseFromString(source, 'image/svg+xml');
-  const svgElement = parsed.querySelector('svg');
+function normalizeSvg(svgElement: SVGSVGElement): RenderedDiagram {
+  const ns = 'http://www.w3.org/2000/svg';
+  const bbox = svgElement.getBBox();
+  const paddedWidth = sanitizeDimension(bbox.width) + EXPORT_PADDING * 2;
+  const paddedHeight = sanitizeDimension(bbox.height) + EXPORT_PADDING * 2;
+  const minX = bbox.x - EXPORT_PADDING;
+  const minY = bbox.y - EXPORT_PADDING;
 
-  if (!svgElement) {
-    throw new Error('Rendered diagram did not produce an SVG element.');
-  }
+  const normalized = svgElement.cloneNode(true) as SVGSVGElement;
 
-  let width = parseDimension(svgElement.getAttribute('width'));
-  let height = parseDimension(svgElement.getAttribute('height'));
-  const viewBox = svgElement.getAttribute('viewBox');
+  normalized.setAttribute('xmlns', normalized.getAttribute('xmlns') ?? ns);
+  normalized.setAttribute('width', `${paddedWidth}`);
+  normalized.setAttribute('height', `${paddedHeight}`);
+  normalized.setAttribute('viewBox', `${minX} ${minY} ${paddedWidth} ${paddedHeight}`);
+  normalized.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  normalized.removeAttribute('x');
+  normalized.removeAttribute('y');
 
-  if ((!width || !height) && viewBox) {
-    const parts = viewBox.trim().split(/\s+/);
-    if (parts.length === 4) {
-      const viewWidth = Number.parseFloat(parts[2] ?? '');
-      const viewHeight = Number.parseFloat(parts[3] ?? '');
-      if ((!width || Number.isNaN(width)) && Number.isFinite(viewWidth)) {
-        width = viewWidth;
-      }
-      if ((!height || Number.isNaN(height)) && Number.isFinite(viewHeight)) {
-        height = viewHeight;
-      }
-    }
-  }
-
-  width = sanitizeDimension(width);
-  height = sanitizeDimension(height);
-
-  svgElement.setAttribute('width', `${width}`);
-  svgElement.setAttribute('height', `${height}`);
-  svgElement.setAttribute('xmlns', svgElement.getAttribute('xmlns') ?? 'http://www.w3.org/2000/svg');
-
-  const serialized = new XMLSerializer().serializeToString(svgElement);
-  return { svg: serialized, width, height };
+  const serialized = new XMLSerializer().serializeToString(normalized);
+  return { svg: serialized, width: paddedWidth, height: paddedHeight };
 }
 
 function parseDimension(value: string | null): number | null {
@@ -150,7 +151,7 @@ function parseDimension(value: string | null): number | null {
 
 function sanitizeDimension(value: number | null | undefined): number {
   if (!value || !Number.isFinite(value) || value <= 0) {
-    return 1024;
+    return 1;
   }
   return value;
 }
@@ -160,8 +161,14 @@ async function convertSvgToPng(diagram: RenderedDiagram, scale: number): Promise
   const dataUrl = encodeSvgDataUri(svg);
 
   const image = await loadImage(dataUrl, width, height);
-  const exportWidth = Math.max(1, Math.round(width * scale));
-  const exportHeight = Math.max(1, Math.round(height * scale));
+  const minDimension = scale > 1 ? PNG_MIN_DOUBLE : PNG_MIN_BASE;
+  const requiredScale = Math.max(
+    scale,
+    minDimension / width,
+    minDimension / height
+  );
+  const exportWidth = Math.max(1, Math.round(width * requiredScale));
+  const exportHeight = Math.max(1, Math.round(height * requiredScale));
 
   const canvas = document.createElement('canvas');
   canvas.width = exportWidth;
@@ -172,7 +179,12 @@ async function convertSvgToPng(diagram: RenderedDiagram, scale: number): Promise
     throw new Error('Unable to acquire canvas context.');
   }
 
-  context.clearRect(0, 0, exportWidth, exportHeight);
+  context.save();
+  context.globalAlpha = 1;
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, exportWidth, exportHeight);
+  context.restore();
+
   context.drawImage(image, 0, 0, exportWidth, exportHeight);
 
   const pngBlob = await new Promise<Blob>((resolve, reject) => {
