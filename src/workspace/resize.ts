@@ -40,7 +40,7 @@ export function initHorizontalResize(
     window.removeEventListener('pointerup', stopDragging);
   };
 
-  divider.addEventListener('pointerdown', event => {
+  divider.addEventListener('pointerdown', (event) => {
     isDragging = true;
     startX = event.clientX;
     containerWidth = container.getBoundingClientRect().width;

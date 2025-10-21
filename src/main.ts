@@ -9,9 +9,9 @@ import 'remixicon/fonts/remixicon.css';
 import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';
 import { createPreview } from './preview/render';
+import { setupToolbarActions } from './toolbar/actions';
 import { loadSettingsStore, setupWindowPersistence } from './window/state';
 import { initHorizontalResize } from './workspace/resize';
-import { setupToolbarActions } from './toolbar/actions';
 
 const DEFAULT_SNIPPET = `graph TD
     A[Start] --> B{Is it working?}
@@ -28,17 +28,10 @@ window.addEventListener('DOMContentLoaded', bootstrap);
 
 async function bootstrap(): Promise<void> {
   const host = document.querySelector<HTMLDivElement>('#editor-host');
-  const previewElement =
-    document.querySelector<HTMLDivElement>('#preview-host');
-  const newDiagramButton = document.querySelector<HTMLButtonElement>(
-    '[data-action="new-diagram"]'
-  );
-  const saveButton = document.querySelector<HTMLButtonElement>(
-    '[data-action="save-diagram"]'
-  );
-  const openButton = document.querySelector<HTMLButtonElement>(
-    '[data-action="open-diagram"]'
-  );
+  const previewElement = document.querySelector<HTMLDivElement>('#preview-host');
+  const newDiagramButton = document.querySelector<HTMLButtonElement>('[data-action="new-diagram"]');
+  const saveButton = document.querySelector<HTMLButtonElement>('[data-action="save-diagram"]');
+  const openButton = document.querySelector<HTMLButtonElement>('[data-action="open-diagram"]');
   const workspace = document.querySelector<HTMLDivElement>('.workspace');
   const editorPane = document.querySelector<HTMLElement>('[data-pane="editor"]');
   const previewPane = document.querySelector<HTMLElement>('[data-pane="preview"]');

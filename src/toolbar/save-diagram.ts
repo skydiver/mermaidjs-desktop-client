@@ -1,6 +1,6 @@
-import type { EditorView } from 'codemirror';
 import { save as showSaveDialog } from '@tauri-apps/plugin-dialog';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
+import type { EditorView } from 'codemirror';
 
 interface SaveDiagramOptions {
   editor: EditorView;

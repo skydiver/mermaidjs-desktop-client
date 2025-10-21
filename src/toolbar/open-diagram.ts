@@ -1,6 +1,6 @@
-import type { EditorView } from 'codemirror';
 import { open as showOpenDialog } from '@tauri-apps/plugin-dialog';
 import { readTextFile } from '@tauri-apps/plugin-fs';
+import type { EditorView } from 'codemirror';
 
 interface OpenDiagramOptions {
   editor: EditorView;
