@@ -40,7 +40,33 @@
               <i class="ri-save-3-line" aria-hidden="true"></i>
             </button>
           </div>
-          <div class="toolbar-right"></div>
+          <div class="toolbar-right">
+            <div class="toolbar-dropdown" data-dropdown="export">
+              <button
+                type="button"
+                class="toolbar-button export-button"
+                aria-label="Export diagram"
+                aria-haspopup="true"
+                aria-expanded="false"
+                data-action="export-menu"
+                data-tooltip="Export"
+              >
+                <i class="ri-download-2-line icon-primary" aria-hidden="true"></i>
+                <i class="ri-arrow-down-s-line icon-arrow" aria-hidden="true"></i>
+              </button>
+              <div class="toolbar-menu" role="menu" aria-label="Export options" hidden>
+                <button type="button" class="toolbar-menu-item" role="menuitem" data-export="png">
+                  Export as PNG
+                </button>
+                <button type="button" class="toolbar-menu-item" role="menuitem" data-export="pngx2">
+                  Export as PNG ×2
+                </button>
+                <button type="button" class="toolbar-menu-item" role="menuitem" data-export="svg">
+                  Export as SVG
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
