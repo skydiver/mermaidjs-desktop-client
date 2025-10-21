@@ -2,8 +2,6 @@ import { indentWithTab } from '@codemirror/commands';
 import { EditorState } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { open as showOpenDialog, save as showSaveDialog } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { basicSetup, EditorView } from 'codemirror';
 import mermaid from 'mermaid';
 import 'remixicon/fonts/remixicon.css';
@@ -13,6 +11,7 @@ import { createEditorTheme } from './editor/theme';
 import { createPreview } from './preview/render';
 import { loadSettingsStore, setupWindowPersistence } from './window/state';
 import { initHorizontalResize } from './workspace/resize';
+import { setupToolbarActions } from './toolbar/actions';
 
 const DEFAULT_SNIPPET = `graph TD
     A[Start] --> B{Is it working?}
@@ -71,82 +70,20 @@ async function bootstrap(): Promise<void> {
   schedulePreviewRender(editor.state.doc.toString());
   initHorizontalResize(workspace, editorPane, previewPane, divider);
 
-  if (newDiagramButton) {
-    newDiagramButton.addEventListener('click', () => {
-      editor.dispatch({
-        changes: { from: 0, to: editor.state.doc.length, insert: DEFAULT_SNIPPET },
-      });
-      schedulePreviewRender(DEFAULT_SNIPPET);
-      currentFilePath = null;
-    });
-  }
-
-  if (openButton) {
-    openButton.addEventListener('click', async () => {
-      try {
-        const selected = await showOpenDialog({
-          filters: [
-            {
-              name: 'Mermaid Diagram',
-              extensions: ['mmd', 'mermaid', 'md'],
-            },
-            { name: 'All Files', extensions: ['*'] },
-          ],
-        });
-
-        if (!selected) {
-          return;
-        }
-
-        const path = Array.isArray(selected) ? selected[0] : selected;
-        if (!path) {
-          return;
-        }
-
-        const fileContents = await readTextFile(path);
-        editor.dispatch({
-          changes: { from: 0, to: editor.state.doc.length, insert: fileContents },
-        });
-        schedulePreviewRender(fileContents);
-        currentFilePath = path;
-      } catch (error) {
-        console.error('Failed to open diagram', error);
-      }
-    });
-  }
-
-  if (saveButton) {
-    saveButton.addEventListener('click', async () => {
-      const documentContent = editor.state.doc.toString();
-      let targetPath = currentFilePath;
-
-      try {
-        if (!targetPath) {
-          const picked = await showSaveDialog({
-            defaultPath: 'diagram.mmd',
-            filters: [
-              {
-                name: 'Mermaid Diagram',
-                extensions: ['mmd', 'mermaid', 'md'],
-              },
-              { name: 'All Files', extensions: ['*'] },
-            ],
-          });
-
-          if (typeof picked === 'string') {
-            targetPath = picked;
-          } else {
-            return;
-          }
-        }
-
-        await writeTextFile(targetPath, documentContent);
-        currentFilePath = targetPath;
-      } catch (error) {
-        console.error('Failed to save diagram', error);
-      }
-    });
-  }
+  setupToolbarActions({
+    editor,
+    schedulePreviewRender,
+    newDiagramButton,
+    openButton,
+    saveButton,
+    onPathChange(path) {
+      currentFilePath = path;
+    },
+    getPath() {
+      return currentFilePath;
+    },
+    defaultSnippet: DEFAULT_SNIPPET,
+  });
 }
 
 function createEditor(
