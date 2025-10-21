@@ -1,9 +1,12 @@
+export type ExportFormat = 'png' | 'pngx2' | 'svg';
+
 export interface ExportMenuOptions {
   button: HTMLButtonElement | null;
   menu: HTMLDivElement | null;
+  onSelect?: (format: ExportFormat) => void | Promise<void>;
 }
 
-export function setupExportMenu({ button, menu }: ExportMenuOptions): void {
+export function setupExportMenu({ button, menu, onSelect }: ExportMenuOptions): void {
   if (!button || !menu) {
     return;
   }
@@ -70,5 +73,16 @@ export function setupExportMenu({ button, menu }: ExportMenuOptions): void {
       setOpen(false);
       button.focus();
     }
+  });
+
+  menu.addEventListener('click', (event) => {
+    const target = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('.toolbar-menu-item');
+    if (!target) return;
+    const format = target.dataset.export as ExportFormat | undefined;
+    if (!format) return;
+    event.preventDefault();
+    setOpen(false);
+    button.focus();
+    onSelect?.(format);
   });
 }

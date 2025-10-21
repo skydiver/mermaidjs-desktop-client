@@ -1,7 +1,8 @@
 import type { EditorView } from 'codemirror';
 
-import { setupNewDiagramAction } from './new-diagram';
+import { createExportHandler } from './export-diagram';
 import { setupExportMenu } from './export-menu';
+import { setupNewDiagramAction } from './new-diagram';
 import { setupOpenDiagramAction } from './open-diagram';
 import { setupSaveDiagramAction } from './save-diagram';
 
@@ -54,8 +55,14 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
     onPathChange,
   });
 
+  const handleExport = createExportHandler({
+    editor,
+    getPath,
+  });
+
   setupExportMenu({
     button: exportButton,
     menu: exportMenu,
+    onSelect: handleExport,
   });
 }
