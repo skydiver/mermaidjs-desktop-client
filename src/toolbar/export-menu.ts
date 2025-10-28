@@ -42,7 +42,8 @@ export function setupExportMenu({ button, menu, onSelect }: ExportMenuOptions): 
     setOpen(false);
   };
 
-  const handleDocumentKeydown = (event: KeyboardEvent) => {
+  const handleDocumentKeydown = (event: Event) => {
+    if (!(event instanceof KeyboardEvent)) return;
     if (event.key === 'Escape' && isOpen) {
       setOpen(false);
       button.focus();

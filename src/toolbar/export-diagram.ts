@@ -97,7 +97,7 @@ async function renderDiagram(source: string): Promise<RenderedDiagram> {
   document.body.appendChild(container);
 
   try {
-    const { svg } = await mermaid.render(renderId, source, undefined, container);
+    const { svg } = await mermaid.render(renderId, source, container);
     let svgElement = container.querySelector('svg');
 
     if (!svgElement) {
