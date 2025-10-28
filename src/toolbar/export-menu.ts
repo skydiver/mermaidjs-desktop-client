@@ -19,7 +19,9 @@ export function setupExportMenu({ button, menu, onSelect }: ExportMenuOptions): 
     button.setAttribute('aria-expanded', String(open));
     menu.hidden = !open;
 
-    const method: 'addEventListener' | 'removeEventListener' = open ? 'addEventListener' : 'removeEventListener';
+    const method: 'addEventListener' | 'removeEventListener' = open
+      ? 'addEventListener'
+      : 'removeEventListener';
     document[method]('pointerdown', handlePointerDown, true);
     document[method]('keydown', handleDocumentKeydown);
   };
@@ -77,7 +79,9 @@ export function setupExportMenu({ button, menu, onSelect }: ExportMenuOptions): 
   });
 
   menu.addEventListener('click', (event) => {
-    const target = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>('.toolbar-menu-item');
+    const target = (event.target as HTMLElement | null)?.closest<HTMLButtonElement>(
+      '.toolbar-menu-item'
+    );
     if (!target) return;
     const format = target.dataset.export as ExportFormat | undefined;
     if (!format) return;

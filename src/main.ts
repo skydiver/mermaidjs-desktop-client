@@ -33,7 +33,9 @@ async function bootstrap(): Promise<void> {
   const saveButton = document.querySelector<HTMLButtonElement>('[data-action="save-diagram"]');
   const openButton = document.querySelector<HTMLButtonElement>('[data-action="open-diagram"]');
   const exportButton = document.querySelector<HTMLButtonElement>('[data-action="export-menu"]');
-  const exportMenu = document.querySelector<HTMLDivElement>('[data-dropdown="export"] .toolbar-menu');
+  const exportMenu = document.querySelector<HTMLDivElement>(
+    '[data-dropdown="export"] .toolbar-menu'
+  );
   const workspace = document.querySelector<HTMLDivElement>('.workspace');
   const editorPane = document.querySelector<HTMLElement>('[data-pane="editor"]');
   const previewPane = document.querySelector<HTMLElement>('[data-pane="preview"]');

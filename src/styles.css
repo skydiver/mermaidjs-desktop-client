@@ -241,7 +241,7 @@ body.dark .toolbar-button {
   transition: transform 0.2s ease;
 }
 
-.export-button[aria-expanded='true'] .icon-arrow {
+.export-button[aria-expanded="true"] .icon-arrow {
   transform: rotate(180deg);
 }
 

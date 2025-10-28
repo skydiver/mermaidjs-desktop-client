@@ -64,7 +64,11 @@ async function exportAsSvg(svg: string, baseName: string): Promise<void> {
   await writeTextFile(targetPath, svg);
 }
 
-async function exportAsPng(diagram: RenderedDiagram, baseName: string, scale: number): Promise<void> {
+async function exportAsPng(
+  diagram: RenderedDiagram,
+  baseName: string,
+  scale: number
+): Promise<void> {
   const suffix = scale > 1 ? '@2x' : '';
   const targetPath = await showSaveDialog({
     defaultPath: `${baseName}${suffix}.png`,
@@ -162,11 +166,7 @@ async function convertSvgToPng(diagram: RenderedDiagram, scale: number): Promise
 
   const image = await loadImage(dataUrl, width, height);
   const minDimension = scale > 1 ? PNG_MIN_DOUBLE : PNG_MIN_BASE;
-  const requiredScale = Math.max(
-    scale,
-    minDimension / width,
-    minDimension / height
-  );
+  const requiredScale = Math.max(scale, minDimension / width, minDimension / height);
   const exportWidth = Math.max(1, Math.round(width * requiredScale));
   const exportHeight = Math.max(1, Math.round(height * requiredScale));
 
@@ -234,7 +234,8 @@ function loadImage(url: string, width: number, height: number): Promise<HTMLImag
       }
       resolve(image);
     };
-    image.onerror = (event) => reject(event instanceof ErrorEvent ? event.error : new Error('Image failed to load.'));
+    image.onerror = (event) =>
+      reject(event instanceof ErrorEvent ? event.error : new Error('Image failed to load.'));
     image.src = url;
   });
 }
