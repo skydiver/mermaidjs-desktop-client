@@ -42,9 +42,10 @@ const MERMAID_KEYWORDS = [
 
 export type MermaidKeyword = (typeof MERMAID_KEYWORDS)[number];
 
+const ARROW_TOKENS = ['-.->', '-->', '<--', '==>', '<==', '.->', '->', '<-', '=='];
+
 export function createMermaidLanguage(): Extension {
   const keywordSet = new Set(MERMAID_KEYWORDS.map((word: MermaidKeyword) => word.toLowerCase()));
-  const arrowPattern = /--?>|<--?|==>|<==|-.\-|\.->|==/;
   const operatorPattern = /[-+*/=<>!]+/;
 
   return StreamLanguage.define({
@@ -67,7 +68,7 @@ export function createMermaidLanguage(): Extension {
         return 'attributeName';
       }
 
-      if (stream.match(arrowPattern) || stream.match(/:::/)) {
+      if (matchArrowToken(stream) || stream.match(':::')) {
         return 'operator';
       }
 
@@ -96,6 +97,15 @@ export function createMermaidLanguage(): Extension {
       closeBrackets: { brackets: '()[]{}"\'`' },
     },
   });
+}
+
+function matchArrowToken(stream: StringStream): boolean {
+  for (const token of ARROW_TOKENS) {
+    if (stream.match(token)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function readQuoted(stream: StringStream, quote: string): void {
