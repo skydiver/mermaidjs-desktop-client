@@ -145,14 +145,6 @@ function normalizeSvg(svgElement: SVGSVGElement): RenderedDiagram {
   return { svg: serialized, width: paddedWidth, height: paddedHeight };
 }
 
-function parseDimension(value: string | null): number | null {
-  if (!value) return null;
-  const match = value.match(/([\d.]+)/);
-  if (!match) return null;
-  const parsed = Number.parseFloat(match[1] ?? '');
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function sanitizeDimension(value: number | null | undefined): number {
   if (!value || !Number.isFinite(value) || value <= 0) {
     return 1;
