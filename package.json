@@ -1,24 +1,27 @@
 {
-  "name": "mermaidjs-desktop",
-  "private": true,
-  "version": "0.1.0",
+  "name": "mermaidjs-desktop-client",
+  "version": "2.0.0",
+  "description": "A Tauri desktop editor for Mermaid diagrams with live preview and export tooling.",
+  "homepage": "https://github.com/skydiver/mermaidjs-desktop-client",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skydiver/mermaidjs-desktop-client.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Martín M.",
+    "email": "skydiver@users.noreply.github.com"
+  },
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri",
     "clean": "rimraf dist src-tauri/target",
+    "dev": "vite",
     "lint:check": "biome check .",
     "lint:fix": "biome check --fix .",
-    "lint:format": "biome format --write ."
-  },
-  "devDependencies": {
-    "@tauri-apps/cli": "^2",
-    "@types/node": "^24.8.1",
-    "rimraf": "^5.0.5",
-    "typescript": "^5.9.3",
-    "vite": "^7.1.10"
+    "lint:format": "biome format --write .",
+    "preview": "vite preview",
+    "tauri": "tauri"
   },
   "dependencies": {
     "@codemirror/commands": "^6.9.0",
@@ -32,5 +35,12 @@
     "codemirror": "^6.0.2",
     "mermaid": "^11.12.0",
     "remixicon": "^4.7.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/node": "^24.8.1",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.10"
   }
 }
