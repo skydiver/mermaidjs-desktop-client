@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "clean": "rimraf dist src-tauri/target",
     "lint:check": "biome check .",
     "lint:fix": "biome check --fix .",
     "lint:format": "biome format --write ."
@@ -15,6 +16,7 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2",
     "@types/node": "^24.8.1",
+    "rimraf": "^5.0.5",
     "typescript": "^5.9.3",
     "vite": "^7.1.10"
   },
