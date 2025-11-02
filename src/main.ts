@@ -85,7 +85,7 @@ async function bootstrap(): Promise<void> {
       status.rendering();
     },
     onRenderSuccess() {
-      status.success('Preview updated successfully.');
+      status.success('Preview updated successfully');
     },
     onRenderEmpty() {
       status.info('Waiting for Mermaid markup...');
