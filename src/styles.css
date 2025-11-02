@@ -199,6 +199,11 @@ body.dark .toolbar-menu-item:focus-visible {
   transition-delay: 0s;
 }
 
+.toolbar-button[aria-expanded="true"][data-tooltip]::after {
+  opacity: 0 !important;
+  transition: none;
+}
+
 .toolbar-button[data-tooltip]:hover::after,
 .toolbar-button[data-tooltip]:focus-visible::after {
   opacity: 1;
