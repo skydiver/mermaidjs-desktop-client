@@ -100,21 +100,38 @@ function loadExamples(): ExampleItem[] {
       const match = path.match(/\/([^/]+)\.mmd$/);
       const id = match?.[1];
       if (!id) return null;
-      const label = formatExampleLabel(id);
+      const { order, name } = parseExampleId(id);
       return {
-        id,
-        label,
+        id: name,
+        label: formatExampleLabel(name),
         content,
+        order,
       };
     })
     .filter((item): item is ExampleItem => item !== null)
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort((a, b) => {
+      if (a.order !== b.order) {
+        return a.order - b.order;
+      }
+      return a.label.localeCompare(b.label);
+    });
 }
 
-function formatExampleLabel(filename: string): string {
-  return filename
+function formatExampleLabel(id: string): string {
+  return id
     .split(/[-_]/g)
     .filter(Boolean)
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
+}
+
+function parseExampleId(rawId: string): { name: string; order: number } {
+  const [, orderPart, namePart] = rawId.match(/^(\d+)[-_](.+)$/) ?? [];
+  if (orderPart && namePart) {
+    return {
+      name: namePart,
+      order: Number.parseInt(orderPart, 10),
+    };
+  }
+  return { name: rawId, order: Number.MAX_SAFE_INTEGER };
 }

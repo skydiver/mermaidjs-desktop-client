@@ -2,6 +2,7 @@ export interface ExampleItem {
   id: string;
   label: string;
   content: string;
+  order: number;
 }
 
 export interface ExamplesMenuOptions {
