@@ -1,17 +1,37 @@
-export type ExampleId = 'flowchart' | 'sequence' | 'gantt' | 'class';
+export interface ExampleItem {
+  id: string;
+  label: string;
+  content: string;
+}
 
 export interface ExamplesMenuOptions {
   button: HTMLButtonElement | null;
   menu: HTMLDivElement | null;
-  onSelect?: (id: ExampleId) => void | Promise<void>;
+  items: ExampleItem[];
+  onSelect?: (content: string, item: ExampleItem) => void | Promise<void>;
 }
 
-export function setupExamplesMenu({ button, menu, onSelect }: ExamplesMenuOptions): void {
-  if (!button || !menu) {
+export function setupExamplesMenu({ button, menu, items, onSelect }: ExamplesMenuOptions): void {
+  if (!button || !menu || items.length === 0) {
     return;
   }
 
   let isOpen = false;
+
+  const renderMenu = () => {
+    menu.innerHTML = '';
+    items.forEach((item) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'toolbar-menu-item';
+      option.role = 'menuitem';
+      option.dataset.example = item.id;
+      option.textContent = item.label;
+      menu.append(option);
+    });
+  };
+
+  renderMenu();
 
   const setOpen = (open: boolean) => {
     if (isOpen === open) return;
@@ -83,11 +103,13 @@ export function setupExamplesMenu({ button, menu, onSelect }: ExamplesMenuOption
       '.toolbar-menu-item'
     );
     if (!target) return;
-    const id = target.dataset.example as ExampleId | undefined;
+    const id = target.dataset.example;
     if (!id) return;
+    const item = items.find((entry) => entry.id === id);
+    if (!item) return;
     event.preventDefault();
     setOpen(false);
     button.focus();
-    onSelect?.(id);
+    onSelect?.(item.content, item);
   });
 }

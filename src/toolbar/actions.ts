@@ -1,7 +1,9 @@
 import type { EditorView } from 'codemirror';
 
 import { createExportHandler } from './export-diagram';
-import { setupExamplesMenu, type ExampleId } from './examples-menu';
+import { setupExamplesMenu, type ExampleItem } from './examples-menu';
+
+const EXAMPLES = loadExamples();
 import { setupExportMenu } from './export-menu';
 import { setupNewDiagramAction } from './new-diagram';
 import { setupOpenDiagramAction } from './open-diagram';
@@ -71,58 +73,44 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
     onSelect: handleExport,
   });
 
-  setupExamplesMenu({
-    button: examplesButton,
-    menu: examplesMenu,
-    onSelect: (id) => {
-      const snippet = EXAMPLE_SNIPPETS[id];
-      if (!snippet) return;
-      editor.dispatch({
-        changes: { from: 0, to: editor.state.doc.length, insert: snippet },
-      });
-      schedulePreviewRender(snippet);
-      onPathChange(null);
-    },
-  });
+  if (EXAMPLES.length > 0) {
+    setupExamplesMenu({
+      button: examplesButton,
+      menu: examplesMenu,
+      items: EXAMPLES,
+      onSelect: (content) => {
+        editor.dispatch({
+          changes: { from: 0, to: editor.state.doc.length, insert: content },
+        });
+        schedulePreviewRender(content);
+        onPathChange(null);
+      },
+    });
+  }
 }
 
-const EXAMPLE_SNIPPETS: Record<ExampleId, string> = {
-  flowchart: `graph TD
-    A[Start] --> B{Is the diagram clear?}
-    B -- Yes --> C[Share with team]
-    B -- No --> D[Revise and iterate]
-    D --> A`,
-  sequence: `sequenceDiagram
-    participant User
-    participant App
-    participant Renderer
+function loadExamples(): ExampleItem[] {
+  const modules = import.meta.glob('../examples/*.mmd', {
+    as: 'raw',
+    eager: true,
+  }) as Record<string, string>;
 
-    User->>App: Edit Mermaid source
-    App->>Renderer: Debounce update
-    Renderer->>Renderer: Render preview
-    Renderer-->>User: Updated diagram`,
-  gantt: `gantt
-    title Release roadmap
-    dateFormat  YYYY-MM-DD
-    section Planning
-    Requirements     :done,    req, 2024-01-01, 2024-01-07
-    Concepts          :active, concept, 2024-01-08, 3d
-    section Execution
-    Implementation    :crit,   impl, 2024-01-11, 8d
-    Testing           :        test, after impl, 1w
-    section Launch
-    Docs & Training   :        docs, 2024-02-01, 5d
-    Release           :milestone, rel, 2024-02-09, 1d`,
-  class: `classDiagram
-    class DiagramEditor {
-      +load(path)
-      +save(path)
-      +setContent(text)
-      +renderPreview()
-    }
-    class ExportService {
-      +exportPNG(path)
-      +exportSVG(path)
-    }
-    DiagramEditor --> ExportService : uses`,
-};
+  return Object.entries(modules)
+    .map(([path, content]) => {
+      const match = path.match(/\/([^/]+)\.mmd$/);
+      const id = match?.[1];
+      if (!id) return null;
+      const label = toTitleCase(id.replace(/[-_]/g, ' '));
+      return {
+        id,
+        label,
+        content,
+      };
+    })
+    .filter((item): item is ExampleItem => item !== null)
+    .sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function toTitleCase(value: string): string {
+  return value.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1));
+}

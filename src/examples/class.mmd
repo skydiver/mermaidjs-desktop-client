@@ -1,0 +1,12 @@
+classDiagram
+    class DiagramEditor {
+      +load(path)
+      +save(path)
+      +setContent(text)
+      +renderPreview()
+    }
+    class ExportService {
+      +exportPNG(path)
+      +exportSVG(path)
+    }
+    DiagramEditor --> ExportService : uses
