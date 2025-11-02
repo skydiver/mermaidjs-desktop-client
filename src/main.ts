@@ -42,6 +42,7 @@ async function bootstrap(): Promise<void> {
     '[data-dropdown="export"] .toolbar-menu'
   );
   const statusMessage = document.querySelector<HTMLSpanElement>('[data-status="message"]');
+  const statusFile = document.querySelector<HTMLSpanElement>('[data-status="file"]');
   const workspace = document.querySelector<HTMLDivElement>('.workspace');
   const editorPane = document.querySelector<HTMLElement>('[data-pane="editor"]');
   const previewPane = document.querySelector<HTMLElement>('[data-pane="preview"]');
@@ -64,6 +65,21 @@ async function bootstrap(): Promise<void> {
   }
 
   const status = createStatusController(statusMessage);
+  const fileStatus = createFileStatusController(statusFile);
+
+  let lastCommittedDoc = DEFAULT_SNIPPET;
+  let isDocumentDirty = false;
+  let lastSavedAt: Date | null = null;
+  let currentFilePath: string | null = null;
+
+  const updateFileStatus = () => {
+    fileStatus.update({
+      path: currentFilePath,
+      dirty: isDocumentDirty,
+      lastSavedAt,
+    });
+  };
+
   const schedulePreviewRender = createPreview(previewElement, RENDER_DELAY, {
     onRenderStart() {
       status.rendering();
@@ -72,27 +88,29 @@ async function bootstrap(): Promise<void> {
       status.success('Preview updated successfully.');
     },
     onRenderEmpty() {
-      status.info('Waiting for Mermaid markup…');
+      status.info('Waiting for Mermaid markup...');
     },
     onRenderError(details) {
       status.error(details);
     },
   });
-  let lastCommittedDoc = DEFAULT_SNIPPET;
-  let isDocumentDirty = false;
-
   const handleDocChange = (doc: string) => {
     isDocumentDirty = doc !== lastCommittedDoc;
+    updateFileStatus();
   };
 
-  const commitDocument = (doc: string) => {
+  const commitDocument = (doc: string, options?: { saved?: boolean }) => {
     lastCommittedDoc = doc;
     isDocumentDirty = false;
+    if (options?.saved) {
+      lastSavedAt = new Date();
+    } else if (!currentFilePath) {
+      lastSavedAt = null;
+    }
+    updateFileStatus();
   };
 
   const editor = createEditor(host, DEFAULT_SNIPPET, schedulePreviewRender, handleDocChange);
-  let currentFilePath: string | null = null;
-
   commitDocument(editor.state.doc.toString());
 
   editor.focus();
@@ -116,7 +134,14 @@ async function bootstrap(): Promise<void> {
     },
     commitDocument,
     onPathChange(path) {
+      const previousPath = currentFilePath;
       currentFilePath = path;
+      if (path === null) {
+        lastSavedAt = null;
+      } else if (path !== previousPath) {
+        lastSavedAt = null;
+      }
+      updateFileStatus();
     },
     getPath() {
       return currentFilePath;
@@ -205,7 +230,7 @@ function createStatusController(element: HTMLSpanElement | null): {
     idle(message) {
       setStatus(message ?? defaultMessage, 'idle');
     },
-    rendering(message = 'Rendering preview…') {
+    rendering(message = 'Rendering preview...') {
       setStatus(message, 'loading');
     },
     success(message = 'Preview updated.') {
@@ -217,6 +242,70 @@ function createStatusController(element: HTMLSpanElement | null): {
     error(details) {
       const summary = details.split(/\r?\n/, 1)[0]?.trim() ?? 'Unknown error';
       setStatus(`Render failed: ${summary}`, 'error');
+    },
+  };
+}
+
+interface FileStatusState {
+  path: string | null;
+  dirty: boolean;
+  lastSavedAt: Date | null;
+}
+
+function createFileStatusController(element: HTMLSpanElement | null): {
+  update(state: FileStatusState): void;
+} {
+  if (!element) {
+    return {
+      update() {},
+    };
+  }
+
+  const formatName = (path: string | null): string => {
+    if (!path) {
+      return 'Untitled';
+    }
+    const normalized = path.replace(/\\/g, '/');
+    const lastSlash = normalized.lastIndexOf('/');
+    return lastSlash >= 0 ? normalized.slice(lastSlash + 1) : normalized;
+  };
+
+  const formatTime = (date: Date): string => {
+    return date.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return {
+    update(state) {
+      const { path, dirty, lastSavedAt } = state;
+      const name = formatName(path);
+
+      let details: string;
+      if (dirty) {
+        details = 'Unsaved changes';
+      } else if (lastSavedAt) {
+        details = `Saved ${formatTime(lastSavedAt)}`;
+      } else if (path) {
+        details = 'Opened from disk';
+      } else {
+        details = 'Not saved yet';
+      }
+
+      element.textContent = `${name} - ${details}`;
+      element.dataset.dirty = dirty ? 'true' : 'false';
+
+      const savedInfo = lastSavedAt ? `Last saved: ${lastSavedAt.toLocaleString()}` : null;
+      if (path && savedInfo) {
+        element.title = `${path}\n${savedInfo}`;
+      } else if (path) {
+        element.title = path;
+      } else if (savedInfo) {
+        element.title = savedInfo;
+      } else {
+        element.title = 'Unsaved diagram';
+      }
     },
   };
 }

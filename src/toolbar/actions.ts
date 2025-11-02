@@ -21,7 +21,7 @@ export interface ToolbarActionsOptions {
   examplesButton: HTMLButtonElement | null;
   examplesMenu: HTMLDivElement | null;
   isDirty: () => boolean;
-  commitDocument: (doc: string) => void;
+  commitDocument: (doc: string, options?: { saved?: boolean }) => void;
   onPathChange: (path: string | null) => void;
   getPath: () => string | null;
   defaultSnippet: string;
@@ -84,7 +84,7 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
     getPath,
     onPathChange,
     onSave(doc) {
-      commitDocument(doc);
+      commitDocument(doc, { saved: true });
     },
   });
 

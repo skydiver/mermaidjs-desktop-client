@@ -125,10 +125,18 @@ graph TD
       </main>
 
       <footer class="app-footer" role="status">
-        <span class="status-label">Status:</span>
-        <span class="status-message" data-status="message" data-status-level="idle">
-          Ready for the next steps.
-        </span>
+        <div class="status-section">
+          <span class="status-label">Status:</span>
+          <span class="status-message" data-status="message" data-status-level="idle">
+            Ready for the next steps.
+          </span>
+        </div>
+        <div class="status-section">
+          <span class="status-label">File:</span>
+          <span class="status-file" data-status="file" data-dirty="false">
+            Untitled - Not saved yet
+          </span>
+        </div>
       </footer>
     </div>
     <script type="module" src="./main.ts"></script>

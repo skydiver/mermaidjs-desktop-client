@@ -50,7 +50,17 @@ body.dark {
   font-size: 0.8125rem;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+
+.status-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .status-label {
@@ -65,6 +75,19 @@ body.dark {
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.status-file {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s ease;
+}
+
+.status-file[data-dirty="true"] {
+  color: #b91c1c;
 }
 
 .status-message[data-status-level="idle"] {
@@ -101,6 +124,10 @@ body.dark .status-message[data-status-level="info"] {
 
 body.dark .status-message[data-status-level="error"] {
   color: #f87171;
+}
+
+body.dark .status-file[data-dirty="true"] {
+  color: #fca5a5;
 }
 
 .app-main {
