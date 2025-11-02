@@ -7,10 +7,12 @@ interface OpenDiagramOptions {
   schedulePreviewRender: (doc: string) => void;
   button: HTMLButtonElement | null;
   onPathChange: (path: string | null) => void;
+  onOpen?: (doc: string, path: string) => void;
+  shouldReplace?: () => boolean | Promise<boolean>;
 }
 
 export function setupOpenDiagramAction(options: OpenDiagramOptions): void {
-  const { editor, schedulePreviewRender, button, onPathChange } = options;
+  const { editor, schedulePreviewRender, button, onPathChange, onOpen, shouldReplace } = options;
   if (!button) return;
 
   button.addEventListener('click', async () => {
@@ -30,12 +32,20 @@ export function setupOpenDiagramAction(options: OpenDiagramOptions): void {
       const path = Array.isArray(selected) ? selected[0] : selected;
       if (!path) return;
 
+      if (typeof shouldReplace === 'function') {
+        const allow = await Promise.resolve(shouldReplace());
+        if (!allow) {
+          return;
+        }
+      }
+
       const fileContents = await readTextFile(path);
       editor.dispatch({
         changes: { from: 0, to: editor.state.doc.length, insert: fileContents },
       });
       schedulePreviewRender(fileContents);
       onPathChange(path);
+      onOpen?.(fileContents, path);
     } catch (error) {
       console.error('Failed to open diagram', error);
     }

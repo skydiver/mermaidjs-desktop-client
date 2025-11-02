@@ -62,8 +62,22 @@ async function bootstrap(): Promise<void> {
   }
 
   const schedulePreviewRender = createPreview(previewElement, RENDER_DELAY);
-  const editor = createEditor(host, DEFAULT_SNIPPET, schedulePreviewRender);
+  let lastCommittedDoc = DEFAULT_SNIPPET;
+  let isDocumentDirty = false;
+
+  const handleDocChange = (doc: string) => {
+    isDocumentDirty = doc !== lastCommittedDoc;
+  };
+
+  const commitDocument = (doc: string) => {
+    lastCommittedDoc = doc;
+    isDocumentDirty = false;
+  };
+
+  const editor = createEditor(host, DEFAULT_SNIPPET, schedulePreviewRender, handleDocChange);
   let currentFilePath: string | null = null;
+
+  commitDocument(editor.state.doc.toString());
 
   editor.focus();
   host.dataset.editor = 'mounted';
@@ -81,6 +95,10 @@ async function bootstrap(): Promise<void> {
     exportMenu,
     examplesButton,
     examplesMenu,
+    isDirty() {
+      return isDocumentDirty;
+    },
+    commitDocument,
     onPathChange(path) {
       currentFilePath = path;
     },
@@ -94,7 +112,8 @@ async function bootstrap(): Promise<void> {
 function createEditor(
   host: HTMLElement,
   initialDoc: string,
-  schedulePreviewRender: (doc: string) => void
+  schedulePreviewRender: (doc: string) => void,
+  onDocChange?: (doc: string) => void
 ): EditorView {
   const state = EditorState.create({
     doc: initialDoc,
@@ -106,7 +125,9 @@ function createEditor(
       keymap.of([indentWithTab]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          schedulePreviewRender(update.state.doc.toString());
+          const nextDoc = update.state.doc.toString();
+          schedulePreviewRender(nextDoc);
+          onDocChange?.(nextDoc);
         }
       }),
     ],

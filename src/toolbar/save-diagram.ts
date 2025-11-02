@@ -7,10 +7,11 @@ interface SaveDiagramOptions {
   button: HTMLButtonElement | null;
   getPath: () => string | null;
   onPathChange: (path: string | null) => void;
+  onSave?: (doc: string, path: string) => void;
 }
 
 export function setupSaveDiagramAction(options: SaveDiagramOptions): void {
-  const { editor, button, getPath, onPathChange } = options;
+  const { editor, button, getPath, onPathChange, onSave } = options;
   if (!button) return;
 
   button.addEventListener('click', async () => {
@@ -39,6 +40,7 @@ export function setupSaveDiagramAction(options: SaveDiagramOptions): void {
 
       await writeTextFile(targetPath, documentContent);
       onPathChange(targetPath);
+      onSave?.(documentContent, targetPath);
     } catch (error) {
       console.error('Failed to save diagram', error);
     }

@@ -1,13 +1,14 @@
+import { ask } from '@tauri-apps/plugin-dialog';
 import type { EditorView } from 'codemirror';
 
 import { createExportHandler } from './export-diagram';
-import { setupExamplesMenu, type ExampleItem } from './examples-menu';
-
-const EXAMPLES = loadExamples();
 import { setupExportMenu } from './export-menu';
+import { type ExampleItem, setupExamplesMenu } from './examples-menu';
 import { setupNewDiagramAction } from './new-diagram';
 import { setupOpenDiagramAction } from './open-diagram';
 import { setupSaveDiagramAction } from './save-diagram';
+
+const EXAMPLES = loadExamples();
 
 export interface ToolbarActionsOptions {
   editor: EditorView;
@@ -19,6 +20,8 @@ export interface ToolbarActionsOptions {
   exportMenu: HTMLDivElement | null;
   examplesButton: HTMLButtonElement | null;
   examplesMenu: HTMLDivElement | null;
+  isDirty: () => boolean;
+  commitDocument: (doc: string) => void;
   onPathChange: (path: string | null) => void;
   getPath: () => string | null;
   defaultSnippet: string;
@@ -35,6 +38,8 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
     exportMenu,
     examplesButton,
     examplesMenu,
+    isDirty,
+    commitDocument,
     onPathChange,
     getPath,
     defaultSnippet,
@@ -46,6 +51,15 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
     button: newDiagramButton,
     defaultSnippet,
     onPathChange,
+    shouldReplace: async () => {
+      if (!isDirty()) {
+        return true;
+      }
+      return confirmReplace('Overwrite the current diagram with a blank template?');
+    },
+    onNew(doc) {
+      commitDocument(doc);
+    },
   });
 
   setupOpenDiagramAction({
@@ -53,6 +67,15 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
     schedulePreviewRender,
     button: openButton,
     onPathChange,
+    shouldReplace: async () => {
+      if (!isDirty()) {
+        return true;
+      }
+      return confirmReplace('Replace the current diagram with the selected file?');
+    },
+    onOpen(doc) {
+      commitDocument(doc);
+    },
   });
 
   setupSaveDiagramAction({
@@ -60,6 +83,9 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
     button: saveButton,
     getPath,
     onPathChange,
+    onSave(doc) {
+      commitDocument(doc);
+    },
   });
 
   const handleExport = createExportHandler({
@@ -78,7 +104,13 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
       button: examplesButton,
       menu: examplesMenu,
       items: EXAMPLES,
-      onSelect: (content) => {
+      onSelect: async (content) => {
+        if (isDirty()) {
+          const proceed = await confirmReplace('Replace the current diagram with this example?');
+          if (!proceed) {
+            return;
+          }
+        }
         editor.dispatch({
           changes: { from: 0, to: editor.state.doc.length, insert: content },
         });
@@ -134,4 +166,18 @@ function parseExampleId(rawId: string): { name: string; order: number } {
     };
   }
   return { name: rawId, order: Number.MAX_SAFE_INTEGER };
+}
+
+async function confirmReplace(message: string): Promise<boolean> {
+  try {
+    const result = await ask(message, {
+      title: 'Discard unsaved changes?',
+      kind: 'warning',
+    });
+    return result;
+  } catch (error) {
+    console.warn('Unable to show confirmation dialog', error);
+    // Fail-safe: prevent destructive action if dialog fails
+    return false;
+  }
 }
