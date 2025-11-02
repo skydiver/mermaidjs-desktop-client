@@ -195,13 +195,16 @@ function createStatusController(element: HTMLSpanElement | null): {
   info(message: string): void;
   error(details: string): void;
 } {
+  const noop = () => {
+    /* intentionally empty */
+  };
   if (!element) {
     return {
-      idle() {},
-      rendering() {},
-      success() {},
-      info() {},
-      error() {},
+      idle: noop,
+      rendering: noop,
+      success: noop,
+      info: noop,
+      error: noop,
     };
   }
 
@@ -257,9 +260,12 @@ interface FileStatusState {
 function createFileStatusController(element: HTMLSpanElement | null): {
   update(state: FileStatusState): void;
 } {
+  const noop = () => {
+    /* intentionally empty */
+  };
   if (!element) {
     return {
-      update() {},
+      update: noop,
     };
   }
 

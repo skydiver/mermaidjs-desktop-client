@@ -1,9 +1,8 @@
 import { ask } from '@tauri-apps/plugin-dialog';
 import type { EditorView } from 'codemirror';
-
+import { type ExampleItem, setupExamplesMenu } from './examples-menu';
 import { createExportHandler } from './export-diagram';
 import { setupExportMenu } from './export-menu';
-import { type ExampleItem, setupExamplesMenu } from './examples-menu';
 import { setupNewDiagramAction } from './new-diagram';
 import { setupOpenDiagramAction } from './open-diagram';
 import { setupSaveDiagramAction } from './save-diagram';
