@@ -205,7 +205,9 @@ function createStatusController(element: HTMLSpanElement | null): {
     };
   }
 
-  const defaultMessage = (element.textContent || 'Ready.').trim() || 'Ready.';
+  const target = element;
+
+  const defaultMessage = (target.textContent || 'Ready.').trim() || 'Ready.';
   let revertTimer: number | null = null;
 
   function setStatus(message: string, level: StatusLevel, autoRevert = false): void {
@@ -213,12 +215,12 @@ function createStatusController(element: HTMLSpanElement | null): {
       window.clearTimeout(revertTimer);
       revertTimer = null;
     }
-    element.textContent = message;
-    element.dataset.statusLevel = level;
+    target.textContent = message;
+    target.dataset.statusLevel = level;
     if (autoRevert) {
       revertTimer = window.setTimeout(() => {
-        element.textContent = defaultMessage;
-        element.dataset.statusLevel = 'idle';
+        target.textContent = defaultMessage;
+        target.dataset.statusLevel = 'idle';
         revertTimer = null;
       }, 4000);
     }
