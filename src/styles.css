@@ -4,6 +4,9 @@
   font-size: 16px;
   line-height: 1.6;
   margin: 0;
+  --app-background: #f5f7fb;
+  --header-background: var(--app-background);
+  --header-border: rgba(15, 23, 42, 0.08);
   --editor-bg: rgba(255, 255, 255, 0.95);
   --editor-border: rgba(15, 23, 42, 0.15);
   --editor-gutter: rgba(71, 85, 105, 0.85);
@@ -13,12 +16,14 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: #f5f7fb;
+  background: var(--app-background);
   color: #1f2933;
 }
 
 body.dark {
-  background: #121620;
+  --app-background: #121620;
+  --header-background: rgba(17, 24, 39, 0.85);
+  --header-border: rgba(148, 163, 184, 0.2);
   color: #f8fafc;
   --editor-bg: rgba(17, 24, 39, 0.75);
   --editor-border: rgba(148, 163, 184, 0.25);
@@ -34,8 +39,8 @@ body.dark {
 
 .app-header {
   padding: 0.5rem 1rem;
-  background: rgba(15, 23, 42, 0.05);
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: var(--header-background);
+  border-bottom: 1px solid var(--header-border);
 }
 
 .app-footer {
