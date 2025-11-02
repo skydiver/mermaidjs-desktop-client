@@ -32,6 +32,10 @@ async function bootstrap(): Promise<void> {
   const newDiagramButton = document.querySelector<HTMLButtonElement>('[data-action="new-diagram"]');
   const saveButton = document.querySelector<HTMLButtonElement>('[data-action="save-diagram"]');
   const openButton = document.querySelector<HTMLButtonElement>('[data-action="open-diagram"]');
+  const examplesButton = document.querySelector<HTMLButtonElement>('[data-action="examples-menu"]');
+  const examplesMenu = document.querySelector<HTMLDivElement>(
+    '[data-dropdown="examples"] .toolbar-menu'
+  );
   const exportButton = document.querySelector<HTMLButtonElement>('[data-action="export-menu"]');
   const exportMenu = document.querySelector<HTMLDivElement>(
     '[data-dropdown="export"] .toolbar-menu'
@@ -75,6 +79,8 @@ async function bootstrap(): Promise<void> {
     saveButton,
     exportButton,
     exportMenu,
+    examplesButton,
+    examplesMenu,
     onPathChange(path) {
       currentFilePath = path;
     },

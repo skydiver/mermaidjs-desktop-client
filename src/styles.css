@@ -230,28 +230,28 @@ body.dark .toolbar-button {
   background: rgba(59, 130, 246, 0.15);
 }
 
-.export-button {
+.dropdown-button {
   gap: 0.35rem;
   padding: 0 0.75rem;
   width: auto;
 }
 
-.export-button i {
+.dropdown-button i {
   line-height: 1;
   pointer-events: none;
   display: inline-flex;
 }
 
-.export-button .icon-primary {
+.dropdown-button .icon-primary {
   font-size: 1.05rem;
 }
 
-.export-button .icon-arrow {
+.dropdown-button .icon-arrow {
   font-size: 0.9rem;
   transition: transform 0.2s ease;
 }
 
-.export-button[aria-expanded="true"] .icon-arrow {
+.dropdown-button[aria-expanded="true"] .icon-arrow {
   transform: rotate(180deg);
 }
 
