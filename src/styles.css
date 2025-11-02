@@ -44,10 +44,63 @@ body.dark {
 }
 
 .app-footer {
-  padding: 1rem 2rem;
+  padding: 0.5rem 1.5rem;
   border-top: 1px solid rgba(15, 23, 42, 0.08);
   border-bottom: none;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-label {
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.status-message {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+.status-message[data-status-level="idle"] {
+  opacity: 0.75;
+}
+
+.status-message[data-status-level="loading"] {
+  color: #2563eb;
+}
+
+.status-message[data-status-level="success"] {
+  color: #047857;
+}
+
+.status-message[data-status-level="info"] {
+  color: #475569;
+}
+
+.status-message[data-status-level="error"] {
+  color: #dc2626;
+}
+
+body.dark .status-message[data-status-level="loading"] {
+  color: #60a5fa;
+}
+
+body.dark .status-message[data-status-level="success"] {
+  color: #34d399;
+}
+
+body.dark .status-message[data-status-level="info"] {
+  color: #cbd5f5;
+}
+
+body.dark .status-message[data-status-level="error"] {
+  color: #f87171;
 }
 
 .app-main {

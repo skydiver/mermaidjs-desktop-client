@@ -124,8 +124,11 @@ graph TD
         </div>
       </main>
 
-      <footer class="app-footer">
-        <span>Status: ready for the next steps.</span>
+      <footer class="app-footer" role="status">
+        <span class="status-label">Status:</span>
+        <span class="status-message" data-status="message" data-status-level="idle">
+          Ready for the next steps.
+        </span>
       </footer>
     </div>
     <script type="module" src="./main.ts"></script>

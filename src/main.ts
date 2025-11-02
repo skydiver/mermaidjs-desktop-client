@@ -41,6 +41,7 @@ async function bootstrap(): Promise<void> {
   const exportMenu = document.querySelector<HTMLDivElement>(
     '[data-dropdown="export"] .toolbar-menu'
   );
+  const statusMessage = document.querySelector<HTMLSpanElement>('[data-status="message"]');
   const workspace = document.querySelector<HTMLDivElement>('.workspace');
   const editorPane = document.querySelector<HTMLElement>('[data-pane="editor"]');
   const previewPane = document.querySelector<HTMLElement>('[data-pane="preview"]');
@@ -62,7 +63,21 @@ async function bootstrap(): Promise<void> {
     await setupWindowPersistence(store, appWindow, WINDOW_PERSIST_DELAY);
   }
 
-  const schedulePreviewRender = createPreview(previewElement, RENDER_DELAY);
+  const status = createStatusController(statusMessage);
+  const schedulePreviewRender = createPreview(previewElement, RENDER_DELAY, {
+    onRenderStart() {
+      status.rendering();
+    },
+    onRenderSuccess() {
+      status.success('Preview updated successfully.');
+    },
+    onRenderEmpty() {
+      status.info('Waiting for Mermaid markup…');
+    },
+    onRenderError(details) {
+      status.error(details);
+    },
+  });
   let lastCommittedDoc = DEFAULT_SNIPPET;
   let isDocumentDirty = false;
 
@@ -144,4 +159,64 @@ function createEditor(
     parent: host,
     state,
   });
+}
+
+type StatusLevel = 'idle' | 'loading' | 'success' | 'error' | 'info';
+
+function createStatusController(element: HTMLSpanElement | null): {
+  idle(message?: string): void;
+  rendering(message?: string): void;
+  success(message?: string): void;
+  info(message: string): void;
+  error(details: string): void;
+} {
+  if (!element) {
+    return {
+      idle() {},
+      rendering() {},
+      success() {},
+      info() {},
+      error() {},
+    };
+  }
+
+  const defaultMessage = (element.textContent || 'Ready.').trim() || 'Ready.';
+  let revertTimer: number | null = null;
+
+  function setStatus(message: string, level: StatusLevel, autoRevert = false): void {
+    if (revertTimer !== null) {
+      window.clearTimeout(revertTimer);
+      revertTimer = null;
+    }
+    element.textContent = message;
+    element.dataset.statusLevel = level;
+    if (autoRevert) {
+      revertTimer = window.setTimeout(() => {
+        element.textContent = defaultMessage;
+        element.dataset.statusLevel = 'idle';
+        revertTimer = null;
+      }, 4000);
+    }
+  }
+
+  setStatus(defaultMessage, 'idle');
+
+  return {
+    idle(message) {
+      setStatus(message ?? defaultMessage, 'idle');
+    },
+    rendering(message = 'Rendering preview…') {
+      setStatus(message, 'loading');
+    },
+    success(message = 'Preview updated.') {
+      setStatus(message, 'success', true);
+    },
+    info(message) {
+      setStatus(message, 'info');
+    },
+    error(details) {
+      const summary = details.split(/\r?\n/, 1)[0]?.trim() ?? 'Unknown error';
+      setStatus(`Render failed: ${summary}`, 'error');
+    },
+  };
 }
