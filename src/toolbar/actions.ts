@@ -122,7 +122,8 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
 
 function loadExamples(): ExampleItem[] {
   const modules = import.meta.glob('../examples/*.mmd', {
-    as: 'raw',
+    query: '?raw',
+    import: 'default',
     eager: true,
   }) as Record<string, string>;
 
