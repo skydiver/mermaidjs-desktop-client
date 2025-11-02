@@ -100,7 +100,7 @@ function loadExamples(): ExampleItem[] {
       const match = path.match(/\/([^/]+)\.mmd$/);
       const id = match?.[1];
       if (!id) return null;
-      const label = toTitleCase(id.replace(/[-_]/g, ' '));
+      const label = formatExampleLabel(id);
       return {
         id,
         label,
@@ -111,6 +111,10 @@ function loadExamples(): ExampleItem[] {
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function toTitleCase(value: string): string {
-  return value.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1));
+function formatExampleLabel(filename: string): string {
+  return filename
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ');
 }
