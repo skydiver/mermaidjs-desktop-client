@@ -10,6 +10,7 @@ import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';
 import { createPreview } from './preview/render';
 import { setupToolbarActions } from './toolbar/actions';
+import { setupToolbarShortcuts } from './toolbar/shortcuts';
 import { loadSettingsStore, setupWindowPersistence } from './window/state';
 import { initHorizontalResize } from './workspace/resize';
 
@@ -106,6 +107,12 @@ async function bootstrap(): Promise<void> {
       return currentFilePath;
     },
     defaultSnippet: DEFAULT_SNIPPET,
+  });
+
+  setupToolbarShortcuts({
+    newButton: newDiagramButton,
+    openButton,
+    saveButton,
   });
 }
 
