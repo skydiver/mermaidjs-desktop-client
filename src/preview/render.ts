@@ -27,9 +27,10 @@ export function createPreview(
       return;
     }
 
+    const sandbox = createRenderSandbox(previewEl);
     try {
       const renderId = `mermaid-${Date.now()}-${token}`;
-      const { svg } = await mermaid.render(renderId, trimmed);
+      const { svg } = await mermaid.render(renderId, trimmed, sandbox);
       if (token !== latestToken) return;
       previewEl.classList.remove('preview-empty', 'preview-error');
       previewEl.innerHTML = svg;
@@ -39,6 +40,8 @@ export function createPreview(
       const details = error instanceof Error ? error.message : String(error ?? 'Unknown error');
       showPreviewError(previewEl, 'Mermaid could not render this diagram.', details);
       callbacks.onRenderError?.(details);
+    } finally {
+      sandbox.remove();
     }
   }, delay);
 
@@ -73,4 +76,16 @@ function showPreviewError(previewEl: HTMLElement, message: string, details: stri
 
   container.append(heading, pre);
   previewEl.replaceChildren(container);
+}
+
+function createRenderSandbox(previewEl: HTMLElement): HTMLDivElement {
+  const sandbox = document.createElement('div');
+  sandbox.setAttribute('aria-hidden', 'true');
+  sandbox.style.position = 'absolute';
+  sandbox.style.width = '0';
+  sandbox.style.height = '0';
+  sandbox.style.overflow = 'hidden';
+  sandbox.style.pointerEvents = 'none';
+  previewEl.append(sandbox);
+  return sandbox;
 }
