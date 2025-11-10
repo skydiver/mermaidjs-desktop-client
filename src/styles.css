@@ -13,11 +13,17 @@
   --editor-caret: #0f172a;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
   background: var(--app-background);
   color: #1f2933;
+  display: flex;
+  flex-direction: column;
 }
 
 body.dark {
@@ -33,8 +39,10 @@ body.dark {
 
 .app-shell {
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100vh;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100vh;
   background: linear-gradient(0deg, #f5f7fb 0%, #e8ecf5 100%);
 }
 
@@ -138,12 +146,14 @@ body.dark .status-file[data-dirty="true"] {
   display: flex;
   padding: 1.5rem 1rem;
   overflow: hidden;
+  min-height: 0;
 }
 
 .workspace {
   display: flex;
   width: 100%;
   height: 100%;
+  min-height: 0;
 }
 
 .panel[data-pane] {
@@ -152,6 +162,7 @@ body.dark .status-file[data-dirty="true"] {
   display: flex;
   flex-direction: column;
   position: relative;
+  min-height: 0;
 }
 
 .divider {
@@ -401,6 +412,7 @@ body.dark .placeholder {
   flex: 1;
   height: 100%;
   min-height: 0;
+  display: flex;
 }
 
 .preview-host {
@@ -413,19 +425,48 @@ body.dark .placeholder {
   justify-content: center;
   padding: 1.5rem;
   overflow: auto;
+  scrollbar-gutter: stable;
   flex: 1;
   height: 100%;
   min-height: 0;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(148, 163, 184, 0.9) rgba(148, 163, 184, 0.25);
 }
 
 body.dark .preview-host {
   border-color: rgba(148, 163, 184, 0.25);
   background: rgba(15, 23, 42, 0.45);
+  scrollbar-color: rgba(226, 232, 240, 0.9) rgba(15, 23, 42, 0.55);
 }
 
 .preview-host svg {
   width: 100%;
   height: auto;
+}
+
+.preview-host::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.preview-host::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+}
+
+.preview-host::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.9);
+  border-radius: 999px;
+  border: 2px solid rgba(148, 163, 184, 0.25);
+}
+
+body.dark .preview-host::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+body.dark .preview-host::-webkit-scrollbar-thumb {
+  background-color: rgba(226, 232, 240, 0.9);
+  border-color: rgba(15, 23, 42, 0.55);
 }
 
 .preview-message {
@@ -454,14 +495,53 @@ body.dark .preview-host {
 
 .editor-host .cm-editor {
   height: 100%;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-host .cm-scroller {
   padding: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(148, 163, 184, 0.9) rgba(148, 163, 184, 0.25);
 }
 
 .editor-host .cm-activeLine {
   background-color: rgba(59, 130, 246, 0.08);
+}
+
+.editor-host .cm-scroller::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.editor-host .cm-scroller::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+}
+
+.editor-host .cm-scroller::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.9);
+  border-radius: 999px;
+  border: 2px solid rgba(148, 163, 184, 0.25);
+}
+
+body.dark .editor-host .cm-scroller {
+  scrollbar-color: rgba(226, 232, 240, 0.9) rgba(15, 23, 42, 0.55);
+}
+
+body.dark .editor-host .cm-scroller::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.55);
+}
+
+body.dark .editor-host .cm-scroller::-webkit-scrollbar-thumb {
+  background-color: rgba(226, 232, 240, 0.9);
+  border-color: rgba(15, 23, 42, 0.55);
 }
 
 .editor-fallback {
