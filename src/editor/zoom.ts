@@ -26,9 +26,17 @@ export function createEditorZoomExtension(): {
 export function createEditorZoomController(
   view: EditorView,
   compartment: Compartment,
-  onZoomChange?: (level: number) => void
+  onZoomChange?: (level: number) => void,
+  initialLevel?: number
 ): EditorZoomController {
-  let zoomLevel = ZOOM_DEFAULT;
+  let zoomLevel = initialLevel ?? ZOOM_DEFAULT;
+
+  // Apply initial zoom if different from default
+  if (initialLevel && initialLevel !== ZOOM_DEFAULT) {
+    view.dispatch({
+      effects: compartment.reconfigure(createFontSizeTheme(zoomLevel)),
+    });
+  }
 
   function applyZoom(): void {
     view.dispatch({

@@ -22,7 +22,12 @@ import {
 } from './preview/zoom';
 import { setupToolbarActions } from './toolbar/actions';
 import { setupToolbarShortcuts } from './toolbar/shortcuts';
-import { loadSettingsStore, setupWindowPersistence } from './window/state';
+import {
+  loadEditorZoom,
+  loadSettingsStore,
+  saveEditorZoom,
+  setupWindowPersistence,
+} from './window/state';
 import { initHorizontalResize } from './workspace/resize';
 
 const DEFAULT_SNIPPET = `graph TD
@@ -146,7 +151,17 @@ async function bootstrap(): Promise<void> {
     zoomExtension
   );
 
-  const editorZoomController = createEditorZoomController(editor, zoomCompartment);
+  const savedEditorZoom = store ? await loadEditorZoom(store) : null;
+  const editorZoomController = createEditorZoomController(
+    editor,
+    zoomCompartment,
+    (level) => {
+      if (store) {
+        saveEditorZoom(store, level);
+      }
+    },
+    savedEditorZoom ?? undefined
+  );
   editor.dispatch({
     effects: StateEffect.appendConfig.of(createEditorZoomKeymap(editorZoomController)),
   });
