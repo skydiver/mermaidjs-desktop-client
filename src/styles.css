@@ -382,6 +382,76 @@ body.dark .panel {
   padding: 0;
   overflow: hidden;
   min-height: 320px;
+  position: relative;
+}
+
+.zoom-controls {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+  z-index: 10;
+}
+
+body.dark .zoom-controls {
+  background: rgba(17, 24, 39, 0.9);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.zoom-button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.zoom-button:hover {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.zoom-button:active {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+body.dark .zoom-button {
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+body.dark .zoom-button:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.zoom-button i {
+  font-size: 1rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.zoom-level {
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 3rem;
+  text-align: center;
+  opacity: 0.8;
 }
 
 .panel h2 {

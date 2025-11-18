@@ -112,6 +112,33 @@ graph TD
           </section>
           <div class="divider" role="separator" aria-orientation="vertical"></div>
           <section class="panel preview-panel" data-pane="preview">
+            <div class="zoom-controls">
+              <button
+                type="button"
+                class="zoom-button"
+                aria-label="Zoom out"
+                data-action="zoom-out"
+              >
+                <i class="ri-subtract-line" aria-hidden="true"></i>
+              </button>
+              <span class="zoom-level" data-zoom-level>100%</span>
+              <button
+                type="button"
+                class="zoom-button"
+                aria-label="Zoom in"
+                data-action="zoom-in"
+              >
+                <i class="ri-add-line" aria-hidden="true"></i>
+              </button>
+              <button
+                type="button"
+                class="zoom-button"
+                aria-label="Reset zoom"
+                data-action="zoom-reset"
+              >
+                <i class="ri-refresh-line" aria-hidden="true"></i>
+              </button>
+            </div>
             <div
               id="preview-host"
               class="preview-host preview-empty"

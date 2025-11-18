@@ -9,6 +9,7 @@ import 'remixicon/fonts/remixicon.css';
 import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';
 import { createPreview } from './preview/render';
+import { createZoomController, setupZoomControls, updateLevelDisplay } from './preview/zoom';
 import { setupToolbarActions } from './toolbar/actions';
 import { setupToolbarShortcuts } from './toolbar/shortcuts';
 import { loadSettingsStore, setupWindowPersistence } from './window/state';
@@ -47,6 +48,10 @@ async function bootstrap(): Promise<void> {
   const editorPane = document.querySelector<HTMLElement>('[data-pane="editor"]');
   const previewPane = document.querySelector<HTMLElement>('[data-pane="preview"]');
   const divider = document.querySelector<HTMLDivElement>('.divider');
+  const zoomInBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-in"]');
+  const zoomOutBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-out"]');
+  const zoomResetBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-reset"]');
+  const zoomLevelDisplay = document.querySelector<HTMLSpanElement>('[data-zoom-level]');
 
   if (!host || !previewElement) {
     return;
@@ -59,6 +64,14 @@ async function bootstrap(): Promise<void> {
 
   const appWindow = getCurrentWindow();
   const store = await loadSettingsStore();
+
+  const zoomController = createZoomController(previewElement, (level) => {
+    if (zoomLevelDisplay) {
+      updateLevelDisplay(zoomLevelDisplay, level);
+    }
+  });
+
+  setupZoomControls(zoomController, zoomInBtn, zoomOutBtn, zoomResetBtn, zoomLevelDisplay);
 
   if (store) {
     await setupWindowPersistence(store, appWindow, WINDOW_PERSIST_DELAY);
@@ -86,6 +99,7 @@ async function bootstrap(): Promise<void> {
     },
     onRenderSuccess() {
       status.success('Preview updated successfully');
+      zoomController.applyZoom();
     },
     onRenderEmpty() {
       status.info('Waiting for Mermaid markup...');
