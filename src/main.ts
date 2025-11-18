@@ -9,7 +9,12 @@ import 'remixicon/fonts/remixicon.css';
 import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';
 import { createPreview } from './preview/render';
-import { createZoomController, setupZoomControls, updateLevelDisplay } from './preview/zoom';
+import {
+  createZoomController,
+  setupWheelZoom,
+  setupZoomControls,
+  updateLevelDisplay,
+} from './preview/zoom';
 import { setupToolbarActions } from './toolbar/actions';
 import { setupToolbarShortcuts } from './toolbar/shortcuts';
 import { loadSettingsStore, setupWindowPersistence } from './window/state';
@@ -72,6 +77,9 @@ async function bootstrap(): Promise<void> {
   });
 
   setupZoomControls(zoomController, zoomInBtn, zoomOutBtn, zoomResetBtn, zoomLevelDisplay);
+  if (previewPane) {
+    setupWheelZoom(previewPane, zoomController);
+  }
 
   if (store) {
     await setupWindowPersistence(store, appWindow, WINDOW_PERSIST_DELAY);

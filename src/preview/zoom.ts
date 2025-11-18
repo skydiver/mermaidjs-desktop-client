@@ -82,6 +82,31 @@ export function setupZoomControls(
   }
 }
 
+export function setupWheelZoom(
+  previewEl: HTMLElement,
+  controller: ZoomController
+): void {
+  previewEl.addEventListener(
+    'wheel',
+    (event) => {
+      // Zoom with Ctrl+Scroll (also handles trackpad pinch-to-zoom)
+      if (!event.ctrlKey) {
+        return
+      }
+
+      event.preventDefault()
+      event.stopPropagation()
+
+      if (event.deltaY < 0) {
+        controller.zoomIn()
+      } else if (event.deltaY > 0) {
+        controller.zoomOut()
+      }
+    },
+    { passive: false, capture: true }
+  )
+}
+
 export function updateLevelDisplay(element: HTMLElement, level: number): void {
   element.textContent = `${Math.round(level * 100)}%`
 }
