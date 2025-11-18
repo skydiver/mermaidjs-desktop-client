@@ -1,52 +1,52 @@
-const ZOOM_MIN = 0.25
-const ZOOM_MAX = 10
-const ZOOM_STEP = 0.25
-const ZOOM_DEFAULT = 1
+const ZOOM_MIN = 0.25;
+const ZOOM_MAX = 10;
+const ZOOM_STEP = 0.25;
+const ZOOM_DEFAULT = 1;
 
 export interface ZoomController {
-  zoomIn: () => void
-  zoomOut: () => void
-  reset: () => void
-  getLevel: () => number
-  applyZoom: () => void
+  zoomIn: () => void;
+  zoomOut: () => void;
+  reset: () => void;
+  getLevel: () => number;
+  applyZoom: () => void;
 }
 
 export function createZoomController(
   previewEl: HTMLElement,
   onZoomChange?: (level: number) => void
 ): ZoomController {
-  let zoomLevel = ZOOM_DEFAULT
+  let zoomLevel = ZOOM_DEFAULT;
 
   function applyZoom(): void {
-    const svg = previewEl.querySelector('svg')
+    const svg = previewEl.querySelector('svg');
     if (svg) {
-      svg.style.transform = `scale(${zoomLevel})`
-      svg.style.transformOrigin = 'center center'
+      svg.style.transform = `scale(${zoomLevel})`;
+      svg.style.transformOrigin = 'center center';
     }
-    onZoomChange?.(zoomLevel)
+    onZoomChange?.(zoomLevel);
   }
 
   function zoomIn(): void {
     if (zoomLevel < ZOOM_MAX) {
-      zoomLevel = Math.min(ZOOM_MAX, zoomLevel + ZOOM_STEP)
-      applyZoom()
+      zoomLevel = Math.min(ZOOM_MAX, zoomLevel + ZOOM_STEP);
+      applyZoom();
     }
   }
 
   function zoomOut(): void {
     if (zoomLevel > ZOOM_MIN) {
-      zoomLevel = Math.max(ZOOM_MIN, zoomLevel - ZOOM_STEP)
-      applyZoom()
+      zoomLevel = Math.max(ZOOM_MIN, zoomLevel - ZOOM_STEP);
+      applyZoom();
     }
   }
 
   function reset(): void {
-    zoomLevel = ZOOM_DEFAULT
-    applyZoom()
+    zoomLevel = ZOOM_DEFAULT;
+    applyZoom();
   }
 
   function getLevel(): number {
-    return zoomLevel
+    return zoomLevel;
   }
 
   return {
@@ -55,7 +55,7 @@ export function createZoomController(
     reset,
     getLevel,
     applyZoom,
-  }
+  };
 }
 
 export function setupZoomControls(
@@ -66,47 +66,44 @@ export function setupZoomControls(
   levelDisplay?: HTMLElement | null
 ): void {
   zoomInBtn?.addEventListener('click', () => {
-    controller.zoomIn()
-  })
+    controller.zoomIn();
+  });
 
   zoomOutBtn?.addEventListener('click', () => {
-    controller.zoomOut()
-  })
+    controller.zoomOut();
+  });
 
   resetBtn?.addEventListener('click', () => {
-    controller.reset()
-  })
+    controller.reset();
+  });
 
   if (levelDisplay) {
-    updateLevelDisplay(levelDisplay, controller.getLevel())
+    updateLevelDisplay(levelDisplay, controller.getLevel());
   }
 }
 
-export function setupWheelZoom(
-  previewEl: HTMLElement,
-  controller: ZoomController
-): void {
+export function setupWheelZoom(previewEl: HTMLElement, controller: ZoomController): void {
   previewEl.addEventListener(
     'wheel',
     (event) => {
       // Zoom with Ctrl+Scroll (also handles trackpad pinch-to-zoom)
       if (!event.ctrlKey) {
-        return
+        return;
       }
 
-      event.preventDefault()
-      event.stopPropagation()
+      event.preventDefault();
+      event.stopPropagation();
 
       if (event.deltaY < 0) {
-        controller.zoomIn()
+        controller.zoomIn();
       } else if (event.deltaY > 0) {
-        controller.zoomOut()
+        controller.zoomOut();
       }
     },
     { passive: false, capture: true }
-  )
+  );
 }
 
 export function updateLevelDisplay(element: HTMLElement, level: number): void {
-  element.textContent = `${Math.round(level * 100)}%`
+  element.textContent = `${Math.round(level * 100)}%`;
 }

@@ -1,5 +1,5 @@
 import { indentWithTab } from '@codemirror/commands';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState, StateEffect } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { basicSetup, EditorView } from 'codemirror';
@@ -8,6 +8,11 @@ import 'remixicon/fonts/remixicon.css';
 
 import { createMermaidLanguage } from './editor/language';
 import { createEditorTheme } from './editor/theme';
+import {
+  createEditorZoomController,
+  createEditorZoomExtension,
+  createEditorZoomKeymap,
+} from './editor/zoom';
 import { createPreview } from './preview/render';
 import {
   createZoomController,
@@ -132,7 +137,20 @@ async function bootstrap(): Promise<void> {
     updateFileStatus();
   };
 
-  const editor = createEditor(host, DEFAULT_SNIPPET, schedulePreviewRender, handleDocChange);
+  const { extension: zoomExtension, compartment: zoomCompartment } = createEditorZoomExtension();
+  const editor = createEditor(
+    host,
+    DEFAULT_SNIPPET,
+    schedulePreviewRender,
+    handleDocChange,
+    zoomExtension
+  );
+
+  const editorZoomController = createEditorZoomController(editor, zoomCompartment);
+  editor.dispatch({
+    effects: StateEffect.appendConfig.of(createEditorZoomKeymap(editorZoomController)),
+  });
+
   commitDocument(editor.state.doc.toString());
 
   editor.focus();
@@ -182,24 +200,31 @@ function createEditor(
   host: HTMLElement,
   initialDoc: string,
   schedulePreviewRender: (doc: string) => void,
-  onDocChange?: (doc: string) => void
+  onDocChange?: (doc: string) => void,
+  zoomExtension?: ReturnType<Compartment['of']>
 ): EditorView {
+  const extensions = [
+    basicSetup,
+    MERMAID_LANGUAGE,
+    EditorView.lineWrapping,
+    EDITOR_THEME,
+    keymap.of([indentWithTab]),
+    EditorView.updateListener.of((update) => {
+      if (update.docChanged) {
+        const nextDoc = update.state.doc.toString();
+        schedulePreviewRender(nextDoc);
+        onDocChange?.(nextDoc);
+      }
+    }),
+  ];
+
+  if (zoomExtension) {
+    extensions.push(zoomExtension);
+  }
+
   const state = EditorState.create({
     doc: initialDoc,
-    extensions: [
-      basicSetup,
-      MERMAID_LANGUAGE,
-      EditorView.lineWrapping,
-      EDITOR_THEME,
-      keymap.of([indentWithTab]),
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          const nextDoc = update.state.doc.toString();
-          schedulePreviewRender(nextDoc);
-          onDocChange?.(nextDoc);
-        }
-      }),
-    ],
+    extensions,
   });
 
   return new EditorView({
