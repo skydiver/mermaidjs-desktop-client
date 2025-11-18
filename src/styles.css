@@ -491,7 +491,7 @@ body.dark .placeholder {
   border: 1px dashed rgba(15, 23, 42, 0.15);
   background: rgba(255, 255, 255, 0.92);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 1.5rem;
   overflow: auto;
@@ -512,6 +512,7 @@ body.dark .preview-host {
 .preview-host svg {
   width: 100%;
   height: auto;
+  margin: auto;
 }
 
 .preview-host::-webkit-scrollbar {
