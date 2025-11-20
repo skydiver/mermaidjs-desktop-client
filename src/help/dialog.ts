@@ -21,6 +21,16 @@ export function setupHelpDialog(button: HTMLButtonElement | null): void {
         </header>
         <div class="help-dialog-body">
           <fieldset class="help-section">
+            <legend>About</legend>
+            <p class="about-description">A Tauri desktop editor for Mermaid diagrams with live preview and export tooling.</p>
+            <div class="about-actions">
+              <button type="button" class="about-button" data-url="https://github.com/skydiver/mermaidjs-desktop-client">
+                <i class="ri-github-fill" aria-hidden="true"></i>
+                View Source
+              </button>
+            </div>
+          </fieldset>
+          <fieldset class="help-section">
             <legend>Keyboard Shortcuts</legend>
             <div class="shortcut-group">
               <h4>File</h4>
@@ -52,13 +62,17 @@ export function setupHelpDialog(button: HTMLButtonElement | null): void {
             </div>
           </fieldset>
           <fieldset class="help-section">
-            <legend>About</legend>
-            <p class="about-description">A Tauri desktop editor for Mermaid diagrams with live preview and export tooling.</p>
-            <div class="about-actions">
-              <button type="button" class="about-button" data-url="https://github.com/skydiver/mermaidjs-desktop-client">
-                Homepage
-              </button>
-            </div>
+            <legend>Examples</legend>
+            <p class="examples-description">Load sample diagrams from the Examples menu in the toolbar to explore different Mermaid diagram types:</p>
+            <ul class="examples-list">
+              <li>Flowchart</li>
+              <li>Class Diagram</li>
+              <li>Sequence Diagram</li>
+              <li>Entity Relationship</li>
+              <li>State Diagram</li>
+              <li>Gantt Chart</li>
+              <li>Git Graph</li>
+            </ul>
           </fieldset>
         </div>
       </div>

@@ -718,8 +718,34 @@ body.dark .help-dialog-close:hover {
 
 .help-dialog-body {
   padding: 1.25rem;
+  padding-right: 0.75rem;
   max-height: 60vh;
   overflow-y: auto;
+}
+
+.help-dialog-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.help-dialog-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.help-dialog-body::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 4px;
+}
+
+.help-dialog-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+body.dark .help-dialog-body::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+}
+
+body.dark .help-dialog-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
 }
 
 .help-section {
@@ -754,25 +780,61 @@ body.dark .help-section {
   opacity: 0.8;
 }
 
+.help-section .examples-description {
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+
+.help-section .examples-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  columns: 2;
+  column-gap: 1rem;
+}
+
+.help-section .examples-list li {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
 .about-actions {
   display: flex;
   justify-content: center;
 }
 
 .about-button {
-  display: inline-block;
-  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
   font-size: 0.8125rem;
   font-weight: 500;
   text-decoration: none;
-  color: #ffffff;
-  background: #3b82f6;
+  color: #0f172a;
+  background: transparent;
+  border: 1px solid rgba(15, 23, 42, 0.2);
   border-radius: 6px;
-  transition: background 0.15s ease;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .about-button:hover {
-  background: #2563eb;
+  background: rgba(15, 23, 42, 0.05);
+  border-color: rgba(15, 23, 42, 0.3);
+}
+
+body.dark .about-button {
+  color: #e2e8f0;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+body.dark .about-button:hover {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.about-button i {
+  font-size: 1rem;
 }
 
 .shortcut-group {
