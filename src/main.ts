@@ -13,6 +13,7 @@ import {
   createEditorZoomExtension,
   createEditorZoomKeymap,
 } from './editor/zoom';
+import { setupHelpDialog } from './help/dialog';
 import { createPreview } from './preview/render';
 import {
   createZoomController,
@@ -67,6 +68,7 @@ async function bootstrap(): Promise<void> {
   const zoomOutBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-out"]');
   const zoomResetBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-reset"]');
   const zoomLevelDisplay = document.querySelector<HTMLSpanElement>('[data-zoom-level]');
+  const helpButton = document.querySelector<HTMLButtonElement>('[data-action="help"]');
 
   if (!host || !previewElement) {
     return;
@@ -209,6 +211,8 @@ async function bootstrap(): Promise<void> {
     openButton,
     saveButton,
   });
+
+  setupHelpDialog(helpButton);
 }
 
 function createEditor(

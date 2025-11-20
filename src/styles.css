@@ -635,3 +635,199 @@ body.dark .editor-host .cm-scroller::-webkit-scrollbar-thumb {
     grid-template-columns: 1fr;
   }
 }
+
+/* Help Dialog */
+.help-dialog {
+  border: none;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 480px;
+  width: 90%;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+body.dark .help-dialog {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+.help-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.help-dialog-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.help-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+body.dark .help-dialog-header {
+  border-color: rgba(148, 163, 184, 0.15);
+}
+
+.help-dialog-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.help-dialog-header h2 .version {
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.help-dialog-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease;
+}
+
+.help-dialog-close:hover {
+  opacity: 1;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+body.dark .help-dialog-close:hover {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.help-dialog-close i {
+  font-size: 1.25rem;
+}
+
+.help-dialog-body {
+  padding: 1.25rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.help-section {
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0 0 1rem 0;
+}
+
+.help-section:last-child {
+  margin-bottom: 0;
+}
+
+body.dark .help-section {
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.help-section legend {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0 0.5rem;
+  margin-left: -0.25rem;
+}
+
+.help-section p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.help-section .about-description {
+  margin-bottom: 0.75rem;
+  opacity: 0.8;
+}
+
+.about-actions {
+  display: flex;
+  justify-content: center;
+}
+
+.about-button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  color: #ffffff;
+  background: #3b82f6;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.about-button:hover {
+  background: #2563eb;
+}
+
+.shortcut-group {
+  margin-bottom: 1rem;
+}
+
+.shortcut-group:last-child {
+  margin-bottom: 0;
+}
+
+.shortcut-group h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+}
+
+.shortcut-list {
+  margin: 0;
+  padding: 0;
+}
+
+.shortcut-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.375rem 0;
+}
+
+.shortcut-item dt {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.shortcut-item dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  opacity: 0.8;
+}
+
+kbd {
+  display: inline-block;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  line-height: 1;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(15, 23, 42, 0.15);
+}
+
+body.dark kbd {
+  background: rgba(148, 163, 184, 0.15);
+  border-color: rgba(148, 163, 184, 0.25);
+}

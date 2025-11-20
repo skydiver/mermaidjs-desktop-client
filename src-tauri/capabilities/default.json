@@ -18,6 +18,7 @@
     "fs:allow-write-text-file",
     "fs:allow-write-file",
     "fs:allow-create",
-    "fs:default"
+    "fs:default",
+    "shell:allow-open"
   ]
 }
