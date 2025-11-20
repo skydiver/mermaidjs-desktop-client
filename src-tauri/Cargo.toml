@@ -1,7 +1,7 @@
 [package]
 name = "mermaidjs_desktop_client"
 version = "2.3.0"
-description = "A Tauri desktop editor for Mermaid diagrams with live preview and export tooling."
+description = "Desktop editor for Mermaid diagrams with real-time preview, syntax highlighting, and SVG/PNG export."
 authors = ["Martin M."]
 edition = "2021"
 

@@ -22,7 +22,7 @@ export function setupHelpDialog(button: HTMLButtonElement | null): void {
         <div class="help-dialog-body">
           <fieldset class="help-section">
             <legend>About</legend>
-            <p class="about-description">A Tauri desktop editor for Mermaid diagrams with live preview and export tooling.</p>
+            <p class="about-description">Desktop editor for Mermaid diagrams with real-time preview, syntax highlighting, and SVG/PNG export.</p>
             <div class="about-actions">
               <button type="button" class="about-button" data-url="https://github.com/skydiver/mermaidjs-desktop-client">
                 <i class="ri-github-fill" aria-hidden="true"></i>
