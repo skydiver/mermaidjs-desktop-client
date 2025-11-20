@@ -1885,7 +1885,7 @@ dependencies = [
 
 [[package]]
 name = "mermaidjs_desktop_client"
-version = "2.1.0"
+version = "2.3.0"
 dependencies = [
  "serde",
  "serde_json",
