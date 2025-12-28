@@ -1,6 +1,6 @@
 [package]
 name = "mermaidjs_desktop_client"
-version = "2.3.0"
+version = "2.3.1"
 description = "Desktop editor for Mermaid diagrams with real-time preview, syntax highlighting, and SVG/PNG export."
 authors = ["Martin M."]
 edition = "2021"
