@@ -815,7 +815,9 @@ body.dark .help-section {
   border: 1px solid rgba(15, 23, 42, 0.2);
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .about-button:hover {
