@@ -1,3 +1,7 @@
+interface NavigatorUAData {
+  platform: string;
+}
+
 export interface ToolbarShortcutsOptions {
   newButton?: HTMLButtonElement | null;
   openButton?: HTMLButtonElement | null;
@@ -5,7 +9,10 @@ export interface ToolbarShortcutsOptions {
 }
 
 export function setupToolbarShortcuts(options: ToolbarShortcutsOptions): () => void {
-  const isMac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform);
+  const userAgentData = (navigator as Navigator & { userAgentData?: NavigatorUAData })
+    .userAgentData;
+  const platform = userAgentData?.platform ?? navigator.platform;
+  const isMac = /mac/i.test(platform);
 
   const handler = (event: KeyboardEvent) => {
     if (event.defaultPrevented) return;
