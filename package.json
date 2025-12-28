@@ -17,13 +17,14 @@
     "build": "tsc && vite build",
     "clean": "rimraf dist src-tauri/target",
     "dev": "vite",
-    "lint:check": "biome check .",
-    "lint:fix": "biome check --fix .",
-    "lint:format": "biome format --write .",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "tauri": "tauri"
   },
   "dependencies": {
+    "@biomejs/biome": "^2.3.10",
     "@codemirror/commands": "^6.10.1",
     "@codemirror/language": "^6.12.1",
     "@codemirror/state": "^6.5.3",
