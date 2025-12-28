@@ -68,9 +68,9 @@ pnpm tauri build
 ## Tooling
 
 - `pnpm clean` – Remove build artifacts (`dist/`, `src-tauri/target/`)
-- `pnpm lint:check` – Run [Biome](https://biomejs.dev/) linter and formatter checks
+- `pnpm lint` – Run [Biome](https://biomejs.dev/) linter and formatter checks
 - `pnpm lint:fix` – Automatically apply Biome fixes
-- `pnpm lint:format` – Format files with Biome
+- `pnpm typecheck` – Type-check TypeScript without emitting files
 
 ## Project Structure
 
