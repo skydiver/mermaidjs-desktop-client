@@ -1,5 +1,5 @@
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Store } from '@tauri-apps/plugin-store';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { load } from '@tauri-apps/plugin-store';
 
 import { debounce } from '../utils/debounce';
 
@@ -15,13 +15,19 @@ export interface WindowStatePayload {
   maximized: boolean;
 }
 
-export type AppWindow = ReturnType<typeof getCurrentWindow>;
+export type Store = Awaited<ReturnType<typeof load>>;
+export type AppWindow = ReturnType<typeof getCurrentWebviewWindow>;
 
 export async function loadSettingsStore(): Promise<Store | null> {
+  // @ts-ignore
+  if (typeof window !== 'undefined' && !window.__TAURI_INTERNALS__) {
+    return null;
+  }
+
   try {
-    return await Store.load(SETTINGS_STORE_NAME);
+    return await load(SETTINGS_STORE_NAME);
   } catch (error) {
-    console.error('Failed to load settings store', error);
+    console.warn('Failed to load settings store', error);
     return null;
   }
 }
@@ -36,11 +42,13 @@ export async function setupWindowPersistence(
   const unlistenResize = await appWindow.onResized(() => debouncedPersist());
   const unlistenMove = await appWindow.onMoved(() => debouncedPersist());
 
-  await appWindow.onCloseRequested(async (event) => {
+  let unlistenClose: () => void;
+  unlistenClose = await appWindow.onCloseRequested(async (event) => {
     event.preventDefault();
     await persistWindowState(store, appWindow);
     if (typeof unlistenResize === 'function') unlistenResize();
     if (typeof unlistenMove === 'function') unlistenMove();
+    if (typeof unlistenClose === 'function') unlistenClose();
     await appWindow.close();
   });
 }

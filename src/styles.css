@@ -5,6 +5,7 @@
   line-height: 1.6;
   margin: 0;
   --app-background: #f5f7fb;
+  --app-gradient: linear-gradient(0deg, #f5f7fb 0%, #e8ecf5 100%);
   --header-background: var(--app-background);
   --header-border: rgba(15, 23, 42, 0.08);
   --editor-bg: rgba(255, 255, 255, 0.95);
@@ -28,6 +29,7 @@ body {
 
 body.dark {
   --app-background: #121620;
+  --app-gradient: linear-gradient(0deg, #121620 0%, #1a1f2e 100%);
   --header-background: rgba(17, 24, 39, 0.85);
   --header-border: rgba(148, 163, 184, 0.2);
   color: #f8fafc;
@@ -43,7 +45,7 @@ body.dark {
   flex: 1 1 auto;
   min-height: 0;
   height: 100vh;
-  background: linear-gradient(0deg, #f5f7fb 0%, #e8ecf5 100%);
+  background: var(--app-gradient, linear-gradient(0deg, #f5f7fb 0%, #e8ecf5 100%));
 }
 
 .app-header {

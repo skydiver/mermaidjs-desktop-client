@@ -173,7 +173,8 @@ async function convertSvgToPng(diagram: RenderedDiagram, scale: number): Promise
 
   context.save();
   context.globalAlpha = 1;
-  context.fillStyle = '#ffffff';
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  context.fillStyle = isDark ? '#1b2537' : '#ffffff';
   context.fillRect(0, 0, exportWidth, exportHeight);
   context.restore();
 

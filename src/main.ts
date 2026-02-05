@@ -1,7 +1,7 @@
 import { indentWithTab } from '@codemirror/commands';
 import { Compartment, EditorState, StateEffect } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { basicSetup, EditorView } from 'codemirror';
 import mermaid from 'mermaid';
 import 'remixicon/fonts/remixicon.css';
@@ -23,6 +23,7 @@ import {
 } from './preview/zoom';
 import { setupToolbarActions } from './toolbar/actions';
 import { setupToolbarShortcuts } from './toolbar/shortcuts';
+import { setupTheme, type ThemeController } from './window/theme';
 import {
   loadEditorZoom,
   loadSettingsStore,
@@ -69,17 +70,21 @@ async function bootstrap(): Promise<void> {
   const zoomResetBtn = document.querySelector<HTMLButtonElement>('[data-action="zoom-reset"]');
   const zoomLevelDisplay = document.querySelector<HTMLSpanElement>('[data-zoom-level]');
   const helpButton = document.querySelector<HTMLButtonElement>('[data-action="help"]');
+  const themeButton = document.querySelector<HTMLButtonElement>('[data-action="toggle-theme"]');
 
   if (!host || !previewElement) {
     return;
   }
 
-  mermaid.initialize({
-    startOnLoad: false,
-    securityLevel: 'strict',
-  });
-
-  const appWindow = getCurrentWindow();
+  let appWindow;
+  try {
+    // @ts-ignore
+    if (window.__TAURI_INTERNALS__) {
+      appWindow = getCurrentWebviewWindow();
+    }
+  } catch (e) {
+    console.warn('Failed to get current webview window', e);
+  }
   const store = await loadSettingsStore();
 
   const zoomController = createZoomController(previewElement, (level) => {
@@ -93,7 +98,7 @@ async function bootstrap(): Promise<void> {
     setupWheelZoom(previewPane, zoomController);
   }
 
-  if (store) {
+  if (store && appWindow) {
     await setupWindowPersistence(store, appWindow, WINDOW_PERSIST_DELAY);
   }
 
@@ -128,6 +133,10 @@ async function bootstrap(): Promise<void> {
       status.error(details);
     },
   });
+
+  // Setup theme
+  const themeController = await setupTheme(store);
+  themeButton?.addEventListener('click', () => themeController.toggle());
   const handleDocChange = (doc: string) => {
     isDocumentDirty = doc !== lastCommittedDoc;
     updateFileStatus();
@@ -169,6 +178,11 @@ async function bootstrap(): Promise<void> {
   });
 
   commitDocument(editor.state.doc.toString());
+
+  // Re-render preview when theme changes
+  window.addEventListener('theme-changed', () => {
+    schedulePreviewRender(editor.state.doc.toString());
+  });
 
   editor.focus();
   host.dataset.editor = 'mounted';
