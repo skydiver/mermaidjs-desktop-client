@@ -24,6 +24,7 @@ MermaidJS Desktop Client is a desktop editor for [Mermaid](https://mermaid.js.or
 - **Editor zoom** – Zoom in/out and reset the code editor font size with keyboard shortcuts.
 - **Preview zoom** – Zoom diagrams with Ctrl+Scroll or toolbar controls.
 - **Help dialog** – Press F1 to view app info, keyboard shortcuts, and available diagram examples.
+- **Dark mode** – Toggle between light and dark themes. Mermaid diagrams, editor syntax highlighting, and UI chrome all adapt. Preference persists between launches.
 - **Resizable workspace** – Drag the divider to resize editor/preview panes or double-click to reset.
 - **Window persistence** – Window position, size, and maximized state persist between launches via Tauri store plugin.
 
@@ -79,7 +80,7 @@ pnpm tauri build
   - `preview/` – Mermaid rendering logic and zoom controls
   - `toolbar/` – File operations, export handlers, examples menu
   - `workspace/` – Resizable pane management
-  - `window/` – Persistence layer for window state
+  - `window/` – Theme management and persistence layer for window state
   - `help/` – Help dialog with shortcuts and app info
   - `examples/` – Built-in Mermaid diagram templates
 - `src-tauri/` – Tauri backend (Rust) with plugins for dialog, filesystem, store, and shell

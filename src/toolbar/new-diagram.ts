@@ -2,7 +2,7 @@ import type { EditorView } from 'codemirror';
 
 interface NewDiagramOptions {
   editor: EditorView;
-  schedulePreviewRender: (doc: string) => void;
+  renderPreview: (doc: string) => void;
   button: HTMLButtonElement | null;
   defaultSnippet: string;
   onPathChange: (path: string | null) => void;
@@ -13,7 +13,7 @@ interface NewDiagramOptions {
 export function setupNewDiagramAction(options: NewDiagramOptions): void {
   const {
     editor,
-    schedulePreviewRender,
+    renderPreview,
     button,
     defaultSnippet,
     onPathChange,
@@ -32,7 +32,7 @@ export function setupNewDiagramAction(options: NewDiagramOptions): void {
     editor.dispatch({
       changes: { from: 0, to: editor.state.doc.length, insert: defaultSnippet },
     });
-    schedulePreviewRender(defaultSnippet);
+    renderPreview(defaultSnippet);
     onPathChange(null);
     onNew?.(defaultSnippet);
   });

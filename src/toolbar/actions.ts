@@ -11,7 +11,7 @@ const EXAMPLES = loadExamples();
 
 export interface ToolbarActionsOptions {
   editor: EditorView;
-  schedulePreviewRender: (doc: string) => void;
+  renderPreview: (doc: string) => void;
   newDiagramButton: HTMLButtonElement | null;
   openButton: HTMLButtonElement | null;
   saveButton: HTMLButtonElement | null;
@@ -29,7 +29,7 @@ export interface ToolbarActionsOptions {
 export function setupToolbarActions(options: ToolbarActionsOptions): void {
   const {
     editor,
-    schedulePreviewRender,
+    renderPreview,
     newDiagramButton,
     openButton,
     saveButton,
@@ -46,7 +46,7 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
 
   setupNewDiagramAction({
     editor,
-    schedulePreviewRender,
+    renderPreview,
     button: newDiagramButton,
     defaultSnippet,
     onPathChange,
@@ -63,7 +63,7 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
 
   setupOpenDiagramAction({
     editor,
-    schedulePreviewRender,
+    renderPreview,
     button: openButton,
     onPathChange,
     shouldReplace: async () => {
@@ -113,7 +113,7 @@ export function setupToolbarActions(options: ToolbarActionsOptions): void {
         editor.dispatch({
           changes: { from: 0, to: editor.state.doc.length, insert: content },
         });
-        schedulePreviewRender(content);
+        renderPreview(content);
         onPathChange(null);
       },
     });

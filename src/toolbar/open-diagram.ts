@@ -4,7 +4,7 @@ import type { EditorView } from 'codemirror';
 
 interface OpenDiagramOptions {
   editor: EditorView;
-  schedulePreviewRender: (doc: string) => void;
+  renderPreview: (doc: string) => void;
   button: HTMLButtonElement | null;
   onPathChange: (path: string | null) => void;
   onOpen?: (doc: string, path: string) => void;
@@ -12,7 +12,7 @@ interface OpenDiagramOptions {
 }
 
 export function setupOpenDiagramAction(options: OpenDiagramOptions): void {
-  const { editor, schedulePreviewRender, button, onPathChange, onOpen, shouldReplace } = options;
+  const { editor, renderPreview, button, onPathChange, onOpen, shouldReplace } = options;
   if (!button) return;
 
   button.addEventListener('click', async () => {
@@ -43,7 +43,7 @@ export function setupOpenDiagramAction(options: OpenDiagramOptions): void {
       editor.dispatch({
         changes: { from: 0, to: editor.state.doc.length, insert: fileContents },
       });
-      schedulePreviewRender(fileContents);
+      renderPreview(fileContents);
       onPathChange(path);
       onOpen?.(fileContents, path);
     } catch (error) {

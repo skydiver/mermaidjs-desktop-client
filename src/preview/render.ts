@@ -11,13 +11,21 @@ export interface PreviewStatusCallbacks {
   onRenderError?: (details: string) => void;
 }
 
+export interface PreviewController {
+  /** Debounced — for editor keystrokes */
+  schedule: PreviewScheduler;
+  /** Immediate — for toolbar actions, theme changes, initial render */
+  render: PreviewScheduler;
+}
+
 export function createPreview(
   previewEl: HTMLElement,
   delay: number,
   callbacks: PreviewStatusCallbacks = {}
-): PreviewScheduler {
+): PreviewController {
   let latestToken = 0;
-  const debouncedRender = debounce(async (source: string, token: number) => {
+
+  async function executeRender(source: string, token: number): Promise<void> {
     if (token !== latestToken) return;
 
     const trimmed = source.trim();
@@ -43,13 +51,26 @@ export function createPreview(
     } finally {
       sandbox.remove();
     }
-  }, delay);
+  }
 
-  return (source: string) => {
+  const debouncedRender = debounce(executeRender, delay);
+
+  function nextToken(): number {
     latestToken += 1;
-    const currentToken = latestToken;
-    callbacks.onRenderStart?.();
-    debouncedRender(source, currentToken);
+    return latestToken;
+  }
+
+  return {
+    schedule(source: string) {
+      const token = nextToken();
+      callbacks.onRenderStart?.();
+      debouncedRender(source, token);
+    },
+    render(source: string) {
+      const token = nextToken();
+      callbacks.onRenderStart?.();
+      executeRender(source, token);
+    },
   };
 }
 
