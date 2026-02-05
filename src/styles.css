@@ -12,6 +12,16 @@
   --editor-border: rgba(15, 23, 42, 0.15);
   --editor-gutter: rgba(71, 85, 105, 0.85);
   --editor-caret: #0f172a;
+  --editor-active-line: rgba(59, 130, 246, 0.08);
+  --editor-active-gutter: rgba(59, 130, 246, 0.12);
+  --syntax-keyword: #7c3aed;
+  --syntax-operator: #0891b2;
+  --syntax-string: #059669;
+  --syntax-comment: #94a3b8;
+  --syntax-number: #d97706;
+  --syntax-bracket: #6366f1;
+  --syntax-variable: #334155;
+  --syntax-attribute: #be185d;
 }
 
 html {
@@ -37,6 +47,16 @@ body.dark {
   --editor-border: rgba(148, 163, 184, 0.25);
   --editor-gutter: rgba(148, 163, 184, 0.85);
   --editor-caret: #f8fafc;
+  --editor-active-line: rgba(148, 163, 184, 0.15);
+  --editor-active-gutter: rgba(148, 163, 184, 0.25);
+  --syntax-keyword: #a78bfa;
+  --syntax-operator: #22d3ee;
+  --syntax-string: #34d399;
+  --syntax-comment: #64748b;
+  --syntax-number: #fbbf24;
+  --syntax-bracket: #818cf8;
+  --syntax-variable: #e2e8f0;
+  --syntax-attribute: #f472b6;
 }
 
 .app-shell {
@@ -585,7 +605,7 @@ body.dark .preview-host::-webkit-scrollbar-thumb {
 }
 
 .editor-host .cm-activeLine {
-  background-color: rgba(59, 130, 246, 0.08);
+  background-color: var(--editor-active-line);
 }
 
 .editor-host .cm-scroller::-webkit-scrollbar {

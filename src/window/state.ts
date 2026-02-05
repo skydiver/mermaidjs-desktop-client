@@ -19,7 +19,6 @@ export type Store = Awaited<ReturnType<typeof load>>;
 export type AppWindow = ReturnType<typeof getCurrentWebviewWindow>;
 
 export async function loadSettingsStore(): Promise<Store | null> {
-  // @ts-ignore
   if (typeof window !== 'undefined' && !window.__TAURI_INTERNALS__) {
     return null;
   }

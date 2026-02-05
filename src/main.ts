@@ -76,9 +76,13 @@ async function bootstrap(): Promise<void> {
     return;
   }
 
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: 'strict',
+  });
+
   let appWindow;
   try {
-    // @ts-ignore
     if (window.__TAURI_INTERNALS__) {
       appWindow = getCurrentWebviewWindow();
     }
@@ -118,21 +122,25 @@ async function bootstrap(): Promise<void> {
     });
   };
 
-  const schedulePreviewRender = createPreview(previewElement, RENDER_DELAY, {
-    onRenderStart() {
-      status.rendering();
-    },
-    onRenderSuccess() {
-      status.success('Preview updated successfully');
-      zoomController.applyZoom();
-    },
-    onRenderEmpty() {
-      status.info('Waiting for Mermaid markup...');
-    },
-    onRenderError(details) {
-      status.error(details);
-    },
-  });
+  const { schedule: schedulePreview, render: renderPreview } = createPreview(
+    previewElement,
+    RENDER_DELAY,
+    {
+      onRenderStart() {
+        status.rendering();
+      },
+      onRenderSuccess() {
+        status.success('Preview updated successfully');
+        zoomController.applyZoom();
+      },
+      onRenderEmpty() {
+        status.info('Waiting for Mermaid markup...');
+      },
+      onRenderError(details) {
+        status.error(details);
+      },
+    }
+  );
 
   // Setup theme
   const themeController = await setupTheme(store);
@@ -157,7 +165,7 @@ async function bootstrap(): Promise<void> {
   const editor = createEditor(
     host,
     DEFAULT_SNIPPET,
-    schedulePreviewRender,
+    schedulePreview,
     handleDocChange,
     zoomExtension
   );
@@ -179,20 +187,20 @@ async function bootstrap(): Promise<void> {
 
   commitDocument(editor.state.doc.toString());
 
-  // Re-render preview when theme changes
+  // Re-render preview when theme changes (immediate — no debounce needed)
   window.addEventListener('theme-changed', () => {
-    schedulePreviewRender(editor.state.doc.toString());
+    renderPreview(editor.state.doc.toString());
   });
 
   editor.focus();
   host.dataset.editor = 'mounted';
   previewElement.dataset.preview = 'ready';
-  schedulePreviewRender(editor.state.doc.toString());
+  renderPreview(editor.state.doc.toString());
   initHorizontalResize(workspace, editorPane, previewPane, divider);
 
   setupToolbarActions({
     editor,
-    schedulePreviewRender,
+    renderPreview,
     newDiagramButton,
     openButton,
     saveButton,

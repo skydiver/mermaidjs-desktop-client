@@ -1,6 +1,6 @@
 {
   "name": "mermaidjs-desktop-client",
-  "version": "2.3.2",
+  "version": "2.4.0",
   "description": "Desktop editor for Mermaid diagrams with real-time preview, syntax highlighting, and SVG/PNG export.",
   "homepage": "https://github.com/skydiver/mermaidjs-desktop-client",
   "repository": {
@@ -28,19 +28,20 @@
     "@codemirror/language": "^6.12.1",
     "@codemirror/state": "^6.5.4",
     "@codemirror/view": "^6.39.12",
-    "@tauri-apps/api": "^2.9.1",
+    "@lezer/highlight": "^1.2.3",
+    "@tauri-apps/api": "^2.10.1",
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-fs": "^2.4.5",
-    "@tauri-apps/plugin-shell": "^2.3.4",
+    "@tauri-apps/plugin-shell": "^2.3.5",
     "@tauri-apps/plugin-store": "^2.4.2",
     "codemirror": "^6.0.2",
     "mermaid": "^11.12.2",
     "remixicon": "^4.9.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.13",
-    "@tauri-apps/cli": "^2.9.6",
-    "@types/node": "^25.1.0",
+    "@biomejs/biome": "^2.3.14",
+    "@tauri-apps/cli": "^2.10.0",
+    "@types/node": "^25.2.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
