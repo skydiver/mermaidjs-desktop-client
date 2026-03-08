@@ -98,30 +98,63 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: b
 
 // ── Section Content ──────────────────────────────────────
 
+function ThemeControl({
+  value,
+  onChange,
+}: {
+  value: ThemePreference;
+  onChange: (v: ThemePreference) => void;
+}) {
+  return (
+    <div className="flex gap-1">
+      {THEME_OPTIONS.map((opt) => (
+        <button
+          key={opt.value}
+          type="button"
+          onClick={() => onChange(opt.value)}
+          className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+            value === opt.value
+              ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+              : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function GeneralSection() {
   const { settings, updateSettings } = useSettings();
 
   return (
-    <div>
-      <SubsectionHeader title="Appearance" />
-      <SettingRow label="Theme">
-        <div className="flex gap-1">
-          {THEME_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => updateSettings({ theme: opt.value })}
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                settings.theme === opt.value
-                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </SettingRow>
+    <div className="space-y-6">
+      <div>
+        <SubsectionHeader title="Appearance" />
+        <SettingRow label="App Theme">
+          <ThemeControl
+            value={settings.theme}
+            onChange={(v) => updateSettings({ theme: v })}
+          />
+        </SettingRow>
+        <SettingRow label="Diagram Theme">
+          <ThemeControl
+            value={settings.diagramTheme}
+            onChange={(v) => updateSettings({ diagramTheme: v })}
+          />
+        </SettingRow>
+      </div>
+
+      <div>
+        <SubsectionHeader title="Behavior" />
+        <SettingRow label="Auto-save documents">
+          <ToggleSwitch
+            checked={settings.autoSave}
+            onChange={(v) => updateSettings({ autoSave: v })}
+          />
+        </SettingRow>
+      </div>
     </div>
   );
 }

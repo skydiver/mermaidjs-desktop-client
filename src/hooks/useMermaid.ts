@@ -24,7 +24,7 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
   render: (source: string) => void;
   status: MermaidStatus;
 } {
-  const { isDark } = useSettings();
+  const { isDiagramDark } = useSettings();
   const [status, setStatus] = useState<MermaidStatus>({ message: 'Ready', level: 'idle' });
   const tokenRef = useRef(0);
   const lastSourceRef = useRef('');
@@ -87,7 +87,7 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: false,
-      theme: isDark ? 'dark' : 'default',
+      theme: isDiagramDark ? 'dark' : 'default',
       securityLevel: 'loose',
     });
 
@@ -97,7 +97,7 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
       const token = tokenRef.current;
       executeRender(lastSourceRef.current, token);
     }
-  }, [isDark, executeRender]);
+  }, [isDiagramDark, executeRender]);
 
   const schedule = useCallback((source: string) => {
     lastSourceRef.current = source;

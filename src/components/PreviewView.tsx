@@ -1,6 +1,7 @@
 import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type MermaidStatus, useMermaid } from '../hooks/useMermaid';
+import { useSettings } from '../hooks/useSettings';
 
 // ── Constants ───────────────────────────────────────────
 
@@ -20,6 +21,7 @@ interface PreviewViewProps {
 export default function PreviewView({ source = '', onStatusChange }: PreviewViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { schedule, status } = useMermaid(containerRef);
+  const { isDiagramDark } = useSettings();
   const [zoom, setZoom] = useState(1);
 
   // Schedule render when source changes
@@ -79,7 +81,7 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
   const showError = status.level === 'error';
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden bg-white dark:bg-neutral-900">
+    <div className={`relative flex flex-1 flex-col overflow-hidden ${isDiagramDark ? 'bg-neutral-900' : 'bg-white'}`}>
       {/* Render target — useMermaid sets innerHTML here */}
       <div
         ref={containerRef}
@@ -89,7 +91,7 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
       {/* Empty state */}
       {showEmpty && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-sm text-neutral-400 dark:text-neutral-500">
+          <p className={`text-sm ${isDiagramDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
             Add Mermaid markup to see the preview.
           </p>
         </div>
@@ -111,36 +113,48 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
 
       {/* Zoom controls */}
       {!showEmpty && (
-        <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border border-neutral-200 bg-white/90 px-1 py-0.5 shadow-sm backdrop-blur dark:border-neutral-700 dark:bg-neutral-800/90">
-          <button
-            type="button"
-            onClick={zoomOut}
-            className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
-            title="Zoom out"
-          >
+        <div className={`absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border px-1 py-0.5 shadow-sm backdrop-blur ${isDiagramDark ? 'border-neutral-700 bg-neutral-800/90' : 'border-neutral-200 bg-white/90'}`}>
+          <ZoomButton onClick={zoomOut} title="Zoom out" isDark={isDiagramDark}>
             <ZoomOut className="h-3.5 w-3.5" />
-          </button>
-          <span className="min-w-[3rem] text-center text-xs tabular-nums text-neutral-500 dark:text-neutral-400">
+          </ZoomButton>
+          <span className={`min-w-[3rem] text-center text-xs tabular-nums ${isDiagramDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
             {Math.round(zoom * 100)}%
           </span>
-          <button
-            type="button"
-            onClick={zoomIn}
-            className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
-            title="Zoom in"
-          >
+          <ZoomButton onClick={zoomIn} title="Zoom in" isDark={isDiagramDark}>
             <ZoomIn className="h-3.5 w-3.5" />
-          </button>
-          <button
-            type="button"
-            onClick={resetZoom}
-            className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
-            title="Reset zoom"
-          >
+          </ZoomButton>
+          <ZoomButton onClick={resetZoom} title="Reset zoom" isDark={isDiagramDark}>
             <RotateCcw className="h-3.5 w-3.5" />
-          </button>
+          </ZoomButton>
         </div>
       )}
     </div>
+  );
+}
+
+function ZoomButton({
+  onClick,
+  title,
+  isDark,
+  children,
+}: {
+  onClick: () => void;
+  title: string;
+  isDark: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`rounded p-1 ${
+        isDark
+          ? 'text-neutral-400 hover:bg-neutral-700 hover:text-neutral-200'
+          : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700'
+      }`}
+    >
+      {children}
+    </button>
   );
 }

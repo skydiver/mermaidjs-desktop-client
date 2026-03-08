@@ -22,11 +22,8 @@ export function createEditorTheme(fontFamily?: string, disableLigatures?: boolea
   return [
     EditorView.theme({
       '&': {
-        borderRadius: '8px',
-        border: '1px solid var(--editor-border)',
         backgroundColor: 'var(--editor-bg)',
         color: 'inherit',
-        boxShadow: 'inset 0 1px 3px rgba(15, 23, 42, 0.08)',
         minHeight: '100%',
       },
       '.cm-scroller': {

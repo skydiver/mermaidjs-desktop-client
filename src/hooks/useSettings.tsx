@@ -15,6 +15,8 @@ export type ThemePreference = 'system' | 'light' | 'dark';
 
 export interface AppSettings {
   theme: ThemePreference;
+  diagramTheme: ThemePreference;
+  autoSave: boolean;
   editorFontFamily: string;
   editorFontSize: number;
   syntaxHighlighting: boolean;
@@ -27,6 +29,8 @@ export interface AppSettings {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
+  diagramTheme: 'system',
+  autoSave: false,
   editorFontFamily: '',
   editorFontSize: 14,
   syntaxHighlighting: true,
@@ -40,6 +44,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
 export interface SettingsContextValue {
   settings: AppSettings;
   isDark: boolean;
+  isDiagramDark: boolean;
   updateSettings(patch: Partial<AppSettings>): void;
   resetSettings(): void;
 }
@@ -129,6 +134,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   // Apply dark class on <html>
   const isDark = resolveIsDark(settings.theme, osPrefersDark);
+  const isDiagramDark = resolveIsDark(settings.diagramTheme, osPrefersDark);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
@@ -165,8 +171,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [persistSettings]);
 
   const contextValue = useMemo(
-    () => ({ settings, isDark, updateSettings, resetSettings }),
-    [settings, isDark, updateSettings, resetSettings]
+    () => ({ settings, isDark, isDiagramDark, updateSettings, resetSettings }),
+    [settings, isDark, isDiagramDark, updateSettings, resetSettings]
   );
 
   // Don't render children until store is loaded to avoid flash

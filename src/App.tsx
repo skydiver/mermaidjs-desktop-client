@@ -7,6 +7,7 @@ import type { StatusLevel } from './components/StatusBar';
 import { useFileHandling } from './hooks/useFileHandling';
 import { useFileWatch } from './hooks/useFileWatch';
 import type { MermaidStatus } from './hooks/useMermaid';
+import { useSettings } from './hooks/useSettings';
 
 const DEFAULT_SNIPPET = `flowchart TD
     A[Start] --> B{Decision}
@@ -37,6 +38,23 @@ export default function App() {
     fileHandling.isDirty,
     fileHandling.reloadContent
   );
+
+  const { settings } = useSettings();
+
+  // Auto-save: debounced save when enabled, file has a path, and content is dirty
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    if (!settings.autoSave || !fileHandling.filePath || !fileHandling.isDirty) return;
+
+    autoSaveTimerRef.current = setTimeout(() => {
+      fileHandling.saveFile();
+    }, 1000);
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [settings.autoSave, fileHandling.filePath, fileHandling.isDirty, fileHandling.saveFile]);
 
   const handleEditorChange = useCallback(
     (text: string) => {
