@@ -23,6 +23,8 @@ export interface UseFileHandlingReturn {
   saveFile: () => Promise<void>;
   exportFile: (format: ExportFormat) => Promise<void>;
   loadExample: (content: string) => Promise<void>;
+  /** Replace editor content without marking dirty (for external reload) */
+  reloadContent: (content: string) => void;
 }
 
 // ── Constants ───────────────────────────────────────────
@@ -181,6 +183,7 @@ export function useFileHandling({
     saveFile,
     exportFile,
     loadExample,
+    reloadContent: replaceContent,
   };
 }
 

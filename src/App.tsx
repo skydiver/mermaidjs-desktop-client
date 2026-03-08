@@ -6,6 +6,7 @@ import HelpDialog from './components/HelpDialog';
 import SettingsDialog from './components/SettingsDialog';
 import type { StatusLevel } from './components/StatusBar';
 import { useFileHandling } from './hooks/useFileHandling';
+import { useFileWatch } from './hooks/useFileWatch';
 import type { MermaidStatus } from './hooks/useMermaid';
 
 const DEFAULT_SNIPPET = `flowchart TD
@@ -30,6 +31,13 @@ export default function App() {
     editorRef,
     defaultSnippet: DEFAULT_SNIPPET,
   });
+
+  const fileWatch = useFileWatch(
+    fileHandling.filePath,
+    editorText,
+    fileHandling.isDirty,
+    fileHandling.reloadContent
+  );
 
   const handleEditorChange = useCallback(
     (text: string) => {
@@ -70,6 +78,10 @@ export default function App() {
         case ',':
           e.preventDefault();
           setShowSettings(true);
+          break;
+        case '?':
+          e.preventDefault();
+          setShowHelp(true);
           break;
       }
     };
@@ -142,6 +154,9 @@ export default function App() {
         onOpenHelp={() => setShowHelp(true)}
         onOpenSettings={() => setShowSettings(true)}
         isDragOver={isDragOver}
+        externallyModified={fileWatch.externallyModified}
+        onReloadFromDisk={fileWatch.reload}
+        onKeepChanges={fileWatch.keepChanges}
       />
       <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
       <HelpDialog open={showHelp} onOpenChange={setShowHelp} />

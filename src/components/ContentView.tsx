@@ -36,6 +36,9 @@ interface ContentViewProps {
   onOpenHelp: () => void;
   onOpenSettings: () => void;
   isDragOver?: boolean;
+  externallyModified?: boolean;
+  onReloadFromDisk?: () => void;
+  onKeepChanges?: () => void;
 }
 
 // ── Component ───────────────────────────────────────────
@@ -60,6 +63,9 @@ export default function ContentView({
   onOpenHelp,
   onOpenSettings,
   isDragOver = false,
+  externallyModified = false,
+  onReloadFromDisk,
+  onKeepChanges,
 }: ContentViewProps) {
   const [editorRatio, setEditorRatio] = useState(DEFAULT_RATIO);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -106,6 +112,27 @@ export default function ContentView({
         isDirty={isDirty}
         hasContent={hasContent}
       />
+
+      {/* External modification warning */}
+      {externallyModified && (
+        <div className="flex items-center gap-2 border-b border-amber-300 bg-amber-50 px-3 py-1.5 text-sm dark:border-amber-700 dark:bg-amber-950/50">
+          <span className="text-amber-800 dark:text-amber-200">File was modified externally.</span>
+          <button
+            type="button"
+            onClick={onReloadFromDisk}
+            className="rounded px-2 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:text-amber-100 dark:hover:bg-amber-800"
+          >
+            Reload
+          </button>
+          <button
+            type="button"
+            onClick={onKeepChanges}
+            className="rounded px-2 py-0.5 text-xs font-medium text-amber-900 hover:bg-amber-200 dark:text-amber-100 dark:hover:bg-amber-800"
+          >
+            Keep Changes
+          </button>
+        </div>
+      )}
 
       {/* Workspace: Editor + Divider + Preview */}
       <div ref={containerRef} className="relative flex min-h-0 flex-1">
