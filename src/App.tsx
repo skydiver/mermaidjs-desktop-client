@@ -1,7 +1,56 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { EditorViewHandle } from "./components/EditorView";
+import ContentView from "./components/ContentView";
+import SettingsDialog from "./components/SettingsDialog";
+
+const DEFAULT_SNIPPET = `flowchart TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Result 1]
+    B -->|No| D[Result 2]
+    C --> E[End]
+    D --> E
+`;
+
 export default function App() {
+  const editorRef = useRef<EditorViewHandle>(null);
+  const [editorText, setEditorText] = useState(DEFAULT_SNIPPET);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const handleEditorChange = useCallback((text: string) => {
+    setEditorText(text);
+  }, []);
+
+  // Menu events from native menu (Rust → JS)
+  useEffect(() => {
+    const onMenuSettings = () => setShowSettings(true);
+
+    window.addEventListener("menu-settings", onMenuSettings);
+    return () => {
+      window.removeEventListener("menu-settings", onMenuSettings);
+    };
+  }, []);
+
   return (
-    <div className="flex h-screen items-center justify-center bg-background text-foreground">
-      <p className="text-lg">MermaidJS Desktop v3</p>
-    </div>
+    <>
+      <ContentView
+        editorRef={editorRef}
+        editorText={editorText}
+        onEditorChange={handleEditorChange}
+        fileName={null}
+        isDirty={false}
+        lastSavedAt={null}
+        statusMessage="Ready"
+        statusLevel="idle"
+        hasContent={editorText.trim().length > 0}
+        onNewFile={() => {}}
+        onOpenFile={() => {}}
+        onSaveFile={() => {}}
+        onOpenExamples={() => {}}
+        onOpenExport={() => {}}
+        onOpenHelp={() => {}}
+        onOpenSettings={() => setShowSettings(true)}
+      />
+      <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+    </>
   );
 }
