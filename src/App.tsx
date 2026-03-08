@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { EditorViewHandle } from "./components/EditorView";
-import ContentView from "./components/ContentView";
-import SettingsDialog from "./components/SettingsDialog";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import ContentView from './components/ContentView';
+import type { EditorViewHandle } from './components/EditorView';
+import SettingsDialog from './components/SettingsDialog';
 
 const DEFAULT_SNIPPET = `flowchart TD
     A[Start] --> B{Decision}
@@ -24,9 +24,9 @@ export default function App() {
   useEffect(() => {
     const onMenuSettings = () => setShowSettings(true);
 
-    window.addEventListener("menu-settings", onMenuSettings);
+    window.addEventListener('menu-settings', onMenuSettings);
     return () => {
-      window.removeEventListener("menu-settings", onMenuSettings);
+      window.removeEventListener('menu-settings', onMenuSettings);
     };
   }, []);
 
@@ -42,12 +42,24 @@ export default function App() {
         statusMessage="Ready"
         statusLevel="idle"
         hasContent={editorText.trim().length > 0}
-        onNewFile={() => {}}
-        onOpenFile={() => {}}
-        onSaveFile={() => {}}
-        onOpenExamples={() => {}}
-        onOpenExport={() => {}}
-        onOpenHelp={() => {}}
+        onNewFile={() => {
+          /* Task 10 */
+        }}
+        onOpenFile={() => {
+          /* Task 10 */
+        }}
+        onSaveFile={() => {
+          /* Task 10 */
+        }}
+        onOpenExamples={() => {
+          /* Task 11 */
+        }}
+        onOpenExport={() => {
+          /* Task 11 */
+        }}
+        onOpenHelp={() => {
+          /* Task 15 */
+        }}
         onOpenSettings={() => setShowSettings(true)}
       />
       <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />

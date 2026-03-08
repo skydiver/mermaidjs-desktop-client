@@ -1,4 +1,4 @@
-export type StatusLevel = "idle" | "loading" | "success" | "error";
+export type StatusLevel = 'idle' | 'loading' | 'success' | 'error';
 
 interface StatusBarProps {
   fileName: string | null;
@@ -9,10 +9,10 @@ interface StatusBarProps {
 }
 
 const STATUS_COLORS: Record<StatusLevel, string> = {
-  idle: "text-neutral-400 dark:text-neutral-500",
-  loading: "text-blue-500 dark:text-blue-400",
-  success: "text-green-600 dark:text-green-400",
-  error: "text-red-600 dark:text-red-400",
+  idle: 'text-neutral-400 dark:text-neutral-500',
+  loading: 'text-blue-500 dark:text-blue-400',
+  success: 'text-green-600 dark:text-green-400',
+  error: 'text-red-600 dark:text-red-400',
 };
 
 export default function StatusBar({
@@ -46,5 +46,5 @@ export default function StatusBar({
 }
 
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

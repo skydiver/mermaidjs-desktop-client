@@ -1,6 +1,6 @@
-import { FilePlus, FolderOpen, HelpCircle, Moon, Save, Settings, Sun } from "lucide-react";
-import { useEffect, useRef } from "react";
-import { useSettings } from "../hooks/useSettings";
+import { FilePlus, FolderOpen, HelpCircle, Moon, Save, Settings, Sun } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { useSettings } from '../hooks/useSettings';
 
 interface ToolbarProps {
   onNewFile: () => void;
@@ -35,18 +35,20 @@ export default function Toolbar({
     if (!el) return;
 
     type AppWindow = Awaited<
-      ReturnType<typeof import("@tauri-apps/api/window")["getCurrentWindow"]>
+      ReturnType<typeof import('@tauri-apps/api/window')['getCurrentWindow']>
     >;
     let appWindow: AppWindow | null = null;
-    import("@tauri-apps/api/window")
+    import('@tauri-apps/api/window')
       .then(({ getCurrentWindow }) => {
         appWindow = getCurrentWindow();
       })
-      .catch(() => {});
+      .catch(() => {
+        /* Tauri unavailable in browser dev */
+      });
 
     const handleMouseDown = (e: MouseEvent) => {
       if (!appWindow) return;
-      if ((e.target as HTMLElement).closest("button")) return;
+      if ((e.target as HTMLElement).closest('button')) return;
       if (e.buttons === 1) {
         if (e.detail === 2) {
           appWindow.toggleMaximize();
@@ -56,12 +58,13 @@ export default function Toolbar({
       }
     };
 
-    el.addEventListener("mousedown", handleMouseDown);
-    return () => el.removeEventListener("mousedown", handleMouseDown);
+    el.addEventListener('mousedown', handleMouseDown);
+    return () => el.removeEventListener('mousedown', handleMouseDown);
   }, []);
 
   const toggleTheme = () => {
-    const next = settings.theme === "system" ? "dark" : settings.theme === "dark" ? "light" : "system";
+    const next =
+      settings.theme === 'system' ? 'dark' : settings.theme === 'dark' ? 'light' : 'system';
     updateSettings({ theme: next });
   };
 
@@ -95,10 +98,7 @@ export default function Toolbar({
       <div className="flex-1" data-tauri-drag-region />
 
       {/* Theme toggle */}
-      <ToolbarButton
-        title={`Theme: ${settings.theme}`}
-        onClick={toggleTheme}
-      >
+      <ToolbarButton title={`Theme: ${settings.theme}`} onClick={toggleTheme}>
         {isDark ? <Moon size={16} /> : <Sun size={16} />}
       </ToolbarButton>
 
@@ -132,8 +132,8 @@ function ToolbarButton({
       onClick={onClick}
       className={`flex h-7 items-center justify-center rounded px-1.5 transition-colors ${
         disabled
-          ? "cursor-default text-neutral-300 dark:text-neutral-600"
-          : "text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+          ? 'cursor-default text-neutral-300 dark:text-neutral-600'
+          : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
       }`}
     >
       {children}

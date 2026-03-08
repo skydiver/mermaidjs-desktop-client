@@ -1,11 +1,11 @@
-import { defaultKeymap, history, historyKeymap, indentWithTab, redo } from "@codemirror/commands";
-import { bracketMatching, indentOnInput } from "@codemirror/language";
-import { EditorState, type Extension } from "@codemirror/state";
-import { EditorView, keymap, lineNumbers } from "@codemirror/view";
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { createMermaidLanguage } from "../lib/editor/language";
-import { createEditorTheme } from "../lib/editor/theme";
-import { createEditorZoomExtension } from "../lib/editor/zoom";
+import { defaultKeymap, history, historyKeymap, indentWithTab, redo } from '@codemirror/commands';
+import { bracketMatching, indentOnInput } from '@codemirror/language';
+import { EditorState, type Extension } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { createMermaidLanguage } from '../lib/editor/language';
+import { createEditorTheme } from '../lib/editor/theme';
+import { createEditorZoomExtension } from '../lib/editor/zoom';
 
 // ── Public handle for parent access ─────────────────────
 
@@ -41,7 +41,7 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
         });
       },
       getContent() {
-        return editorRef.current?.state.doc.toString() ?? "";
+        return editorRef.current?.state.doc.toString() ?? '';
       },
     }));
 
@@ -67,10 +67,10 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
           }
         }),
         EditorView.theme({
-          "&": { height: "100%" },
-          ".cm-scroller": { overflow: "auto", padding: "16px" },
-          ".cm-content": { padding: "8px 0" },
-          ".cm-activeLine": { backgroundColor: "var(--editor-active-line)" },
+          '&': { height: '100%' },
+          '.cm-scroller': { overflow: 'auto', padding: '16px' },
+          '.cm-content': { padding: '8px 0' },
+          '.cm-activeLine': { backgroundColor: 'var(--editor-active-line)' },
         }),
       ];
 
@@ -84,20 +84,19 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
 
       // Capture-phase listener to fix redo on non-US keyboard layouts
       function onKeyDownCapture(e: KeyboardEvent) {
-        if (e.key === "Dead" && e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+        if (e.key === 'Dead' && e.code === 'KeyZ' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
           e.preventDefault();
           e.stopPropagation();
           redo(editor);
         }
       }
-      container.addEventListener("keydown", onKeyDownCapture, true);
+      container.addEventListener('keydown', onKeyDownCapture, true);
 
       return () => {
-        container.removeEventListener("keydown", onKeyDownCapture, true);
+        container.removeEventListener('keydown', onKeyDownCapture, true);
         editor.destroy();
         editorRef.current = null;
       };
-      // biome-ignore lint/correctness/useExhaustiveDependencies: only create once
     }, []);
 
     // Sync external text changes (e.g. file load) — reset editor state

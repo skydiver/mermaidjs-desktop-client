@@ -1,5 +1,5 @@
-import { Compartment } from "@codemirror/state";
-import { EditorView, keymap } from "@codemirror/view";
+import { Compartment } from '@codemirror/state';
+import { EditorView, keymap } from '@codemirror/view';
 
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
@@ -15,7 +15,7 @@ export interface EditorZoomController {
 }
 
 export function createEditorZoomExtension(): {
-  extension: ReturnType<Compartment["of"]>;
+  extension: ReturnType<Compartment['of']>;
   compartment: Compartment;
 } {
   const compartment = new Compartment();
@@ -82,19 +82,19 @@ export function createEditorZoomController(
 export function createEditorZoomKeymap(controller: EditorZoomController) {
   return keymap.of([
     {
-      key: "Mod-=",
+      key: 'Mod-=',
       run: () => controller.zoomIn(),
     },
     {
-      key: "Mod-+",
+      key: 'Mod-+',
       run: () => controller.zoomIn(),
     },
     {
-      key: "Mod--",
+      key: 'Mod--',
       run: () => controller.zoomOut(),
     },
     {
-      key: "Mod-0",
+      key: 'Mod-0',
       run: () => controller.reset(),
     },
   ]);
@@ -103,7 +103,7 @@ export function createEditorZoomKeymap(controller: EditorZoomController) {
 function createFontSizeTheme(zoomLevel: number) {
   const fontSize = Math.round(BASE_FONT_SIZE * zoomLevel);
   return EditorView.theme({
-    ".cm-scroller": {
+    '.cm-scroller': {
       fontSize: `${fontSize}px`,
     },
   });

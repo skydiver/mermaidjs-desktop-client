@@ -7,11 +7,11 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
+} from 'react';
 
 // ── Types ───────────────────────────────────────────────
 
-export type ThemePreference = "system" | "light" | "dark";
+export type ThemePreference = 'system' | 'light' | 'dark';
 
 export interface AppSettings {
   theme: ThemePreference;
@@ -21,8 +21,8 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  theme: "system",
-  editorFontFamily: "",
+  theme: 'system',
+  editorFontFamily: '',
   editorFontSize: 12,
   syntaxHighlighting: true,
 };
@@ -40,23 +40,23 @@ const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function useSettings(): SettingsContextValue {
   const ctx = useContext(SettingsContext);
-  if (!ctx) throw new Error("useSettings must be used within SettingsProvider");
+  if (!ctx) throw new Error('useSettings must be used within SettingsProvider');
   return ctx;
 }
 
 // ── Persistence helpers ─────────────────────────────────
 
-const STORE_NAME = "settings.json";
-const STORE_KEY = "app";
+const STORE_NAME = 'settings.json';
+const STORE_KEY = 'app';
 const DEBOUNCE_MS = 300;
 
 let storePromise: Promise<
-  InstanceType<typeof import("@tauri-apps/plugin-store")["LazyStore"]>
+  InstanceType<typeof import('@tauri-apps/plugin-store')['LazyStore']>
 > | null = null;
 
 function getStore() {
   if (!storePromise) {
-    storePromise = import("@tauri-apps/plugin-store").then(
+    storePromise = import('@tauri-apps/plugin-store').then(
       ({ LazyStore }) => new LazyStore(STORE_NAME)
     );
   }
@@ -86,8 +86,8 @@ async function saveToStore(settings: AppSettings): Promise<void> {
 // ── Dark mode resolution ────────────────────────────────
 
 function resolveIsDark(theme: ThemePreference, osPrefersDark: boolean): boolean {
-  if (theme === "dark") return true;
-  if (theme === "light") return false;
+  if (theme === 'dark') return true;
+  if (theme === 'light') return false;
   return osPrefersDark;
 }
 
@@ -96,7 +96,7 @@ function resolveIsDark(theme: ThemePreference, osPrefersDark: boolean): boolean 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [osPrefersDark, setOsPrefersDark] = useState(
-    () => window.matchMedia("(prefers-color-scheme: dark)").matches
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches
   );
   const [loaded, setLoaded] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -111,16 +111,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   // Listen for OS dark mode changes
   useEffect(() => {
-    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e: MediaQueryListEvent) => setOsPrefersDark(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
   }, []);
 
   // Apply dark class on <html>
   const isDark = resolveIsDark(settings.theme, osPrefersDark);
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
 
   // Debounced persistence

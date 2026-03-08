@@ -1,0 +1,7 @@
+stateDiagram
+    [*] --> Idle
+    Idle --> Authoring : type Mermaid
+    Authoring --> Previewing : debounce render
+    Previewing --> Authoring : edit again
+    Previewing --> Exporting : choose format
+    Exporting --> Idle : complete export

@@ -1,10 +1,10 @@
-import { type Ref } from "react";
-import type { StatusLevel } from "./StatusBar";
-import type { EditorViewHandle } from "./EditorView";
-import EditorView from "./EditorView";
-import PreviewView from "./PreviewView";
-import StatusBar from "./StatusBar";
-import Toolbar from "./Toolbar";
+import { type Ref } from 'react';
+import type { EditorViewHandle } from './EditorView';
+import EditorView from './EditorView';
+import PreviewView from './PreviewView';
+import type { StatusLevel } from './StatusBar';
+import StatusBar from './StatusBar';
+import Toolbar from './Toolbar';
 
 interface ContentViewProps {
   editorRef: Ref<EditorViewHandle>;

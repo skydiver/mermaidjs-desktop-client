@@ -1,0 +1,9 @@
+sequenceDiagram
+    participant User
+    participant App
+    participant Renderer
+
+    User->>App: Edit Mermaid source
+    App->>Renderer: Debounce update
+    Renderer->>Renderer: Render preview
+    Renderer-->>User: Updated diagram
