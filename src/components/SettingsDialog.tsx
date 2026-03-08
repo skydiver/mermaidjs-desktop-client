@@ -295,10 +295,17 @@ export default function SettingsDialog({
   }, [open, initialSection]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0" showCloseButton={false}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      {open && (
+        <div className="fixed inset-x-0 bottom-0 top-10 z-50 bg-black/70" />
+      )}
+      <DialogContent
+          className="sm:max-w-4xl p-0 shadow-2xl"
+          showCloseButton={false}
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
         <DialogTitle className="sr-only">Settings</DialogTitle>
-        <div className="flex h-[480px]">
+        <div className="flex h-[520px]">
           {/* Sidebar */}
           <aside className="flex w-44 flex-col border-r border-neutral-200 dark:border-neutral-700">
             <nav className="flex-1 space-y-1 p-2">

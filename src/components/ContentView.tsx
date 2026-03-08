@@ -39,6 +39,7 @@ interface ContentViewProps {
   externallyModified?: boolean;
   onReloadFromDisk?: () => void;
   onKeepChanges?: () => void;
+  toolbarDisabled?: boolean;
 }
 
 // ── Component ───────────────────────────────────────────
@@ -66,6 +67,7 @@ export default function ContentView({
   externallyModified = false,
   onReloadFromDisk,
   onKeepChanges,
+  toolbarDisabled = false,
 }: ContentViewProps) {
   const [editorRatio, setEditorRatio] = useState(DEFAULT_RATIO);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -111,6 +113,7 @@ export default function ContentView({
         onOpenSettings={onOpenSettings}
         isDirty={isDirty}
         hasContent={hasContent}
+        disabled={toolbarDisabled}
       />
 
       {/* External modification warning */}

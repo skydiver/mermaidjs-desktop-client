@@ -166,6 +166,7 @@ export default function App() {
         externallyModified={fileWatch.externallyModified}
         onReloadFromDisk={fileWatch.reload}
         onKeepChanges={fileWatch.keepChanges}
+        toolbarDisabled={showSettings || showHelp}
       />
       <SettingsDialog
         open={showSettings}

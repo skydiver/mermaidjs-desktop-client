@@ -14,6 +14,7 @@ interface ToolbarProps {
   onOpenSettings: () => void;
   isDirty: boolean;
   hasContent: boolean;
+  disabled?: boolean;
 }
 
 export default function Toolbar({
@@ -26,6 +27,7 @@ export default function Toolbar({
   onOpenSettings,
   isDirty,
   hasContent,
+  disabled = false,
 }: ToolbarProps) {
   // Vanilla JS drag handler — React synthetic events don't work reliably
   // with Tauri's startDragging() which needs the native mousedown event context.
@@ -68,32 +70,44 @@ export default function Toolbar({
       data-tauri-drag-region
       className="flex h-10 shrink-0 items-center gap-1 border-b border-neutral-200 bg-neutral-50 pr-2 pl-[90px] dark:border-neutral-700 dark:bg-neutral-800"
     >
-      {/* File actions */}
-      <ToolbarButton title="New File" onClick={onNewFile}>
-        <FilePlus size={16} />
-      </ToolbarButton>
-      <ToolbarButton title="Open File" onClick={onOpenFile}>
-        <FolderOpen size={16} />
-      </ToolbarButton>
-      <ToolbarButton title="Save" disabled={!isDirty} onClick={onSaveFile}>
-        <Save size={16} />
-      </ToolbarButton>
+      <span className="mr-1 text-xs font-bold text-neutral-600 dark:text-neutral-300" data-tauri-drag-region>
+        Mermaid Desktop
+      </span>
 
-      <Separator />
+      {!disabled && (
+        <>
+          {/* File actions */}
+          <ToolbarButton title="New File" onClick={onNewFile}>
+            <FilePlus size={16} />
+          </ToolbarButton>
+          <ToolbarButton title="Open File" onClick={onOpenFile}>
+            <FolderOpen size={16} />
+          </ToolbarButton>
+          <ToolbarButton title="Save" disabled={!isDirty} onClick={onSaveFile}>
+            <Save size={16} />
+          </ToolbarButton>
 
-      {/* Examples & Export dropdowns */}
-      <ExamplesDropdown onSelect={onSelectExample} />
-      <ExportDropdown disabled={!hasContent} onExport={onExport} />
+          <Separator />
+
+          {/* Examples & Export dropdowns */}
+          <ExamplesDropdown onSelect={onSelectExample} />
+          <ExportDropdown disabled={!hasContent} onExport={onExport} />
+        </>
+      )}
 
       <div className="flex-1" data-tauri-drag-region />
 
-      {/* Help & Settings */}
-      <ToolbarButton title="Help" onClick={onOpenHelp}>
-        <HelpCircle size={16} />
-      </ToolbarButton>
-      <ToolbarButton title="Settings" onClick={onOpenSettings}>
-        <Settings size={16} />
-      </ToolbarButton>
+      {!disabled && (
+        <>
+          {/* Help & Settings */}
+          <ToolbarButton title="Help" onClick={onOpenHelp}>
+            <HelpCircle size={16} />
+          </ToolbarButton>
+          <ToolbarButton title="Settings" onClick={onOpenSettings}>
+            <Settings size={16} />
+          </ToolbarButton>
+        </>
+      )}
     </div>
   );
 }
