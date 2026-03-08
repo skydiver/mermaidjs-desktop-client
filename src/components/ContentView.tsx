@@ -1,4 +1,6 @@
 import { type Ref } from 'react';
+import type { MermaidStatus } from '../hooks/useMermaid';
+import type { ExportFormat } from '../lib/export/export-diagram';
 import type { EditorViewHandle } from './EditorView';
 import EditorView from './EditorView';
 import PreviewView from './PreviewView';
@@ -16,11 +18,13 @@ interface ContentViewProps {
   statusMessage: string;
   statusLevel: StatusLevel;
   hasContent: boolean;
+  previewSource: string;
+  onPreviewStatusChange: (status: MermaidStatus) => void;
   onNewFile: () => void;
   onOpenFile: () => void;
   onSaveFile: () => void;
-  onOpenExamples: () => void;
-  onOpenExport: () => void;
+  onSelectExample: (content: string) => void;
+  onExport: (format: ExportFormat) => void;
   onOpenHelp: () => void;
   onOpenSettings: () => void;
 }
@@ -35,11 +39,13 @@ export default function ContentView({
   statusMessage,
   statusLevel,
   hasContent,
+  previewSource,
+  onPreviewStatusChange,
   onNewFile,
   onOpenFile,
   onSaveFile,
-  onOpenExamples,
-  onOpenExport,
+  onSelectExample,
+  onExport,
   onOpenHelp,
   onOpenSettings,
 }: ContentViewProps) {
@@ -49,8 +55,8 @@ export default function ContentView({
         onNewFile={onNewFile}
         onOpenFile={onOpenFile}
         onSaveFile={onSaveFile}
-        onOpenExamples={onOpenExamples}
-        onOpenExport={onOpenExport}
+        onSelectExample={onSelectExample}
+        onExport={onExport}
         onOpenHelp={onOpenHelp}
         onOpenSettings={onOpenSettings}
         isDirty={isDirty}
@@ -68,7 +74,7 @@ export default function ContentView({
 
         {/* Preview panel */}
         <div className="flex w-1/2 flex-col">
-          <PreviewView />
+          <PreviewView source={previewSource} onStatusChange={onPreviewStatusChange} />
         </div>
       </div>
 

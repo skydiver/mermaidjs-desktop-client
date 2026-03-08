@@ -1,13 +1,16 @@
 import { FilePlus, FolderOpen, HelpCircle, Moon, Save, Settings, Sun } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useSettings } from '../hooks/useSettings';
+import type { ExportFormat } from '../lib/export/export-diagram';
+import ExamplesDropdown from './ExamplesDropdown';
+import ExportDropdown from './ExportDropdown';
 
 interface ToolbarProps {
   onNewFile: () => void;
   onOpenFile: () => void;
   onSaveFile: () => void;
-  onOpenExamples: () => void;
-  onOpenExport: () => void;
+  onSelectExample: (content: string) => void;
+  onExport: (format: ExportFormat) => void;
   onOpenHelp: () => void;
   onOpenSettings: () => void;
   isDirty: boolean;
@@ -18,8 +21,8 @@ export default function Toolbar({
   onNewFile,
   onOpenFile,
   onSaveFile,
-  onOpenExamples,
-  onOpenExport,
+  onSelectExample,
+  onExport,
   onOpenHelp,
   onOpenSettings,
   isDirty,
@@ -87,13 +90,9 @@ export default function Toolbar({
 
       <Separator />
 
-      {/* Examples & Export placeholders */}
-      <ToolbarButton title="Examples" onClick={onOpenExamples}>
-        <span className="text-xs font-medium">Examples</span>
-      </ToolbarButton>
-      <ToolbarButton title="Export" disabled={!hasContent} onClick={onOpenExport}>
-        <span className="text-xs font-medium">Export</span>
-      </ToolbarButton>
+      {/* Examples & Export dropdowns */}
+      <ExamplesDropdown onSelect={onSelectExample} />
+      <ExportDropdown disabled={!hasContent} onExport={onExport} />
 
       <div className="flex-1" data-tauri-drag-region />
 
