@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    mermaidjs_desktop_temp_lib::run()
+    mermaidjs_desktop_lib::run()
 }
