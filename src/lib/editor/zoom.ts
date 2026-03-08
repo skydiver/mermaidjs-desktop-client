@@ -14,12 +14,12 @@ export interface EditorZoomController {
   getLevel: () => number;
 }
 
-export function createEditorZoomExtension(): {
+export function createEditorZoomExtension(baseFontSize: number = BASE_FONT_SIZE): {
   extension: ReturnType<Compartment['of']>;
   compartment: Compartment;
 } {
   const compartment = new Compartment();
-  const extension = compartment.of(createFontSizeTheme(ZOOM_DEFAULT));
+  const extension = compartment.of(createFontSizeTheme(ZOOM_DEFAULT, baseFontSize));
   return { extension, compartment };
 }
 
@@ -27,20 +27,21 @@ export function createEditorZoomController(
   view: EditorView,
   compartment: Compartment,
   onZoomChange?: (level: number) => void,
-  initialLevel?: number
+  initialLevel?: number,
+  baseFontSize: number = BASE_FONT_SIZE
 ): EditorZoomController {
   let zoomLevel = initialLevel ?? ZOOM_DEFAULT;
 
   // Apply initial zoom if different from default
   if (initialLevel && initialLevel !== ZOOM_DEFAULT) {
     view.dispatch({
-      effects: compartment.reconfigure(createFontSizeTheme(zoomLevel)),
+      effects: compartment.reconfigure(createFontSizeTheme(zoomLevel, baseFontSize)),
     });
   }
 
   function applyZoom(): void {
     view.dispatch({
-      effects: compartment.reconfigure(createFontSizeTheme(zoomLevel)),
+      effects: compartment.reconfigure(createFontSizeTheme(zoomLevel, baseFontSize)),
     });
     onZoomChange?.(zoomLevel);
   }
@@ -100,8 +101,8 @@ export function createEditorZoomKeymap(controller: EditorZoomController) {
   ]);
 }
 
-function createFontSizeTheme(zoomLevel: number) {
-  const fontSize = Math.round(BASE_FONT_SIZE * zoomLevel);
+function createFontSizeTheme(zoomLevel: number, baseFontSize: number = BASE_FONT_SIZE) {
+  const fontSize = Math.round(baseFontSize * zoomLevel);
   return EditorView.theme({
     '.cm-scroller': {
       fontSize: `${fontSize}px`,

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import AboutDialog from './components/AboutDialog';
 import ContentView from './components/ContentView';
 import type { EditorViewHandle } from './components/EditorView';
 import HelpDialog from './components/HelpDialog';
-import SettingsDialog from './components/SettingsDialog';
+import SettingsDialog, { type SectionId } from './components/SettingsDialog';
 import type { StatusLevel } from './components/StatusBar';
 import { useFileHandling } from './hooks/useFileHandling';
 import { useFileWatch } from './hooks/useFileWatch';
@@ -21,8 +20,8 @@ export default function App() {
   const editorRef = useRef<EditorViewHandle>(null);
   const [editorText, setEditorText] = useState(DEFAULT_SNIPPET);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsSection, setSettingsSection] = useState<SectionId>('general');
   const [showHelp, setShowHelp] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [statusMessage, setStatusMessage] = useState('Ready');
   const [statusLevel, setStatusLevel] = useState<StatusLevel>('idle');
@@ -77,6 +76,7 @@ export default function App() {
           break;
         case ',':
           e.preventDefault();
+          setSettingsSection('general');
           setShowSettings(true);
           break;
         case '?':
@@ -91,8 +91,14 @@ export default function App() {
 
   // Menu events from native menu (Rust → JS)
   useEffect(() => {
-    const onMenuSettings = () => setShowSettings(true);
-    const onMenuAbout = () => setShowAbout(true);
+    const onMenuSettings = () => {
+      setSettingsSection('general');
+      setShowSettings(true);
+    };
+    const onMenuAbout = () => {
+      setSettingsSection('about');
+      setShowSettings(true);
+    };
 
     window.addEventListener('menu-settings', onMenuSettings);
     window.addEventListener('menu-about', onMenuAbout);
@@ -152,15 +158,21 @@ export default function App() {
         onSelectExample={fileHandling.loadExample}
         onExport={fileHandling.exportFile}
         onOpenHelp={() => setShowHelp(true)}
-        onOpenSettings={() => setShowSettings(true)}
+        onOpenSettings={() => {
+          setSettingsSection('general');
+          setShowSettings(true);
+        }}
         isDragOver={isDragOver}
         externallyModified={fileWatch.externallyModified}
         onReloadFromDisk={fileWatch.reload}
         onKeepChanges={fileWatch.keepChanges}
       />
-      <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
+      <SettingsDialog
+        open={showSettings}
+        onOpenChange={setShowSettings}
+        initialSection={settingsSection}
+      />
       <HelpDialog open={showHelp} onOpenChange={setShowHelp} />
-      <AboutDialog open={showAbout} onOpenChange={setShowAbout} />
     </>
   );
 }

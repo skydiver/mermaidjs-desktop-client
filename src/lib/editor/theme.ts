@@ -3,7 +3,7 @@ import type { Extension } from '@codemirror/state';
 import { tags } from '@lezer/highlight';
 import { EditorView } from 'codemirror';
 
-const editorHighlightStyle = HighlightStyle.define([
+export const editorHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: 'var(--syntax-keyword)' },
   { tag: tags.operator, color: 'var(--syntax-operator)' },
   { tag: tags.string, color: 'var(--syntax-string)' },
@@ -14,7 +14,11 @@ const editorHighlightStyle = HighlightStyle.define([
   { tag: tags.attributeName, color: 'var(--syntax-attribute)' },
 ]);
 
-export function createEditorTheme(): Extension {
+export function createEditorTheme(fontFamily?: string, disableLigatures?: boolean): Extension {
+  const fontStack = fontFamily
+    ? `"${fontFamily}", "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace`
+    : '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace';
+
   return [
     EditorView.theme({
       '&': {
@@ -26,8 +30,9 @@ export function createEditorTheme(): Extension {
         minHeight: '100%',
       },
       '.cm-scroller': {
-        fontFamily: '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace',
+        fontFamily: fontStack,
         lineHeight: '1.5',
+        ...(disableLigatures ? { fontVariantLigatures: 'none' } : {}),
       },
       '.cm-content': {
         caretColor: 'var(--editor-caret)',

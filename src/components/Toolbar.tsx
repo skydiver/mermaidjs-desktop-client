@@ -1,6 +1,5 @@
-import { FilePlus, FolderOpen, HelpCircle, Moon, Save, Settings, Sun } from 'lucide-react';
+import { FilePlus, FolderOpen, HelpCircle, Save, Settings } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { useSettings } from '../hooks/useSettings';
 import type { ExportFormat } from '../lib/export/export-diagram';
 import ExamplesDropdown from './ExamplesDropdown';
 import ExportDropdown from './ExportDropdown';
@@ -28,8 +27,6 @@ export default function Toolbar({
   isDirty,
   hasContent,
 }: ToolbarProps) {
-  const { settings, isDark, updateSettings } = useSettings();
-
   // Vanilla JS drag handler — React synthetic events don't work reliably
   // with Tauri's startDragging() which needs the native mousedown event context.
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -65,12 +62,6 @@ export default function Toolbar({
     return () => el.removeEventListener('mousedown', handleMouseDown);
   }, []);
 
-  const toggleTheme = () => {
-    const next =
-      settings.theme === 'system' ? 'dark' : settings.theme === 'dark' ? 'light' : 'system';
-    updateSettings({ theme: next });
-  };
-
   return (
     <div
       ref={toolbarRef}
@@ -95,11 +86,6 @@ export default function Toolbar({
       <ExportDropdown disabled={!hasContent} onExport={onExport} />
 
       <div className="flex-1" data-tauri-drag-region />
-
-      {/* Theme toggle */}
-      <ToolbarButton title={`Theme: ${settings.theme}`} onClick={toggleTheme}>
-        {isDark ? <Moon size={16} /> : <Sun size={16} />}
-      </ToolbarButton>
 
       {/* Help & Settings */}
       <ToolbarButton title="Help" onClick={onOpenHelp}>

@@ -18,13 +18,23 @@ export interface AppSettings {
   editorFontFamily: string;
   editorFontSize: number;
   syntaxHighlighting: boolean;
+  wordWrap: boolean;
+  showInvisibles: boolean;
+  disableLigatures: boolean;
+  indentType: 'space' | 'tab';
+  indentSize: number;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
   editorFontFamily: '',
-  editorFontSize: 12,
+  editorFontSize: 14,
   syntaxHighlighting: true,
+  wordWrap: true,
+  showInvisibles: false,
+  disableLigatures: false,
+  indentType: 'space',
+  indentSize: 2,
 };
 
 export interface SettingsContextValue {

@@ -3,8 +3,13 @@ import { bracketMatching, indentOnInput } from '@codemirror/language';
 import { EditorState, type Extension } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import { useSettings } from '../hooks/useSettings';
 import { createMermaidLanguage } from '../lib/editor/language';
-import { createEditorTheme } from '../lib/editor/theme';
+import {
+  createSettingsCompartments,
+  createSettingsExtensions,
+  reconfigureSettings,
+} from '../lib/editor/settings-compartments';
 import { createEditorZoomExtension } from '../lib/editor/zoom';
 
 // ── Public handle for parent access ─────────────────────
@@ -29,6 +34,8 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
     const editorRef = useRef<EditorView | null>(null);
     const onChangeRef = useRef(onChange);
     onChangeRef.current = onChange;
+    const { settings } = useSettings();
+    const compartmentsRef = useRef(createSettingsCompartments());
 
     useImperativeHandle(ref, () => ({
       replaceContent(text: string) {
@@ -50,7 +57,7 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
       const container = containerRef.current;
       if (!container) return;
 
-      const { extension: zoomExt } = createEditorZoomExtension();
+      const { extension: zoomExt } = createEditorZoomExtension(settings.editorFontSize);
 
       const extensions: Extension[] = [
         lineNumbers(),
@@ -58,7 +65,7 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
         bracketMatching(),
         indentOnInput(),
         createMermaidLanguage(),
-        createEditorTheme(),
+        ...createSettingsExtensions(compartmentsRef.current, settings),
         zoomExt,
         keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
         EditorView.updateListener.of((update) => {
@@ -110,6 +117,22 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
         });
       }
     }, [initialText]);
+
+    // Reconfigure editor when settings change
+    useEffect(() => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      reconfigureSettings(editor, compartmentsRef.current, settings);
+    }, [
+      settings.editorFontFamily,
+      settings.editorFontSize,
+      settings.disableLigatures,
+      settings.wordWrap,
+      settings.showInvisibles,
+      settings.indentType,
+      settings.indentSize,
+      settings.syntaxHighlighting,
+    ]);
 
     return <div ref={containerRef} className="h-full w-full" />;
   }

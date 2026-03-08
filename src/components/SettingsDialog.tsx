@@ -1,98 +1,354 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ExternalLink, FileCode, Info, Settings as SettingsIcon, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { type ThemePreference, useSettings } from '../hooks/useSettings';
 
-interface SettingsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
+// ── Constants ────────────────────────────────────────────
 
-const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-];
+const GITHUB_URL = 'https://github.com/skydiver/mermaidjs-desktop-client';
 
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 24;
 
-export default function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+];
+
+const FONT_OPTIONS = [
+  { value: '', label: 'Default (System)' },
+  { value: 'JetBrains Mono', label: 'JetBrains Mono' },
+  { value: 'Fira Code', label: 'Fira Code' },
+  { value: 'SF Mono', label: 'SF Mono' },
+  { value: 'Cascadia Code', label: 'Cascadia Code' },
+  { value: 'Source Code Pro', label: 'Source Code Pro' },
+  { value: 'Menlo', label: 'Menlo' },
+  { value: 'Monaco', label: 'Monaco' },
+  { value: 'Courier New', label: 'Courier New' },
+];
+
+const SECTIONS = [
+  { id: 'general', label: 'General', icon: SettingsIcon },
+  { id: 'editor', label: 'Editor', icon: FileCode },
+  { id: 'about', label: 'About', icon: Info },
+] as const;
+
+export type SectionId = (typeof SECTIONS)[number]['id'];
+
+// ── Props ────────────────────────────────────────────────
+
+interface SettingsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialSection?: SectionId;
+}
+
+// ── Reusable Sub-Components ──────────────────────────────
+
+function SubsectionHeader({ title }: { title: string }) {
+  return (
+    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+      {title}
+    </h3>
+  );
+}
+
+function SettingRow({
+  label,
+  description,
+  children,
+}: {
+  label: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between py-2">
+      <div>
+        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</span>
+        {description && (
+          <p className="text-xs text-neutral-400 dark:text-neutral-500">{description}</p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors ${
+        checked ? 'bg-neutral-900 dark:bg-neutral-100' : 'bg-neutral-300 dark:bg-neutral-600'
+      }`}
+    >
+      <span
+        className={`pointer-events-none inline-block h-4 w-4 translate-y-0.5 rounded-full bg-white shadow-sm transition-transform dark:bg-neutral-900 ${
+          checked ? 'translate-x-4' : 'translate-x-0.5'
+        }`}
+      />
+    </button>
+  );
+}
+
+// ── Section Content ──────────────────────────────────────
+
+function GeneralSection() {
   const { settings, updateSettings } = useSettings();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 pt-2">
-          {/* Theme selector */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Theme</label>
-            <div className="flex gap-1">
-              {THEME_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => updateSettings({ theme: opt.value })}
-                  className={`flex-1 rounded-md px-3 py-1.5 text-sm transition-colors ${
-                    settings.theme === opt.value
-                      ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Editor font size */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium" htmlFor="editor-font-size">
-              Editor Font Size
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                id="editor-font-size"
-                type="range"
-                min={FONT_SIZE_MIN}
-                max={FONT_SIZE_MAX}
-                step={1}
-                value={settings.editorFontSize}
-                onChange={(e) => updateSettings({ editorFontSize: Number(e.target.value) })}
-                className="h-1.5 flex-1 cursor-pointer appearance-none rounded-full bg-neutral-200 accent-neutral-900 dark:bg-neutral-700 dark:accent-neutral-100"
-              />
-              <span className="w-8 text-center text-sm tabular-nums text-neutral-500 dark:text-neutral-400">
-                {settings.editorFontSize}
-              </span>
-            </div>
-          </div>
-
-          {/* Syntax highlighting */}
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium" htmlFor="syntax-highlighting">
-              Syntax Highlighting
-            </label>
+    <div>
+      <SubsectionHeader title="Appearance" />
+      <SettingRow label="Theme">
+        <div className="flex gap-1">
+          {THEME_OPTIONS.map((opt) => (
             <button
-              id="syntax-highlighting"
+              key={opt.value}
               type="button"
-              role="switch"
-              aria-checked={settings.syntaxHighlighting}
-              onClick={() => updateSettings({ syntaxHighlighting: !settings.syntaxHighlighting })}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors ${
-                settings.syntaxHighlighting
-                  ? 'bg-neutral-900 dark:bg-neutral-100'
-                  : 'bg-neutral-300 dark:bg-neutral-600'
+              onClick={() => updateSettings({ theme: opt.value })}
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                settings.theme === opt.value
+                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900'
+                  : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700'
               }`}
             >
-              <span
-                className={`pointer-events-none inline-block h-4 w-4 translate-y-0.5 rounded-full bg-white shadow-sm transition-transform dark:bg-neutral-900 ${
-                  settings.syntaxHighlighting ? 'translate-x-4' : 'translate-x-0.5'
-                }`}
-              />
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </SettingRow>
+    </div>
+  );
+}
+
+function EditorSection() {
+  const { settings, updateSettings } = useSettings();
+
+  const stepperBtnClass =
+    'flex h-7 w-7 items-center justify-center rounded-md border border-neutral-300 text-sm transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:hover:bg-neutral-800';
+
+  const selectClass =
+    'rounded-md border border-neutral-300 bg-transparent px-2 py-1 text-sm dark:border-neutral-600';
+
+  return (
+    <div className="space-y-6">
+      {/* Font */}
+      <div>
+        <SubsectionHeader title="Font" />
+        <SettingRow label="Font">
+          <select
+            value={settings.editorFontFamily}
+            onChange={(e) => updateSettings({ editorFontFamily: e.target.value })}
+            className={selectClass}
+          >
+            {FONT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </SettingRow>
+        <SettingRow label="Size">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() =>
+                updateSettings({
+                  editorFontSize: Math.max(FONT_SIZE_MIN, settings.editorFontSize - 1),
+                })
+              }
+              className={stepperBtnClass}
+            >
+              −
+            </button>
+            <span className="w-8 text-center text-sm tabular-nums">{settings.editorFontSize}</span>
+            <button
+              type="button"
+              onClick={() =>
+                updateSettings({
+                  editorFontSize: Math.min(FONT_SIZE_MAX, settings.editorFontSize + 1),
+                })
+              }
+              className={stepperBtnClass}
+            >
+              +
             </button>
           </div>
+        </SettingRow>
+      </div>
+
+      {/* Display */}
+      <div>
+        <SubsectionHeader title="Display" />
+        <SettingRow label="Syntax Highlighting">
+          <ToggleSwitch
+            checked={settings.syntaxHighlighting}
+            onChange={(v) => updateSettings({ syntaxHighlighting: v })}
+          />
+        </SettingRow>
+        <SettingRow label="Word Wrap">
+          <ToggleSwitch
+            checked={settings.wordWrap}
+            onChange={(v) => updateSettings({ wordWrap: v })}
+          />
+        </SettingRow>
+        <SettingRow label="Show Invisibles">
+          <ToggleSwitch
+            checked={settings.showInvisibles}
+            onChange={(v) => updateSettings({ showInvisibles: v })}
+          />
+        </SettingRow>
+        <SettingRow label="Disable Ligatures">
+          <ToggleSwitch
+            checked={settings.disableLigatures}
+            onChange={(v) => updateSettings({ disableLigatures: v })}
+          />
+        </SettingRow>
+      </div>
+
+      {/* Formatting */}
+      <div>
+        <SubsectionHeader title="Formatting" />
+        <SettingRow label="Indent Type">
+          <select
+            value={settings.indentType}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === 'space' || value === 'tab') {
+                updateSettings({ indentType: value });
+              }
+            }}
+            className={selectClass}
+          >
+            <option value="space">Space</option>
+            <option value="tab">Tab</option>
+          </select>
+        </SettingRow>
+        <SettingRow label="Indent Size">
+          <select
+            value={settings.indentSize}
+            onChange={(e) => updateSettings({ indentSize: Number(e.target.value) })}
+            className={selectClass}
+          >
+            <option value={2}>2</option>
+            <option value={4}>4</option>
+            <option value={8}>8</option>
+          </select>
+        </SettingRow>
+      </div>
+    </div>
+  );
+}
+
+function AboutSection() {
+  const handleOpenGitHub = async () => {
+    try {
+      const { openUrl } = await import('@tauri-apps/plugin-opener');
+      await openUrl(GITHUB_URL);
+    } catch {
+      window.open(GITHUB_URL, '_blank');
+    }
+  };
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+      <h3 className="text-lg font-semibold">Mermaid Desktop</h3>
+      <p className="text-sm text-neutral-500 dark:text-neutral-400">Version {__APP_VERSION__}</p>
+      <p className="text-sm text-neutral-600 dark:text-neutral-300">
+        A desktop app for Mermaid diagrams
+      </p>
+      <p className="text-xs text-neutral-400 dark:text-neutral-500">
+        &copy; {new Date().getFullYear()}
+      </p>
+      <button
+        type="button"
+        onClick={handleOpenGitHub}
+        className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+      >
+        <ExternalLink size={14} />
+        View on GitHub
+      </button>
+    </div>
+  );
+}
+
+// ── Main Component ───────────────────────────────────────
+
+export default function SettingsDialog({
+  open,
+  onOpenChange,
+  initialSection,
+}: SettingsDialogProps) {
+  const { resetSettings } = useSettings();
+  const [section, setSection] = useState<SectionId>(initialSection ?? 'general');
+
+  // Reset to initialSection when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSection(initialSection ?? 'general');
+    }
+  }, [open, initialSection]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl p-0" showCloseButton={false}>
+        <DialogTitle className="sr-only">Settings</DialogTitle>
+        <div className="flex h-[480px]">
+          {/* Sidebar */}
+          <aside className="flex w-44 flex-col border-r border-neutral-200 dark:border-neutral-700">
+            <nav className="flex-1 space-y-1 p-2">
+              {SECTIONS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSection(id)}
+                  className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
+                    section === id
+                      ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
+                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100'
+                  }`}
+                >
+                  <Icon size={16} />
+                  {label}
+                </button>
+              ))}
+            </nav>
+            <div className="border-t border-neutral-200 p-2 dark:border-neutral-700">
+              <button
+                type="button"
+                onClick={resetSettings}
+                className="w-full rounded-md px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+              >
+                Reset to defaults
+              </button>
+            </div>
+          </aside>
+
+          {/* Main content */}
+          <main className="flex flex-1 flex-col">
+            <header className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700">
+              <h2 className="font-semibold">{SECTIONS.find((s) => s.id === section)?.label}</h2>
+              <DialogClose asChild>
+                <button
+                  type="button"
+                  className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden"
+                >
+                  <X size={16} />
+                  <span className="sr-only">Close</span>
+                </button>
+              </DialogClose>
+            </header>
+            <div className="flex-1 overflow-y-auto p-4">
+              {section === 'general' && <GeneralSection />}
+              {section === 'editor' && <EditorSection />}
+              {section === 'about' && <AboutSection />}
+            </div>
+          </main>
         </div>
       </DialogContent>
     </Dialog>
