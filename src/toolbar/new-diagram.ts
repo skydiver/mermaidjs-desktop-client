@@ -11,15 +11,8 @@ interface NewDiagramOptions {
 }
 
 export function setupNewDiagramAction(options: NewDiagramOptions): void {
-  const {
-    editor,
-    renderPreview,
-    button,
-    defaultSnippet,
-    onPathChange,
-    onNew,
-    shouldReplace,
-  } = options;
+  const { editor, renderPreview, button, defaultSnippet, onPathChange, onNew, shouldReplace } =
+    options;
   if (!button) return;
 
   button.addEventListener('click', async () => {

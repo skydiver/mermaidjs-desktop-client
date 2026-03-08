@@ -23,13 +23,13 @@ import {
 } from './preview/zoom';
 import { setupToolbarActions } from './toolbar/actions';
 import { setupToolbarShortcuts } from './toolbar/shortcuts';
-import { setupTheme, type ThemeController } from './window/theme';
 import {
   loadEditorZoom,
   loadSettingsStore,
   saveEditorZoom,
   setupWindowPersistence,
 } from './window/state';
+import { setupTheme, type ThemeController } from './window/theme';
 import { initHorizontalResize } from './workspace/resize';
 
 const DEFAULT_SNIPPET = `graph TD

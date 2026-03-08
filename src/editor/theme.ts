@@ -26,8 +26,7 @@ export function createEditorTheme(): Extension {
         minHeight: '100%',
       },
       '.cm-scroller': {
-        fontFamily:
-          '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace',
+        fontFamily: '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace',
         lineHeight: '1.5',
       },
       '.cm-content': {

@@ -24,7 +24,7 @@ export async function setupTheme(store: Store | null): Promise<ThemeController> 
   const applyTheme = () => {
     document.body.classList.toggle('dark', currentTheme === 'dark');
     document.documentElement.dataset.theme = currentTheme;
-    
+
     // Update toggle button icon and tooltip
     const toggleBtn = document.querySelector<HTMLButtonElement>('[data-action="toggle-theme"]');
     if (toggleBtn) {
@@ -33,7 +33,10 @@ export async function setupTheme(store: Store | null): Promise<ThemeController> 
         icon.className = currentTheme === 'dark' ? 'ri-sun-line' : 'ri-moon-line';
       }
       toggleBtn.setAttribute('data-tooltip', currentTheme === 'dark' ? 'Light mode' : 'Dark mode');
-      toggleBtn.setAttribute('aria-label', currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      toggleBtn.setAttribute(
+        'aria-label',
+        currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+      );
     }
 
     // Update Mermaid default configuration
@@ -42,7 +45,7 @@ export async function setupTheme(store: Store | null): Promise<ThemeController> 
       securityLevel: 'strict',
       theme: currentTheme === 'dark' ? 'dark' : 'default',
     });
-    
+
     // Trigger a custom event so other components (like the preview) know to re-render
     window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: currentTheme } }));
   };
