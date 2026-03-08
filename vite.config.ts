@@ -37,6 +37,10 @@ export default defineConfig({
     },
   },
 
+  optimizeDeps: {
+    entries: ['index.html', 'src/**/*.{ts,tsx}'],
+  },
+
   test: {
     globals: true,
     environment: 'node',
