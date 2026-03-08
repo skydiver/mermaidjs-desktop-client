@@ -1,49 +1,26 @@
 {
-  "name": "mermaidjs-desktop-client",
-  "version": "2.4.1",
-  "description": "Desktop editor for Mermaid diagrams with real-time preview, syntax highlighting, and SVG/PNG export.",
-  "homepage": "https://github.com/skydiver/mermaidjs-desktop-client",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/skydiver/mermaidjs-desktop-client.git"
-  },
-  "license": "MIT",
-  "author": {
-    "name": "Martín M.",
-    "email": "skydiver@users.noreply.github.com"
-  },
+  "name": "mermaidjs-desktop-temp",
+  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "tsc && vite build",
-    "clean": "rimraf dist src-tauri/target",
     "dev": "vite",
-    "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "typecheck": "tsc --noEmit",
+    "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },
   "dependencies": {
-    "@codemirror/commands": "^6.10.2",
-    "@codemirror/language": "^6.12.2",
-    "@codemirror/state": "^6.5.4",
-    "@codemirror/view": "^6.39.16",
-    "@lezer/highlight": "^1.2.3",
-    "@tauri-apps/api": "^2.10.1",
-    "@tauri-apps/plugin-dialog": "^2.6.0",
-    "@tauri-apps/plugin-fs": "^2.4.5",
-    "@tauri-apps/plugin-shell": "^2.3.5",
-    "@tauri-apps/plugin-store": "^2.4.2",
-    "codemirror": "^6.0.2",
-    "mermaid": "^11.12.3",
-    "remixicon": "^4.9.1"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-opener": "^2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.6",
-    "@tauri-apps/cli": "^2.10.1",
-    "@types/node": "^25.3.5",
-    "rimraf": "^6.1.3",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "typescript": "~5.8.3",
+    "vite": "^7.0.4",
+    "@tauri-apps/cli": "^2"
   }
 }
