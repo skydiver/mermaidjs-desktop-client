@@ -2,6 +2,9 @@ import { ExternalLink, FileCode, Info, Settings as SettingsIcon, X } from 'lucid
 import { useEffect, useState } from 'react';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { type ThemePreference, useSettings } from '../hooks/useSettings';
 
 // ── Constants ────────────────────────────────────────────
@@ -17,16 +20,44 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: 'System' },
 ];
 
-const FONT_OPTIONS = [
-  { value: '', label: 'Default (System)' },
-  { value: 'JetBrains Mono', label: 'JetBrains Mono' },
-  { value: 'Fira Code', label: 'Fira Code' },
-  { value: 'SF Mono', label: 'SF Mono' },
-  { value: 'Cascadia Code', label: 'Cascadia Code' },
-  { value: 'Source Code Pro', label: 'Source Code Pro' },
-  { value: 'Menlo', label: 'Menlo' },
-  { value: 'Monaco', label: 'Monaco' },
-  { value: 'Courier New', label: 'Courier New' },
+const FONT_DEFAULT = 'system';
+
+function useMonospaceFonts(): { value: string; label: string }[] {
+  const [fonts, setFonts] = useState<{ value: string; label: string }[]>([
+    { value: FONT_DEFAULT, label: 'Default (System)' },
+  ]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const names: string[] = await invoke('list_monospace_fonts');
+        if (cancelled) return;
+        setFonts([
+          { value: FONT_DEFAULT, label: 'Default (System)' },
+          ...names.map((name) => ({ value: name, label: name })),
+        ]);
+      } catch {
+        // Not in Tauri environment — keep default only
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  return fonts;
+}
+
+const INDENT_TYPE_OPTIONS: { value: 'space' | 'tab'; label: string }[] = [
+  { value: 'space', label: 'Space' },
+  { value: 'tab', label: 'Tab' },
+];
+
+const INDENT_SIZE_OPTIONS = [
+  { value: '2', label: '2' },
+  { value: '4', label: '4' },
+  { value: '8', label: '8' },
 ];
 
 const SECTIONS = [
@@ -77,26 +108,6 @@ function SettingRow({
   );
 }
 
-function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors ${
-        checked ? 'bg-neutral-900 dark:bg-neutral-100' : 'bg-neutral-300 dark:bg-neutral-600'
-      }`}
-    >
-      <span
-        className={`pointer-events-none inline-block h-4 w-4 translate-y-0.5 rounded-full bg-white shadow-sm transition-transform dark:bg-neutral-900 ${
-          checked ? 'translate-x-4' : 'translate-x-0.5'
-        }`}
-      />
-    </button>
-  );
-}
-
 // ── Section Content ──────────────────────────────────────
 
 function GeneralSection() {
@@ -125,9 +136,9 @@ function GeneralSection() {
       <div>
         <SubsectionHeader title="Behavior" />
         <SettingRow label="Auto-save documents">
-          <ToggleSwitch
+          <Switch
             checked={settings.autoSave}
-            onChange={(v) => updateSettings({ autoSave: v })}
+            onCheckedChange={(v) => updateSettings({ autoSave: v })}
           />
         </SettingRow>
       </div>
@@ -137,12 +148,7 @@ function GeneralSection() {
 
 function EditorSection() {
   const { settings, updateSettings } = useSettings();
-
-  const stepperBtnClass =
-    'flex h-7 w-7 items-center justify-center rounded-md border border-neutral-300 text-sm transition-colors hover:bg-neutral-100 dark:border-neutral-600 dark:hover:bg-neutral-800';
-
-  const selectClass =
-    'rounded-md border border-neutral-300 bg-transparent px-2 py-1 text-sm dark:border-neutral-600';
+  const fontOptions = useMonospaceFonts();
 
   return (
     <div className="space-y-6">
@@ -150,43 +156,35 @@ function EditorSection() {
       <div>
         <SubsectionHeader title="Font" />
         <SettingRow label="Font">
-          <select
-            value={settings.editorFontFamily}
-            onChange={(e) => updateSettings({ editorFontFamily: e.target.value })}
-            className={selectClass}
+          <Select
+            value={settings.editorFontFamily || FONT_DEFAULT}
+            onValueChange={(v) => updateSettings({ editorFontFamily: v === FONT_DEFAULT ? '' : v })}
           >
-            {FONT_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {fontOptions.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </SettingRow>
         <SettingRow label="Size">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() =>
-                updateSettings({
-                  editorFontSize: Math.max(FONT_SIZE_MIN, settings.editorFontSize - 1),
-                })
-              }
-              className={stepperBtnClass}
-            >
-              −
-            </button>
-            <span className="w-8 text-center text-sm tabular-nums">{settings.editorFontSize}</span>
-            <button
-              type="button"
-              onClick={() =>
-                updateSettings({
-                  editorFontSize: Math.min(FONT_SIZE_MAX, settings.editorFontSize + 1),
-                })
-              }
-              className={stepperBtnClass}
-            >
-              +
-            </button>
+          <div className="flex items-center gap-3">
+            <Slider
+              min={FONT_SIZE_MIN}
+              max={FONT_SIZE_MAX}
+              step={1}
+              value={[settings.editorFontSize]}
+              onValueChange={([v]) => updateSettings({ editorFontSize: v })}
+              className="w-28"
+            />
+            <span className="w-8 text-right text-xs tabular-nums text-muted-foreground">
+              {settings.editorFontSize}px
+            </span>
           </div>
         </SettingRow>
       </div>
@@ -195,27 +193,27 @@ function EditorSection() {
       <div>
         <SubsectionHeader title="Display" />
         <SettingRow label="Syntax Highlighting">
-          <ToggleSwitch
+          <Switch
             checked={settings.syntaxHighlighting}
-            onChange={(v) => updateSettings({ syntaxHighlighting: v })}
+            onCheckedChange={(v) => updateSettings({ syntaxHighlighting: v })}
           />
         </SettingRow>
         <SettingRow label="Word Wrap">
-          <ToggleSwitch
+          <Switch
             checked={settings.wordWrap}
-            onChange={(v) => updateSettings({ wordWrap: v })}
+            onCheckedChange={(v) => updateSettings({ wordWrap: v })}
           />
         </SettingRow>
         <SettingRow label="Show Invisibles">
-          <ToggleSwitch
+          <Switch
             checked={settings.showInvisibles}
-            onChange={(v) => updateSettings({ showInvisibles: v })}
+            onCheckedChange={(v) => updateSettings({ showInvisibles: v })}
           />
         </SettingRow>
         <SettingRow label="Disable Ligatures">
-          <ToggleSwitch
+          <Switch
             checked={settings.disableLigatures}
-            onChange={(v) => updateSettings({ disableLigatures: v })}
+            onCheckedChange={(v) => updateSettings({ disableLigatures: v })}
           />
         </SettingRow>
       </div>
@@ -224,30 +222,18 @@ function EditorSection() {
       <div>
         <SubsectionHeader title="Formatting" />
         <SettingRow label="Indent Type">
-          <select
+          <SegmentedControl<'space' | 'tab'>
+            options={INDENT_TYPE_OPTIONS}
             value={settings.indentType}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === 'space' || value === 'tab') {
-                updateSettings({ indentType: value });
-              }
-            }}
-            className={selectClass}
-          >
-            <option value="space">Space</option>
-            <option value="tab">Tab</option>
-          </select>
+            onChange={(v) => updateSettings({ indentType: v })}
+          />
         </SettingRow>
         <SettingRow label="Indent Size">
-          <select
-            value={settings.indentSize}
-            onChange={(e) => updateSettings({ indentSize: Number(e.target.value) })}
-            className={selectClass}
-          >
-            <option value={2}>2</option>
-            <option value={4}>4</option>
-            <option value={8}>8</option>
-          </select>
+          <SegmentedControl
+            options={INDENT_SIZE_OPTIONS}
+            value={String(settings.indentSize)}
+            onChange={(v) => updateSettings({ indentSize: Number(v) })}
+          />
         </SettingRow>
       </div>
     </div>
@@ -314,7 +300,7 @@ export default function SettingsDialog({
           onPointerDownOutside={(e) => e.preventDefault()}
         >
         <DialogTitle className="sr-only">Settings</DialogTitle>
-        <div className="flex h-[520px]">
+        <div className="flex h-[600px]">
           {/* Sidebar */}
           <aside className="flex w-44 flex-col border-r border-neutral-200 dark:border-neutral-700">
             <nav className="flex-1 space-y-1 p-2">

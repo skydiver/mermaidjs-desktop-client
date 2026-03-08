@@ -10,7 +10,6 @@ import {
   createSettingsExtensions,
   reconfigureSettings,
 } from '../lib/editor/settings-compartments';
-import { createEditorZoomExtension } from '../lib/editor/zoom';
 
 // ── Public handle for parent access ─────────────────────
 
@@ -57,8 +56,6 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
       const container = containerRef.current;
       if (!container) return;
 
-      const { extension: zoomExt } = createEditorZoomExtension(settings.editorFontSize);
-
       const extensions: Extension[] = [
         lineNumbers(),
         history(),
@@ -66,7 +63,6 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
         indentOnInput(),
         createMermaidLanguage(),
         ...createSettingsExtensions(compartmentsRef.current, settings),
-        zoomExt,
         keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
