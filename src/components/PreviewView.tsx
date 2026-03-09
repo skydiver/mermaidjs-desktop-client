@@ -68,13 +68,12 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
     return () => el.removeEventListener('wheel', handler, true);
   }, []);
 
-  // Apply zoom transform to rendered SVG
+  // Apply zoom transform to rendered diagram (SVG or HTML)
   useEffect(() => {
-    const svg = containerRef.current?.querySelector('svg');
-    if (svg instanceof SVGSVGElement) {
-      svg.style.transform = `scale(${zoom})`;
-      svg.style.transformOrigin = 'center center';
-    }
+    const el = containerRef.current?.firstElementChild as HTMLElement | SVGSVGElement | null;
+    if (!el) return;
+    el.style.transform = `scale(${zoom})`;
+    el.style.transformOrigin = 'center center';
   }, [zoom, status]);
 
   const showEmpty = !source.trim().length;

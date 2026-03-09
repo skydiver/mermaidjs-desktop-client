@@ -47,12 +47,14 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
         return;
       }
 
-      // Sandbox for mermaid rendering — removed after render completes
+      // Sandbox for mermaid rendering — removed after render completes.
+      // Must have real dimensions because some renderers (Gantt, ZenUML) use
+      // the container's width to calculate the output size.
       const sandbox = document.createElement('div');
       sandbox.setAttribute('aria-hidden', 'true');
       sandbox.style.position = 'absolute';
-      sandbox.style.width = '0';
-      sandbox.style.height = '0';
+      sandbox.style.width = `${container.clientWidth}px`;
+      sandbox.style.height = `${container.clientHeight}px`;
       sandbox.style.overflow = 'hidden';
       sandbox.style.pointerEvents = 'none';
       container.append(sandbox);
