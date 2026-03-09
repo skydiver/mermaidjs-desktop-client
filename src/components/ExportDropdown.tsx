@@ -1,6 +1,11 @@
 import { Download, FileImage, FileType } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import type { ExportFormat } from '../lib/export/export-diagram';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 // ── Props ───────────────────────────────────────────────
 
@@ -12,97 +17,36 @@ interface ExportDropdownProps {
 // ── Component ───────────────────────────────────────────
 
 export default function ExportDropdown({ disabled, onExport }: ExportDropdownProps) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Close on click outside
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('pointerdown', handler);
-    return () => document.removeEventListener('pointerdown', handler);
-  }, [open]);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open]);
-
-  function handleSelect(format: ExportFormat) {
-    setOpen(false);
-    onExport(format);
-  }
-
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        title="Export Diagram"
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        className={`flex h-7 items-center justify-center gap-1 rounded px-1.5 text-xs font-medium transition-colors ${
-          disabled
-            ? 'cursor-default text-neutral-300 dark:text-slate-600'
-            : open
-              ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400'
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild disabled={disabled}>
+        <button
+          type="button"
+          title="Export Diagram"
+          disabled={disabled}
+          className={`flex h-7 items-center justify-center rounded px-1.5 transition-colors ${
+            disabled
+              ? 'cursor-default text-neutral-300 dark:text-slate-600'
               : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
-        }`}
-      >
-        <Download size={14} />
-        <span>Export</span>
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 w-40 rounded-md border border-neutral-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-          <DropdownItem
-            icon={<FileType size={14} />}
-            label="Export as SVG"
-            onClick={() => handleSelect('svg')}
-          />
-          <DropdownItem
-            icon={<FileImage size={14} />}
-            label="Export as PNG"
-            onClick={() => handleSelect('png')}
-          />
-          <DropdownItem
-            icon={<FileImage size={14} />}
-            label="Export as PNG @2x"
-            onClick={() => handleSelect('pngx2')}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Dropdown item ───────────────────────────────────────
-
-function DropdownItem({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-slate-300 dark:hover:bg-slate-700"
-    >
-      {icon}
-      <span>{label}</span>
-    </button>
+          }`}
+        >
+          <Download size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={() => onExport('svg')}>
+          <FileType size={14} />
+          Export as SVG
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onExport('png')}>
+          <FileImage size={14} />
+          Export as PNG
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onExport('pngx2')}>
+          <FileImage size={14} />
+          Export as PNG @2x
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

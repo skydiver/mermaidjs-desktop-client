@@ -1,5 +1,10 @@
 import { BookOpen } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 
 // ── Load examples at module level ───────────────────────
 
@@ -55,66 +60,26 @@ interface ExamplesDropdownProps {
 // ── Component ───────────────────────────────────────────
 
 export default function ExamplesDropdown({ onSelect }: ExamplesDropdownProps) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Close on click outside
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('pointerdown', handler);
-    return () => document.removeEventListener('pointerdown', handler);
-  }, [open]);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open]);
-
   if (EXAMPLES.length === 0) return null;
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        title="Examples"
-        onClick={() => setOpen((v) => !v)}
-        className={`flex h-7 items-center justify-center gap-1 rounded px-1.5 text-xs font-medium transition-colors ${
-          open
-            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400'
-            : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
-        }`}
-      >
-        <BookOpen size={14} />
-        <span>Examples</span>
-      </button>
-
-      {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 w-48 rounded-md border border-neutral-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-          {EXAMPLES.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                onSelect(item.content);
-              }}
-              className="flex w-full items-center px-3 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-slate-300 dark:hover:bg-slate-700"
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          title="Examples"
+          className="flex h-7 items-center justify-center rounded px-1.5 transition-colors text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+        >
+          <BookOpen size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {EXAMPLES.map((item) => (
+          <DropdownMenuItem key={item.label} onSelect={() => onSelect(item.content)}>
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

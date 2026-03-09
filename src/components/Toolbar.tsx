@@ -87,11 +87,6 @@ export default function Toolbar({
             <Save size={16} />
           </ToolbarButton>
 
-          <Separator />
-
-          {/* Examples & Export dropdowns */}
-          <ExamplesDropdown onSelect={onSelectExample} />
-          <ExportDropdown disabled={!hasContent} onExport={onExport} />
         </>
       )}
 
@@ -99,6 +94,12 @@ export default function Toolbar({
 
       {!disabled && (
         <>
+          {/* Examples & Export dropdowns */}
+          <ExamplesDropdown onSelect={onSelectExample} />
+          <ExportDropdown disabled={!hasContent} onExport={onExport} />
+
+          <Separator />
+
           {/* Help & Settings */}
           <ToolbarButton title="Help" onClick={onOpenHelp}>
             <HelpCircle size={16} />
