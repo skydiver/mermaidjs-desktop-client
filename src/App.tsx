@@ -9,17 +9,9 @@ import { useFileWatch } from './hooks/useFileWatch';
 import type { MermaidStatus } from './hooks/useMermaid';
 import { useSettings } from './hooks/useSettings';
 
-const DEFAULT_SNIPPET = `flowchart TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Result 1]
-    B -->|No| D[Result 2]
-    C --> E[End]
-    D --> E
-`;
-
 export default function App() {
   const editorRef = useRef<EditorViewHandle>(null);
-  const [editorText, setEditorText] = useState(DEFAULT_SNIPPET);
+  const [editorText, setEditorText] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SectionId>('general');
   const [showHelp, setShowHelp] = useState(false);
@@ -27,10 +19,7 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState('Ready');
   const [statusLevel, setStatusLevel] = useState<StatusLevel>('idle');
 
-  const fileHandling = useFileHandling({
-    editorRef,
-    defaultSnippet: DEFAULT_SNIPPET,
-  });
+  const fileHandling = useFileHandling({ editorRef, onContentReplace: setEditorText });
 
   const fileWatch = useFileWatch(
     fileHandling.filePath,
@@ -172,6 +161,7 @@ export default function App() {
         statusMessage={statusMessage}
         statusLevel={statusLevel}
         hasContent={editorText.trim().length > 0}
+        hasDocument={fileHandling.hasDocument}
         previewSource={editorText}
         onPreviewStatusChange={handlePreviewStatusChange}
         onNewFile={fileHandling.newFile}

@@ -3,6 +3,7 @@ import type { MermaidStatus } from '../hooks/useMermaid';
 import type { ExportFormat } from '../lib/export/export-diagram';
 import type { EditorViewHandle } from './EditorView';
 import EditorView from './EditorView';
+import EmptyState from './EmptyState';
 import PreviewView from './PreviewView';
 import type { StatusLevel } from './StatusBar';
 import StatusBar from './StatusBar';
@@ -26,6 +27,7 @@ interface ContentViewProps {
   statusMessage: string;
   statusLevel: StatusLevel;
   hasContent: boolean;
+  hasDocument: boolean;
   previewSource: string;
   onPreviewStatusChange: (status: MermaidStatus) => void;
   onNewFile: () => void;
@@ -54,6 +56,7 @@ export default function ContentView({
   statusMessage,
   statusLevel,
   hasContent,
+  hasDocument,
   previewSource,
   onPreviewStatusChange,
   onNewFile,
@@ -137,44 +140,48 @@ export default function ContentView({
         </div>
       )}
 
-      {/* Workspace: Editor + Divider + Preview */}
-      <div ref={containerRef} className="relative flex min-h-0 flex-1">
-        {/* Editor panel */}
-        <div
-          className="flex flex-col border-r border-neutral-200 dark:border-slate-700"
-          style={{ flex: `${editorRatio} 1 0` }}
-        >
-          <EditorView ref={editorRef} initialText={editorText} onChange={onEditorChange} />
-        </div>
-
-        {/* Resize divider */}
-        <div
-          className="group flex w-1 shrink-0 cursor-col-resize items-center justify-center hover:bg-blue-500/20 active:bg-blue-500/30"
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onDoubleClick={handleDoubleClick}
-        >
-          <div className="h-8 w-0.5 rounded-full bg-neutral-300 transition-colors group-hover:bg-blue-500 group-active:bg-blue-600 dark:bg-slate-600 dark:group-hover:bg-blue-400" />
-        </div>
-
-        {/* Preview panel */}
-        <div className="flex flex-col" style={{ flex: `${1 - editorRatio} 1 0` }}>
-          <PreviewView source={previewSource} onStatusChange={onPreviewStatusChange} />
-        </div>
-
-        {/* Drop overlay */}
-        {isDragOver && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-blue-100/90 dark:bg-blue-950/80">
-            <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-blue-400 px-10 py-8 dark:border-blue-500">
-              <span className="text-3xl">📄</span>
-              <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                Drop Mermaid file to open
-              </p>
-            </div>
+      {hasDocument ? (
+        /* Workspace: Editor + Divider + Preview */
+        <div ref={containerRef} className="relative flex min-h-0 flex-1">
+          {/* Editor panel */}
+          <div
+            className="flex flex-col border-r border-neutral-200 dark:border-slate-700"
+            style={{ flex: `${editorRatio} 1 0` }}
+          >
+            <EditorView ref={editorRef} initialText={editorText} onChange={onEditorChange} />
           </div>
-        )}
-      </div>
+
+          {/* Resize divider */}
+          <div
+            className="group flex w-1 shrink-0 cursor-col-resize items-center justify-center hover:bg-blue-500/20 active:bg-blue-500/30"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onDoubleClick={handleDoubleClick}
+          >
+            <div className="h-8 w-0.5 rounded-full bg-neutral-300 transition-colors group-hover:bg-blue-500 group-active:bg-blue-600 dark:bg-slate-600 dark:group-hover:bg-blue-400" />
+          </div>
+
+          {/* Preview panel */}
+          <div className="flex flex-col" style={{ flex: `${1 - editorRatio} 1 0` }}>
+            <PreviewView source={previewSource} onStatusChange={onPreviewStatusChange} />
+          </div>
+
+          {/* Drop overlay */}
+          {isDragOver && (
+            <div className="absolute inset-0 z-30 flex items-center justify-center bg-blue-100/90 dark:bg-blue-950/80">
+              <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-blue-400 px-10 py-8 dark:border-blue-500">
+                <span className="text-3xl">📄</span>
+                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                  Drop Mermaid file to open
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <EmptyState isDragOver={isDragOver} />
+      )}
 
       <StatusBar
         fileName={fileName}

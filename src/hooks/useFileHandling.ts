@@ -8,13 +8,14 @@ import { type ExportFormat, exportDiagram, inferBaseName } from '../lib/export/e
 
 interface UseFileHandlingOptions {
   editorRef: RefObject<EditorViewHandle | null>;
-  defaultSnippet: string;
+  onContentReplace: (content: string) => void;
 }
 
 export interface UseFileHandlingReturn {
   filePath: string | null;
   fileName: string | null;
   isDirty: boolean;
+  hasDocument: boolean;
   lastSavedAt: Date | null;
   markDirty: () => void;
   newFile: () => Promise<void>;
@@ -36,13 +37,11 @@ const DIALOG_FILTERS = [
 
 // ── Hook ────────────────────────────────────────────────
 
-export function useFileHandling({
-  editorRef,
-  defaultSnippet,
-}: UseFileHandlingOptions): UseFileHandlingReturn {
+export function useFileHandling({ editorRef, onContentReplace }: UseFileHandlingOptions): UseFileHandlingReturn {
   const [filePath, setFilePath] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [hasDocument, setHasDocument] = useState(false);
 
   // Refs for reading current state in stable callbacks
   const isDirtyRef = useRef(false);
@@ -67,28 +66,31 @@ export function useFileHandling({
   const replaceContent = useCallback(
     (content: string) => {
       suppressDirtyRef.current = true;
+      onContentReplace(content);
       editorRef.current?.replaceContent(content);
       isDirtyRef.current = false;
       setIsDirty(false);
     },
-    [editorRef]
+    [editorRef, onContentReplace]
   );
 
   const newFile = useCallback(async () => {
     if (isDirtyRef.current) {
-      const proceed = await confirmDiscard('Overwrite the current diagram with a blank template?');
+      const proceed = await confirmDiscard('Discard the current diagram and start fresh?');
       if (!proceed) return;
     }
-    replaceContent(defaultSnippet);
+    setHasDocument(true);
+    replaceContent('');
     setFilePath(null);
     setLastSavedAt(null);
-  }, [replaceContent, defaultSnippet]);
+  }, [replaceContent]);
 
   const openFilePath = useCallback(
     async (path: string) => {
       try {
         const content = await readTextFile(path);
         replaceContent(content);
+        setHasDocument(true);
         setFilePath(path);
         setLastSavedAt(null);
       } catch (error) {
@@ -164,6 +166,7 @@ export function useFileHandling({
         const proceed = await confirmDiscard('Replace the current diagram with this example?');
         if (!proceed) return;
       }
+      setHasDocument(true);
       replaceContent(content);
       setFilePath(null);
       setLastSavedAt(null);
@@ -175,6 +178,7 @@ export function useFileHandling({
     filePath,
     fileName,
     isDirty,
+    hasDocument,
     lastSavedAt,
     markDirty,
     newFile,
