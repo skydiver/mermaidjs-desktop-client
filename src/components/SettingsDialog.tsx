@@ -354,7 +354,7 @@ export default function SettingsDialog({
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-hidden"
+                  className="rounded-md p-1 opacity-70 transition-all hover:bg-neutral-200 hover:opacity-100 focus:ring-2 focus:ring-ring focus:outline-hidden dark:hover:bg-slate-700"
                 >
                   <X size={16} />
                   <span className="sr-only">Close</span>

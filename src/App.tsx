@@ -72,7 +72,7 @@ export default function App() {
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'F1') {
+      if (e.key === 'F1' && !showSettings) {
         e.preventDefault();
         setShowHelp(true);
         return;
@@ -94,26 +94,30 @@ export default function App() {
           break;
         case ',':
           e.preventDefault();
+          setShowHelp(false);
           setSettingsSection('general');
           setShowSettings(true);
           break;
         case '?':
           e.preventDefault();
+          setShowSettings(false);
           setShowHelp(true);
           break;
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [fileHandling]);
+  }, [fileHandling, showSettings]);
 
   // Menu events from native menu (Rust → JS)
   useEffect(() => {
     const onMenuSettings = () => {
+      setShowHelp(false);
       setSettingsSection('general');
       setShowSettings(true);
     };
     const onMenuAbout = () => {
+      setShowHelp(false);
       setSettingsSection('about');
       setShowSettings(true);
     };
@@ -175,8 +179,12 @@ export default function App() {
         onSaveFile={fileHandling.saveFile}
         onSelectExample={fileHandling.loadExample}
         onExport={fileHandling.exportFile}
-        onOpenHelp={() => setShowHelp(true)}
+        onOpenHelp={() => {
+          setShowSettings(false);
+          setShowHelp(true);
+        }}
         onOpenSettings={() => {
+          setShowHelp(false);
           setSettingsSection('general');
           setShowSettings(true);
         }}

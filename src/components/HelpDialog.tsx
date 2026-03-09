@@ -45,17 +45,17 @@ export default function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
 
         <div className="space-y-4 pt-2">
           {SHORTCUT_GROUPS.map((group) => (
-            <div key={group.title} className="space-y-1.5">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-slate-500">
+            <div key={group.title}>
+              <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-slate-500">
                 {group.title}
               </h4>
-              <div className="space-y-1">
+              <div className="divide-y divide-neutral-200 rounded-lg bg-neutral-50 px-3 dark:divide-slate-700/50 dark:bg-slate-700/30">
                 {group.shortcuts.map((shortcut) => (
-                  <div key={shortcut.keys} className="flex items-center justify-between text-sm">
+                  <div key={shortcut.keys} className="flex items-center justify-between py-2 text-sm">
                     <span className="text-neutral-600 dark:text-slate-300">
                       {shortcut.description}
                     </span>
-                    <kbd className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-500 dark:bg-slate-800 dark:text-slate-400">
+                    <kbd className="rounded bg-white px-1.5 py-0.5 font-mono text-xs text-neutral-500 dark:bg-slate-800 dark:text-slate-400">
                       {shortcut.keys}
                     </kbd>
                   </div>
