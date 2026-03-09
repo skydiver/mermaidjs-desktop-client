@@ -25,6 +25,7 @@ export interface AppSettings {
   disableLigatures: boolean;
   indentType: 'space' | 'tab';
   indentSize: number;
+  showDotGrid: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -39,6 +40,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   disableLigatures: false,
   indentType: 'space',
   indentSize: 2,
+  showDotGrid: true,
 };
 
 export interface SettingsContextValue {

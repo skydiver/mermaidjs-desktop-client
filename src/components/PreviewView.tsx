@@ -21,7 +21,7 @@ interface PreviewViewProps {
 export default function PreviewView({ source = '', onStatusChange }: PreviewViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { schedule, status } = useMermaid(containerRef);
-  const { isDiagramDark } = useSettings();
+  const { isDiagramDark, settings } = useSettings();
   const [zoom, setZoom] = useState(1);
 
   // Schedule render when source changes
@@ -81,7 +81,13 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
   const showError = status.level === 'error';
 
   return (
-    <div className={`relative flex flex-1 flex-col overflow-hidden ${isDiagramDark ? 'bg-neutral-900' : 'bg-white'}`}>
+    <div
+      className={`relative flex flex-1 flex-col overflow-hidden ${isDiagramDark ? 'bg-gray-900' : 'bg-white'}`}
+      style={settings.showDotGrid ? {
+        backgroundImage: `radial-gradient(circle, ${isDiagramDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'} 1px, transparent 1px)`,
+        backgroundSize: '24px 24px',
+      } : undefined}
+    >
       {/* Render target — useMermaid sets innerHTML here */}
       <div
         ref={containerRef}

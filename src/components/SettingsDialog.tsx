@@ -131,6 +131,12 @@ function GeneralSection() {
             onChange={(v) => updateSettings({ diagramTheme: v })}
           />
         </SettingRow>
+        <SettingRow label="Dot Grid Background">
+          <Switch
+            checked={settings.showDotGrid}
+            onCheckedChange={(v) => updateSettings({ showDotGrid: v })}
+          />
+        </SettingRow>
       </div>
 
       <div>

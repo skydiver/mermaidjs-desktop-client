@@ -64,7 +64,7 @@ body {
 }
 
 .dark {
-  --editor-bg: rgba(17, 24, 39, 0.75);
+  --editor-bg: rgba(23, 23, 23, 0.75);
   --editor-border: rgba(148, 163, 184, 0.25);
   --editor-gutter: rgba(148, 163, 184, 0.85);
   --editor-caret: #f8fafc;
