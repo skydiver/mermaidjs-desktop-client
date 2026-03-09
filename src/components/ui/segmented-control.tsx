@@ -24,7 +24,7 @@ export function SegmentedControl<T extends string>({
     <div
       data-slot="segmented-control"
       className={cn(
-        'relative grid rounded-lg bg-muted p-1 shadow-xs',
+        'relative grid rounded-lg bg-muted dark:bg-slate-700/50 p-1 shadow-xs',
         className,
       )}
       style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}
@@ -48,7 +48,7 @@ export function SegmentedControl<T extends string>({
       ))}
       <div
         data-slot="segmented-control-indicator"
-        className="absolute inset-y-1 rounded-md bg-background shadow-xs transition-transform duration-200 ease-out"
+        className="absolute inset-y-1 rounded-md bg-background dark:bg-slate-900 shadow-xs transition-transform duration-200 ease-out"
         style={{
           width: `calc((100% - 8px) / ${options.length})`,
           left: 4,

@@ -80,7 +80,7 @@ interface SettingsDialogProps {
 
 function SubsectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-slate-400">
       {title}
     </h3>
   );
@@ -98,9 +98,9 @@ function SettingRow({
   return (
     <div className="flex items-center justify-between py-2">
       <div>
-        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">{label}</span>
+        <span className="text-sm font-medium text-neutral-700 dark:text-slate-200">{label}</span>
         {description && (
-          <p className="text-xs text-neutral-400 dark:text-neutral-500">{description}</p>
+          <p className="text-xs text-neutral-400 dark:text-slate-400">{description}</p>
         )}
       </div>
       {children}
@@ -117,36 +117,40 @@ function GeneralSection() {
     <div className="space-y-6">
       <div>
         <SubsectionHeader title="Appearance" />
-        <SettingRow label="App Theme">
-          <SegmentedControl
-            options={THEME_OPTIONS}
-            value={settings.theme}
-            onChange={(v) => updateSettings({ theme: v })}
-          />
-        </SettingRow>
-        <SettingRow label="Diagram Theme">
-          <SegmentedControl
-            options={THEME_OPTIONS}
-            value={settings.diagramTheme}
-            onChange={(v) => updateSettings({ diagramTheme: v })}
-          />
-        </SettingRow>
-        <SettingRow label="Dot Grid Background">
-          <Switch
-            checked={settings.showDotGrid}
-            onCheckedChange={(v) => updateSettings({ showDotGrid: v })}
-          />
-        </SettingRow>
+        <div className="divide-y divide-neutral-200 rounded-lg bg-white px-4 dark:divide-slate-700/50 dark:bg-slate-800/50">
+          <SettingRow label="App Theme">
+            <SegmentedControl
+              options={THEME_OPTIONS}
+              value={settings.theme}
+              onChange={(v) => updateSettings({ theme: v })}
+            />
+          </SettingRow>
+          <SettingRow label="Diagram Theme">
+            <SegmentedControl
+              options={THEME_OPTIONS}
+              value={settings.diagramTheme}
+              onChange={(v) => updateSettings({ diagramTheme: v })}
+            />
+          </SettingRow>
+          <SettingRow label="Dot Grid Background">
+            <Switch
+              checked={settings.showDotGrid}
+              onCheckedChange={(v) => updateSettings({ showDotGrid: v })}
+            />
+          </SettingRow>
+        </div>
       </div>
 
       <div>
         <SubsectionHeader title="Behavior" />
-        <SettingRow label="Auto-save documents">
-          <Switch
-            checked={settings.autoSave}
-            onCheckedChange={(v) => updateSettings({ autoSave: v })}
-          />
-        </SettingRow>
+        <div className="divide-y divide-neutral-200 rounded-lg bg-white px-4 dark:divide-slate-700/50 dark:bg-slate-800/50">
+          <SettingRow label="Auto-save documents">
+            <Switch
+              checked={settings.autoSave}
+              onCheckedChange={(v) => updateSettings({ autoSave: v })}
+            />
+          </SettingRow>
+        </div>
       </div>
     </div>
   );
@@ -161,86 +165,92 @@ function EditorSection() {
       {/* Font */}
       <div>
         <SubsectionHeader title="Font" />
-        <SettingRow label="Font">
-          <Select
-            value={settings.editorFontFamily || FONT_DEFAULT}
-            onValueChange={(v) => updateSettings({ editorFontFamily: v === FONT_DEFAULT ? '' : v })}
-          >
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {fontOptions.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </SettingRow>
-        <SettingRow label="Size">
-          <div className="flex items-center gap-3">
-            <Slider
-              min={FONT_SIZE_MIN}
-              max={FONT_SIZE_MAX}
-              step={1}
-              value={[settings.editorFontSize]}
-              onValueChange={([v]) => updateSettings({ editorFontSize: v })}
-              className="w-28"
-            />
-            <span className="w-8 text-right text-xs tabular-nums text-muted-foreground">
-              {settings.editorFontSize}px
-            </span>
-          </div>
-        </SettingRow>
+        <div className="divide-y divide-neutral-200 rounded-lg bg-white px-4 dark:divide-slate-700/50 dark:bg-slate-800/50">
+          <SettingRow label="Font">
+            <Select
+              value={settings.editorFontFamily || FONT_DEFAULT}
+              onValueChange={(v) => updateSettings({ editorFontFamily: v === FONT_DEFAULT ? '' : v })}
+            >
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {fontOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </SettingRow>
+          <SettingRow label="Size">
+            <div className="flex items-center gap-3">
+              <Slider
+                min={FONT_SIZE_MIN}
+                max={FONT_SIZE_MAX}
+                step={1}
+                value={[settings.editorFontSize]}
+                onValueChange={([v]) => updateSettings({ editorFontSize: v })}
+                className="w-28"
+              />
+              <span className="w-8 text-right text-xs tabular-nums text-muted-foreground">
+                {settings.editorFontSize}px
+              </span>
+            </div>
+          </SettingRow>
+        </div>
       </div>
 
       {/* Display */}
       <div>
         <SubsectionHeader title="Display" />
-        <SettingRow label="Syntax Highlighting">
-          <Switch
-            checked={settings.syntaxHighlighting}
-            onCheckedChange={(v) => updateSettings({ syntaxHighlighting: v })}
-          />
-        </SettingRow>
-        <SettingRow label="Word Wrap">
-          <Switch
-            checked={settings.wordWrap}
-            onCheckedChange={(v) => updateSettings({ wordWrap: v })}
-          />
-        </SettingRow>
-        <SettingRow label="Show Invisibles">
-          <Switch
-            checked={settings.showInvisibles}
-            onCheckedChange={(v) => updateSettings({ showInvisibles: v })}
-          />
-        </SettingRow>
-        <SettingRow label="Disable Ligatures">
-          <Switch
-            checked={settings.disableLigatures}
-            onCheckedChange={(v) => updateSettings({ disableLigatures: v })}
-          />
-        </SettingRow>
+        <div className="divide-y divide-neutral-200 rounded-lg bg-white px-4 dark:divide-slate-700/50 dark:bg-slate-800/50">
+          <SettingRow label="Syntax Highlighting">
+            <Switch
+              checked={settings.syntaxHighlighting}
+              onCheckedChange={(v) => updateSettings({ syntaxHighlighting: v })}
+            />
+          </SettingRow>
+          <SettingRow label="Word Wrap">
+            <Switch
+              checked={settings.wordWrap}
+              onCheckedChange={(v) => updateSettings({ wordWrap: v })}
+            />
+          </SettingRow>
+          <SettingRow label="Show Invisibles">
+            <Switch
+              checked={settings.showInvisibles}
+              onCheckedChange={(v) => updateSettings({ showInvisibles: v })}
+            />
+          </SettingRow>
+          <SettingRow label="Disable Ligatures">
+            <Switch
+              checked={settings.disableLigatures}
+              onCheckedChange={(v) => updateSettings({ disableLigatures: v })}
+            />
+          </SettingRow>
+        </div>
       </div>
 
       {/* Formatting */}
       <div>
         <SubsectionHeader title="Formatting" />
-        <SettingRow label="Indent Type">
-          <SegmentedControl<'space' | 'tab'>
-            options={INDENT_TYPE_OPTIONS}
-            value={settings.indentType}
-            onChange={(v) => updateSettings({ indentType: v })}
-          />
-        </SettingRow>
-        <SettingRow label="Indent Size">
-          <SegmentedControl
-            options={INDENT_SIZE_OPTIONS}
-            value={String(settings.indentSize)}
-            onChange={(v) => updateSettings({ indentSize: Number(v) })}
-          />
-        </SettingRow>
+        <div className="divide-y divide-neutral-200 rounded-lg bg-white px-4 dark:divide-slate-700/50 dark:bg-slate-800/50">
+          <SettingRow label="Indent Type">
+            <SegmentedControl<'space' | 'tab'>
+              options={INDENT_TYPE_OPTIONS}
+              value={settings.indentType}
+              onChange={(v) => updateSettings({ indentType: v })}
+            />
+          </SettingRow>
+          <SettingRow label="Indent Size">
+            <SegmentedControl
+              options={INDENT_SIZE_OPTIONS}
+              value={String(settings.indentSize)}
+              onChange={(v) => updateSettings({ indentSize: Number(v) })}
+            />
+          </SettingRow>
+        </div>
       </div>
     </div>
   );
@@ -259,11 +269,11 @@ function AboutSection() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
       <h3 className="text-lg font-semibold">Mermaid Desktop</h3>
-      <p className="text-sm text-neutral-500 dark:text-neutral-400">Version {__APP_VERSION__}</p>
-      <p className="text-sm text-neutral-600 dark:text-neutral-300">
+      <p className="text-sm text-neutral-500 dark:text-slate-400">Version {__APP_VERSION__}</p>
+      <p className="text-sm text-neutral-600 dark:text-slate-300">
         A desktop app for Mermaid diagrams
       </p>
-      <p className="text-xs text-neutral-400 dark:text-neutral-500">
+      <p className="text-xs text-neutral-400 dark:text-slate-500">
         &copy; {new Date().getFullYear()}
       </p>
       <button
@@ -308,7 +318,7 @@ export default function SettingsDialog({
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <div className="flex h-[600px]">
           {/* Sidebar */}
-          <aside className="flex w-44 flex-col border-r border-neutral-200 dark:border-neutral-700">
+          <aside className="flex w-44 flex-col border-r border-neutral-200 dark:border-slate-700 dark:bg-slate-900">
             <nav className="flex-1 space-y-1 p-2">
               {SECTIONS.map(({ id, label, icon: Icon }) => (
                 <button
@@ -317,8 +327,8 @@ export default function SettingsDialog({
                   onClick={() => setSection(id)}
                   className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
                     section === id
-                      ? 'bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100'
+                      ? 'bg-neutral-200 text-neutral-900 dark:bg-slate-700 dark:text-slate-100'
+                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-100'
                   }`}
                 >
                   <Icon size={16} />
@@ -326,11 +336,11 @@ export default function SettingsDialog({
                 </button>
               ))}
             </nav>
-            <div className="border-t border-neutral-200 p-2 dark:border-neutral-700">
+            <div className="border-t border-neutral-200 p-2 dark:border-slate-700">
               <button
                 type="button"
                 onClick={resetSettings}
-                className="w-full rounded-md px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                className="w-full rounded-md px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
               >
                 Reset to defaults
               </button>
@@ -338,8 +348,8 @@ export default function SettingsDialog({
           </aside>
 
           {/* Main content */}
-          <main className="flex flex-1 flex-col">
-            <header className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-neutral-700">
+          <main className="flex flex-1 flex-col bg-neutral-100 dark:bg-slate-900/50">
+            <header className="flex items-center justify-between border-b border-neutral-200 p-4 dark:border-slate-700">
               <h2 className="font-semibold">{SECTIONS.find((s) => s.id === section)?.label}</h2>
               <DialogClose asChild>
                 <button
