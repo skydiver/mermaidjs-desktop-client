@@ -241,6 +241,7 @@ function EditorSection() {
               options={INDENT_TYPE_OPTIONS}
               value={settings.indentType}
               onChange={(v) => updateSettings({ indentType: v })}
+              className="w-36"
             />
           </SettingRow>
           <SettingRow label="Indent Size">
@@ -248,6 +249,7 @@ function EditorSection() {
               options={INDENT_SIZE_OPTIONS}
               value={String(settings.indentSize)}
               onChange={(v) => updateSettings({ indentSize: Number(v) })}
+              className="w-36"
             />
           </SettingRow>
         </div>
@@ -268,6 +270,7 @@ function AboutSection() {
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+      <img src="/app-icon.png" alt="Mermaid Desktop" className="size-16" />
       <h3 className="text-lg font-semibold">Mermaid Desktop</h3>
       <p className="text-sm text-neutral-500 dark:text-slate-400">Version {__APP_VERSION__}</p>
       <p className="text-sm text-neutral-600 dark:text-slate-300">
@@ -316,7 +319,7 @@ export default function SettingsDialog({
           onPointerDownOutside={(e) => e.preventDefault()}
         >
         <DialogTitle className="sr-only">Settings</DialogTitle>
-        <div className="flex h-[600px]">
+        <div className="flex h-[600px] overflow-hidden rounded-lg">
           {/* Sidebar */}
           <aside className="flex w-44 flex-col border-r border-neutral-200 dark:border-slate-700 dark:bg-slate-900">
             <nav className="flex-1 space-y-1 p-2">
@@ -361,7 +364,7 @@ export default function SettingsDialog({
                 </button>
               </DialogClose>
             </header>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex flex-1 flex-col overflow-y-auto p-4">
               {section === 'general' && <GeneralSection />}
               {section === 'editor' && <EditorSection />}
               {section === 'about' && <AboutSection />}
