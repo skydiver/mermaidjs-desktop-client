@@ -102,7 +102,7 @@ export default function ContentView({
   }, []);
 
   return (
-    <div className="flex h-screen w-full flex-col bg-white dark:bg-neutral-900">
+    <div className="flex h-screen w-full flex-col bg-white dark:bg-slate-900">
       <Toolbar
         onNewFile={onNewFile}
         onOpenFile={onOpenFile}
@@ -141,7 +141,7 @@ export default function ContentView({
       <div ref={containerRef} className="relative flex min-h-0 flex-1">
         {/* Editor panel */}
         <div
-          className="flex flex-col border-r border-neutral-200 dark:border-neutral-700"
+          className="flex flex-col border-r border-neutral-200 dark:border-slate-700"
           style={{ flex: `${editorRatio} 1 0` }}
         >
           <EditorView ref={editorRef} initialText={editorText} onChange={onEditorChange} />
@@ -155,7 +155,7 @@ export default function ContentView({
           onPointerUp={handlePointerUp}
           onDoubleClick={handleDoubleClick}
         >
-          <div className="h-8 w-0.5 rounded-full bg-neutral-300 transition-colors group-hover:bg-blue-500 group-active:bg-blue-600 dark:bg-neutral-600 dark:group-hover:bg-blue-400" />
+          <div className="h-8 w-0.5 rounded-full bg-neutral-300 transition-colors group-hover:bg-blue-500 group-active:bg-blue-600 dark:bg-slate-600 dark:group-hover:bg-blue-400" />
         </div>
 
         {/* Preview panel */}

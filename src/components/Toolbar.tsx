@@ -68,9 +68,9 @@ export default function Toolbar({
     <div
       ref={toolbarRef}
       data-tauri-drag-region
-      className="flex h-10 shrink-0 items-center gap-1 border-b border-neutral-200 bg-neutral-50 pr-2 pl-[90px] dark:border-neutral-700 dark:bg-neutral-800"
+      className="flex h-10 shrink-0 items-center gap-1 border-b border-neutral-200 bg-neutral-50 pr-2 pl-[90px] dark:border-slate-700 dark:bg-slate-800"
     >
-      <span className="mr-1 text-xs font-bold text-neutral-600 dark:text-neutral-300" data-tauri-drag-region>
+      <span className="mr-1 text-xs font-bold text-neutral-600 dark:text-slate-300" data-tauri-drag-region>
         Mermaid Desktop
       </span>
 
@@ -131,8 +131,8 @@ function ToolbarButton({
       onClick={onClick}
       className={`flex h-7 items-center justify-center rounded px-1.5 transition-colors ${
         disabled
-          ? 'cursor-default text-neutral-300 dark:text-neutral-600'
-          : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
+          ? 'cursor-default text-neutral-300 dark:text-slate-600'
+          : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
       }`}
     >
       {children}
@@ -141,5 +141,5 @@ function ToolbarButton({
 }
 
 function Separator() {
-  return <div className="mx-1 h-5 w-px bg-neutral-200 dark:bg-neutral-700" />;
+  return <div className="mx-1 h-5 w-px bg-neutral-200 dark:bg-slate-700" />;
 }

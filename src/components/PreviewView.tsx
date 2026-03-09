@@ -82,7 +82,7 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
 
   return (
     <div
-      className={`relative flex flex-1 flex-col overflow-hidden ${isDiagramDark ? 'bg-gray-900' : 'bg-white'}`}
+      className={`relative flex flex-1 flex-col overflow-hidden ${isDiagramDark ? 'bg-slate-900' : 'bg-white'}`}
       style={settings.showDotGrid ? {
         backgroundImage: `radial-gradient(circle, ${isDiagramDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'} 1px, transparent 1px)`,
         backgroundSize: '24px 24px',

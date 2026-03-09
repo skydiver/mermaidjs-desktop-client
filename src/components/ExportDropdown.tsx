@@ -51,10 +51,10 @@ export default function ExportDropdown({ disabled, onExport }: ExportDropdownPro
         onClick={() => setOpen((v) => !v)}
         className={`flex h-7 items-center justify-center gap-1 rounded px-1.5 text-xs font-medium transition-colors ${
           disabled
-            ? 'cursor-default text-neutral-300 dark:text-neutral-600'
+            ? 'cursor-default text-neutral-300 dark:text-slate-600'
             : open
               ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400'
-              : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
+              : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
         }`}
       >
         <Download size={14} />
@@ -62,7 +62,7 @@ export default function ExportDropdown({ disabled, onExport }: ExportDropdownPro
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1 w-40 rounded-md border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+        <div className="absolute left-0 top-full z-30 mt-1 w-40 rounded-md border border-neutral-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-800">
           <DropdownItem
             icon={<FileType size={14} />}
             label="Export as SVG"
@@ -99,7 +99,7 @@ function DropdownItem({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-700"
+      className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-slate-300 dark:hover:bg-slate-700"
     >
       {icon}
       <span>{label}</span>
