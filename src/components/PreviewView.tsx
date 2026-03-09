@@ -1,4 +1,4 @@
-import { RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type MermaidStatus, useMermaid } from '../hooks/useMermaid';
 import { useSettings } from '../hooks/useSettings';
@@ -106,13 +106,14 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
       {/* Error state */}
       {showError && status.errorDetails && (
         <div className="absolute inset-0 flex items-center justify-center p-8">
-          <div className="max-w-md text-center">
-            <p className="text-sm font-medium text-red-500 dark:text-red-400">
-              Mermaid could not render this diagram.
+          <div className="flex max-w-lg flex-col items-center gap-3 rounded-xl border border-amber-300/50 bg-amber-50/80 p-5 dark:border-amber-900/50 dark:bg-amber-950/20">
+            <AlertTriangle className="h-8 w-8 text-amber-500 dark:text-amber-400" />
+            <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+              Mermaid could not render this diagram
             </p>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-red-400/75 dark:text-red-500/75">
-              {status.errorDetails}
-            </pre>
+            <p className="whitespace-pre-wrap text-center text-xs leading-relaxed text-amber-600/75 dark:text-amber-400/60">
+              {formatMermaidError(status.errorDetails)}
+            </p>
           </div>
         </div>
       )}
@@ -136,6 +137,21 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
       )}
     </div>
   );
+}
+
+function formatMermaidError(message: string): string {
+  // "No diagram type detected matching given configuration for text: <entire source>"
+  // Truncate the embedded source text to keep the error readable
+  const noTypeMatch = message.match(
+    /^No diagram type detected matching given configuration for text:\s*([\s\S]*)/
+  );
+  if (noTypeMatch) {
+    const source = noTypeMatch[1].trim();
+    const truncated = source.length > 80 ? `${source.slice(0, 80)}…` : source;
+    return `No diagram type detected for: ${truncated}`;
+  }
+
+  return message;
 }
 
 function ZoomButton({
