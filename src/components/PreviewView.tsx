@@ -119,7 +119,7 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
       )}
 
       {/* Zoom controls */}
-      {!showEmpty && (
+      {!showEmpty && !showError && (
         <div className={`absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border px-1 py-0.5 shadow-sm backdrop-blur ${isDiagramDark ? 'border-neutral-700 bg-neutral-800/90' : 'border-neutral-200 bg-white/90'}`}>
           <ZoomButton onClick={zoomOut} title="Zoom out" isDark={isDiagramDark}>
             <ZoomOut className="h-3.5 w-3.5" />
