@@ -1,4 +1,5 @@
 import mermaid from 'mermaid';
+import zenuml from '@mermaid-js/mermaid-zenuml';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { debounce } from '../lib/debounce';
 import { useSettings } from './useSettings';
@@ -16,6 +17,9 @@ export interface MermaidStatus {
 // ── Constants ───────────────────────────────────────────
 
 const RENDER_DELAY = 300;
+
+// Register external diagram types once at module level
+await mermaid.registerExternalDiagrams([zenuml]);
 
 // ── Hook ────────────────────────────────────────────────
 
