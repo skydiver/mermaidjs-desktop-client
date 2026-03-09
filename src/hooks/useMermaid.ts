@@ -97,7 +97,7 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
     mermaid.initialize({
       startOnLoad: false,
       theme: isDiagramDark ? 'dark' : 'default',
-      securityLevel: 'loose',
+      securityLevel: 'strict',
     });
 
     // Re-render existing content with new theme

@@ -1,7 +1,7 @@
 import { HighlightStyle } from '@codemirror/language';
 import type { Extension } from '@codemirror/state';
 import { tags } from '@lezer/highlight';
-import { EditorView } from 'codemirror';
+import { EditorView } from '@codemirror/view';
 
 export const editorHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: 'var(--syntax-keyword)' },
