@@ -162,3 +162,10 @@ body {
   }
 }
 
+/* Desktop app — disable all focus rings globally */
+*:focus,
+*:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+

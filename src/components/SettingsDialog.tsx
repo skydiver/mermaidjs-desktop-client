@@ -300,13 +300,22 @@ export default function SettingsDialog({
 }: SettingsDialogProps) {
   const { resetSettings } = useSettings();
   const [section, setSection] = useState<SectionId>(initialSection ?? 'general');
+  const [confirmReset, setConfirmReset] = useState(false);
 
   // Reset to initialSection when dialog opens
   useEffect(() => {
     if (open) {
       setSection(initialSection ?? 'general');
+      setConfirmReset(false);
     }
   }, [open, initialSection]);
+
+  // Auto-dismiss confirmation after 3 seconds
+  useEffect(() => {
+    if (!confirmReset) return;
+    const timer = setTimeout(() => setConfirmReset(false), 3000);
+    return () => clearTimeout(timer);
+  }, [confirmReset]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
@@ -340,13 +349,35 @@ export default function SettingsDialog({
               ))}
             </nav>
             <div className="border-t border-neutral-200 p-2 dark:border-slate-700">
-              <button
-                type="button"
-                onClick={resetSettings}
-                className="w-full rounded-md px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
-              >
-                Reset to defaults
-              </button>
+              {confirmReset ? (
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetSettings();
+                      setConfirmReset(false);
+                    }}
+                    className="flex-1 rounded-md px-3 py-1.5 text-xs text-red-700 transition-colors hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/30"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmReset(false)}
+                    className="flex-1 rounded-md px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 dark:text-slate-400 dark:hover:bg-slate-700/50"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmReset(true)}
+                  className="w-full rounded-md px-3 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-200"
+                >
+                  Reset to defaults
+                </button>
+              )}
             </div>
           </aside>
 
@@ -357,7 +388,7 @@ export default function SettingsDialog({
               <DialogClose asChild>
                 <button
                   type="button"
-                  className="rounded-md p-1 opacity-70 transition-all hover:bg-neutral-200 hover:opacity-100 focus:ring-2 focus:ring-ring focus:outline-hidden dark:hover:bg-slate-700"
+                  className="rounded-md p-1 opacity-70 transition-all hover:bg-neutral-200 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus:outline-hidden dark:hover:bg-slate-700"
                 >
                   <X size={16} />
                   <span className="sr-only">Close</span>
