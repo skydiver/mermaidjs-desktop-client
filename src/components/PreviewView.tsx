@@ -1,4 +1,4 @@
-import { AlertTriangle, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, Crosshair, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type MermaidStatus, useMermaid } from '../hooks/useMermaid';
 import { useSettings } from '../hooks/useSettings';
@@ -46,6 +46,41 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
 
   const resetZoom = useCallback(() => {
     setZoom(1);
+  }, []);
+
+  const fitToViewport = useCallback(() => {
+    const container = containerRef.current;
+    const el = container?.firstElementChild as HTMLElement | SVGSVGElement | null;
+    if (!container || !el) return;
+
+    // Get the diagram's natural size (at zoom=1)
+    el.style.transform = 'scale(1)';
+    const diagramWidth = el.scrollWidth;
+    const diagramHeight = el.scrollHeight;
+
+    // Available space (minus padding)
+    const availWidth = container.clientWidth - 64; // p-8 = 32px each side
+    const availHeight = container.clientHeight - 64;
+
+    if (diagramWidth <= 0 || diagramHeight <= 0) return;
+
+    const scale = Math.min(
+      availWidth / diagramWidth,
+      availHeight / diagramHeight,
+      ZOOM_MAX
+    );
+    const clampedZoom = Math.max(ZOOM_MIN, Math.round(scale * 100) / 100);
+
+    // Apply transform directly — can't rely on useEffect when zoom value is unchanged
+    el.style.transform = `scale(${clampedZoom})`;
+    el.style.transformOrigin = 'center center';
+    setZoom(clampedZoom);
+
+    // Center after layout settles
+    requestAnimationFrame(() => {
+      container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+      container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+    });
   }, []);
 
   // Ctrl+Scroll zoom (also handles trackpad pinch-to-zoom)
@@ -129,8 +164,12 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
           <ZoomButton onClick={zoomIn} title="Zoom in" isDark={isDiagramDark}>
             <ZoomIn className="h-3.5 w-3.5" />
           </ZoomButton>
+          <div className={`mx-0.5 h-4 w-px ${isDiagramDark ? 'bg-neutral-600' : 'bg-neutral-200'}`} />
           <ZoomButton onClick={resetZoom} title="Reset zoom" isDark={isDiagramDark}>
             <RotateCcw className="h-3.5 w-3.5" />
+          </ZoomButton>
+          <ZoomButton onClick={fitToViewport} title="Fit to viewport" isDark={isDiagramDark}>
+            <Crosshair className="h-3.5 w-3.5" />
           </ZoomButton>
         </div>
       )}
