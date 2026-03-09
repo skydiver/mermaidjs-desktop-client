@@ -11,7 +11,7 @@ import Toolbar from './Toolbar';
 
 // ── Constants ───────────────────────────────────────────
 
-const DEFAULT_RATIO = 0.5;
+const DEFAULT_RATIO = 0.4;
 const MIN_RATIO = 0.2;
 const MAX_RATIO = 0.8;
 
