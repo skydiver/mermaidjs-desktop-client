@@ -76,6 +76,8 @@ export default function Toolbar({
 
       {!disabled && (
         <>
+          <Separator />
+
           {/* File actions */}
           <ToolbarButton title="New File" onClick={onNewFile}>
             <FilePlus size={16} />
