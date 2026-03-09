@@ -102,18 +102,6 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
       };
     }, []);
 
-    // Sync external text changes (e.g. file load) — reset editor state
-    useEffect(() => {
-      const editor = editorRef.current;
-      if (!editor) return;
-      const currentText = editor.state.doc.toString();
-      if (currentText !== initialText) {
-        editor.dispatch({
-          changes: { from: 0, to: editor.state.doc.length, insert: initialText },
-        });
-      }
-    }, [initialText]);
-
     // Reconfigure editor when settings change
     useEffect(() => {
       const editor = editorRef.current;

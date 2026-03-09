@@ -5,9 +5,9 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
+import { debounce } from '../lib/debounce';
 
 // ── Types ───────────────────────────────────────────────
 
@@ -116,7 +116,6 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     () => window.matchMedia('(prefers-color-scheme: dark)').matches
   );
   const [loaded, setLoaded] = useState(false);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load persisted settings on mount
   useEffect(() => {
@@ -142,19 +141,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [isDark]);
 
   // Debounced persistence
-  const persistSettings = useCallback((next: AppSettings) => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      saveToStore(next);
-    }, DEBOUNCE_MS);
-  }, []);
+  const [persistSettings] = useState(() => debounce(saveToStore, DEBOUNCE_MS));
 
-  // Cleanup timer
+  // Cancel pending save on unmount
   useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, []);
+    return () => persistSettings.cancel();
+  }, [persistSettings]);
 
   const updateSettings = useCallback(
     (patch: Partial<AppSettings>) => {

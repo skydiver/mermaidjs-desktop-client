@@ -1,11 +1,10 @@
 import { type Ref, useCallback, useRef, useState } from 'react';
-import type { MermaidStatus } from '../hooks/useMermaid';
+import type { MermaidStatus, RenderStatus } from '../hooks/useMermaid';
 import type { ExportFormat } from '../lib/export/export-diagram';
 import type { EditorViewHandle } from './EditorView';
 import EditorView from './EditorView';
 import EmptyState from './EmptyState';
 import PreviewView from './PreviewView';
-import type { StatusLevel } from './StatusBar';
 import StatusBar from './StatusBar';
 import Toolbar from './Toolbar';
 
@@ -25,10 +24,9 @@ interface ContentViewProps {
   isDirty: boolean;
   lastSavedAt: Date | null;
   statusMessage: string;
-  statusLevel: StatusLevel;
+  statusLevel: RenderStatus;
   hasContent: boolean;
   hasDocument: boolean;
-  previewSource: string;
   onPreviewStatusChange: (status: MermaidStatus) => void;
   onNewFile: () => void;
   onOpenFile: () => void;
@@ -57,7 +55,6 @@ export default function ContentView({
   statusLevel,
   hasContent,
   hasDocument,
-  previewSource,
   onPreviewStatusChange,
   onNewFile,
   onOpenFile,
@@ -164,7 +161,7 @@ export default function ContentView({
 
           {/* Preview panel */}
           <div className="flex flex-col" style={{ flex: `${1 - editorRatio} 1 0` }}>
-            <PreviewView source={previewSource} onStatusChange={onPreviewStatusChange} />
+            <PreviewView source={editorText} onStatusChange={onPreviewStatusChange} />
           </div>
 
           {/* Drop overlay */}

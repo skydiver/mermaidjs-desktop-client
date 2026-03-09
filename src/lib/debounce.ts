@@ -1,12 +1,21 @@
-export function debounce<TArgs extends unknown[], TResult>(
-  fn: (...args: TArgs) => TResult,
+export interface DebouncedFunction<TArgs extends unknown[]> {
+  (...args: TArgs): void;
+  cancel(): void;
+}
+
+export function debounce<TArgs extends unknown[]>(
+  fn: (...args: TArgs) => unknown,
   wait: number
-): (...args: TArgs) => void {
+): DebouncedFunction<TArgs> {
   let timeoutId: number | undefined;
-  return (...args: TArgs) => {
+  const debounced = (...args: TArgs) => {
     window.clearTimeout(timeoutId);
     timeoutId = window.setTimeout(() => {
       void fn(...args);
     }, wait);
   };
+  debounced.cancel = () => {
+    window.clearTimeout(timeoutId);
+  };
+  return debounced;
 }

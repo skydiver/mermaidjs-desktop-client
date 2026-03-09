@@ -15,14 +15,6 @@ const SHORTCUT_GROUPS = [
     ],
   },
   {
-    title: 'Editor Zoom',
-    shortcuts: [
-      { keys: '⌘ =', description: 'Zoom in' },
-      { keys: '⌘ -', description: 'Zoom out' },
-      { keys: '⌘ 0', description: 'Reset zoom' },
-    ],
-  },
-  {
     title: 'Preview Zoom',
     shortcuts: [{ keys: 'Ctrl + Scroll', description: 'Zoom in/out' }],
   },

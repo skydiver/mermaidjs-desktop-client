@@ -3,7 +3,6 @@ import ContentView from './components/ContentView';
 import type { EditorViewHandle } from './components/EditorView';
 import HelpDialog from './components/HelpDialog';
 import SettingsDialog, { type SectionId } from './components/SettingsDialog';
-import type { StatusLevel } from './components/StatusBar';
 import { useFileHandling } from './hooks/useFileHandling';
 import { useFileWatch } from './hooks/useFileWatch';
 import type { MermaidStatus } from './hooks/useMermaid';
@@ -16,8 +15,7 @@ export default function App() {
   const [settingsSection, setSettingsSection] = useState<SectionId>('general');
   const [showHelp, setShowHelp] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Ready');
-  const [statusLevel, setStatusLevel] = useState<StatusLevel>('idle');
+  const [status, setStatus] = useState<MermaidStatus>({ message: 'Ready', level: 'idle' });
 
   const fileHandling = useFileHandling({ editorRef, onContentReplace: setEditorText });
 
@@ -53,9 +51,8 @@ export default function App() {
     [fileHandling.markDirty]
   );
 
-  const handlePreviewStatusChange = useCallback((status: MermaidStatus) => {
-    setStatusMessage(status.message);
-    setStatusLevel(status.level);
+  const handlePreviewStatusChange = useCallback((s: MermaidStatus) => {
+    setStatus(s);
   }, []);
 
   // Keyboard shortcuts
@@ -158,11 +155,10 @@ export default function App() {
         fileName={fileHandling.fileName}
         isDirty={fileHandling.isDirty}
         lastSavedAt={fileHandling.lastSavedAt}
-        statusMessage={statusMessage}
-        statusLevel={statusLevel}
+        statusMessage={status.message}
+        statusLevel={status.level}
         hasContent={editorText.trim().length > 0}
         hasDocument={fileHandling.hasDocument}
-        previewSource={editorText}
         onPreviewStatusChange={handlePreviewStatusChange}
         onNewFile={fileHandling.newFile}
         onOpenFile={fileHandling.openFile}

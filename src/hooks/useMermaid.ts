@@ -19,13 +19,16 @@ export interface MermaidStatus {
 const RENDER_DELAY = 300;
 
 // Register external diagram types once at module level
-await mermaid.registerExternalDiagrams([zenuml]);
+try {
+  await mermaid.registerExternalDiagrams([zenuml]);
+} catch (error) {
+  console.error('Failed to register ZenUML diagram type', error);
+}
 
 // ── Hook ────────────────────────────────────────────────
 
 export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
   schedule: (source: string) => void;
-  render: (source: string) => void;
   status: MermaidStatus;
 } {
   const { isDiagramDark } = useSettings();
@@ -105,6 +108,11 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
     }
   }, [isDiagramDark, executeRender]);
 
+  // Cancel debounced render on unmount
+  useEffect(() => {
+    return () => debouncedRenderRef.current.cancel();
+  }, []);
+
   const schedule = useCallback((source: string) => {
     lastSourceRef.current = source;
     tokenRef.current += 1;
@@ -113,16 +121,5 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
     debouncedRenderRef.current(source, token);
   }, []);
 
-  const render = useCallback(
-    (source: string) => {
-      lastSourceRef.current = source;
-      tokenRef.current += 1;
-      const token = tokenRef.current;
-      setStatus({ message: 'Rendering...', level: 'loading' });
-      executeRender(source, token);
-    },
-    [executeRender]
-  );
-
-  return { schedule, render, status };
+  return { schedule, status };
 }

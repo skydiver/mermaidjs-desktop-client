@@ -1,14 +1,14 @@
-export type StatusLevel = 'idle' | 'loading' | 'success' | 'error';
+import type { RenderStatus } from '../hooks/useMermaid';
 
 interface StatusBarProps {
   fileName: string | null;
   isDirty: boolean;
   lastSavedAt: Date | null;
   statusMessage: string;
-  statusLevel: StatusLevel;
+  statusLevel: RenderStatus;
 }
 
-const STATUS_COLORS: Record<StatusLevel, string> = {
+const STATUS_COLORS: Record<RenderStatus, string> = {
   idle: 'text-neutral-400 dark:text-slate-500',
   loading: 'text-blue-500 dark:text-blue-400',
   success: 'text-green-600 dark:text-green-400',
