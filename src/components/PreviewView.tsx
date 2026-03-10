@@ -1,13 +1,8 @@
 import { AlertTriangle, Crosshair, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useCanvasTransform } from '../hooks/useCanvasTransform';
 import { type MermaidStatus, useMermaid } from '../hooks/useMermaid';
 import { useSettings } from '../hooks/useSettings';
-
-// ── Constants ───────────────────────────────────────────
-
-const ZOOM_MIN = 0.25;
-const ZOOM_MAX = 10;
-const ZOOM_STEP = 0.25;
 
 // ── Props ───────────────────────────────────────────────
 
@@ -22,7 +17,8 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
   const containerRef = useRef<HTMLDivElement>(null);
   const { schedule, status } = useMermaid(containerRef);
   const { isDiagramDark, settings } = useSettings();
-  const [zoom, setZoom] = useState(1);
+  const { displayScale, zoomIn, zoomOut, resetView, fitToViewport, reapplyTransform } =
+    useCanvasTransform(containerRef);
 
   // Schedule render when source changes
   useEffect(() => {
@@ -34,82 +30,12 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
     onStatusChange?.(status);
   }, [status, onStatusChange]);
 
-  // ── Zoom handlers ───────────────────────────────────
-
-  const zoomIn = useCallback(() => {
-    setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP));
-  }, []);
-
-  const zoomOut = useCallback(() => {
-    setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP));
-  }, []);
-
-  const resetZoom = useCallback(() => {
-    setZoom(1);
-  }, []);
-
-  const fitToViewport = useCallback(() => {
-    const container = containerRef.current;
-    const el = container?.firstElementChild as HTMLElement | SVGSVGElement | null;
-    if (!container || !el) return;
-
-    // Get the diagram's natural size (at zoom=1)
-    el.style.transform = 'scale(1)';
-    const diagramWidth = el.scrollWidth;
-    const diagramHeight = el.scrollHeight;
-
-    // Available space (minus padding)
-    const availWidth = container.clientWidth - 64; // p-8 = 32px each side
-    const availHeight = container.clientHeight - 64;
-
-    if (diagramWidth <= 0 || diagramHeight <= 0) return;
-
-    const scale = Math.min(
-      availWidth / diagramWidth,
-      availHeight / diagramHeight,
-      ZOOM_MAX
-    );
-    const clampedZoom = Math.max(ZOOM_MIN, Math.round(scale * 100) / 100);
-
-    // Apply transform directly — can't rely on useEffect when zoom value is unchanged
-    el.style.transform = `scale(${clampedZoom})`;
-    el.style.transformOrigin = 'center center';
-    setZoom(clampedZoom);
-
-    // Center after layout settles
-    requestAnimationFrame(() => {
-      container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
-      container.scrollTop = (container.scrollHeight - container.clientHeight) / 2;
-    });
-  }, []);
-
-  // Ctrl+Scroll zoom (also handles trackpad pinch-to-zoom)
+  // Reapply transform after mermaid re-renders the SVG
   useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-
-    const handler = (e: WheelEvent) => {
-      if (!e.ctrlKey) return;
-      e.preventDefault();
-      e.stopPropagation();
-      if (e.deltaY < 0) {
-        setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP));
-      } else if (e.deltaY > 0) {
-        setZoom((z) => Math.max(ZOOM_MIN, z - ZOOM_STEP));
-      }
-    };
-
-    el.addEventListener('wheel', handler, { passive: false, capture: true });
-    return () => el.removeEventListener('wheel', handler, true);
-  }, []);
-
-  // Apply zoom transform to rendered diagram (SVG or HTML)
-  useEffect(() => {
-    const el = containerRef.current?.firstElementChild as HTMLElement | SVGSVGElement | null;
-    if (!el) return;
-    el.style.transform = `scale(${zoom})`;
-    el.style.transformOrigin = 'center center';
-  }, [zoom, status]);
+    if (status.level === 'success' || status.level === 'idle') {
+      reapplyTransform();
+    }
+  }, [status, reapplyTransform]);
 
   const showEmpty = !source.trim().length;
   const showError = status.level === 'error';
@@ -125,7 +51,7 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
       {/* Render target — useMermaid sets innerHTML here */}
       <div
         ref={containerRef}
-        className="flex flex-1 items-center justify-center overflow-auto p-8"
+        className="flex-1 overflow-hidden"
       />
 
       {/* Empty state */}
@@ -159,13 +85,13 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
             <ZoomOut className="h-3.5 w-3.5" />
           </ZoomButton>
           <span className={`min-w-[3rem] text-center text-xs tabular-nums ${isDiagramDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-            {Math.round(zoom * 100)}%
+            {Math.round(displayScale * 100)}%
           </span>
           <ZoomButton onClick={zoomIn} title="Zoom in" isDark={isDiagramDark}>
             <ZoomIn className="h-3.5 w-3.5" />
           </ZoomButton>
           <div className={`mx-0.5 h-4 w-px ${isDiagramDark ? 'bg-neutral-600' : 'bg-neutral-200'}`} />
-          <ZoomButton onClick={resetZoom} title="Reset zoom" isDark={isDiagramDark}>
+          <ZoomButton onClick={resetView} title="Reset zoom" isDark={isDiagramDark}>
             <RotateCcw className="h-3.5 w-3.5" />
           </ZoomButton>
           <ZoomButton onClick={fitToViewport} title="Fit to viewport" isDark={isDiagramDark}>
