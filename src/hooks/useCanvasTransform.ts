@@ -21,16 +21,22 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * Measure the natural (untransformed) dimensions of an element.
- * Temporarily removes the CSS transform, reads the bounding rect, then restores it.
- * The two style writes happen synchronously, so no visual flash occurs.
+ * Read the natural (unscaled) dimensions of a freshly-rendered element.
+ * For SVGs, reads width/height attributes or viewBox to avoid depending on CSS layout.
+ * Falls back to getBoundingClientRect for non-SVG elements.
+ * Must be called on a fresh element before any scaling is applied.
  */
-function measureNaturalSize(el: Element): { width: number; height: number } | null {
-  const htmlEl = el as HTMLElement;
-  const prev = htmlEl.style.transform;
-  htmlEl.style.transform = 'none';
+function readNaturalSize(el: Element): { width: number; height: number } | null {
+  if (el instanceof SVGSVGElement) {
+    const w = el.width.baseVal.value;
+    const h = el.height.baseVal.value;
+    if (w > 0 && h > 0) return { width: w, height: h };
+
+    const vb = el.viewBox.baseVal;
+    if (vb.width > 0 && vb.height > 0) return { width: vb.width, height: vb.height };
+  }
+
   const rect = el.getBoundingClientRect();
-  htmlEl.style.transform = prev;
   if (rect.width <= 0 || rect.height <= 0) return null;
   return { width: rect.width, height: rect.height };
 }
@@ -42,6 +48,7 @@ export function useCanvasTransform(containerRef: RefObject<HTMLDivElement | null
   const [displayScale, setDisplayScale] = useState(1);
   const dragRef = useRef({ active: false, lastX: 0, lastY: 0 });
   const rafRef = useRef(0);
+  const naturalSizeRef = useRef<{ width: number; height: number } | null>(null);
 
   const getContent = useCallback(
     () => containerRef.current?.firstElementChild as HTMLElement | SVGSVGElement | null,
@@ -54,7 +61,21 @@ export function useCanvasTransform(containerRef: RefObject<HTMLDivElement | null
     const el = getContent();
     if (!el) return;
     const { x, y, scale } = tRef.current;
-    el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    const nat = naturalSizeRef.current;
+
+    if (el instanceof SVGSVGElement && nat) {
+      // Scale via SVG attributes → browser renders vectors at display resolution.
+      // CSS translate-only for panning → compositor-friendly, no rasterization artifacts.
+      // Position absolute → SVG doesn't affect flex layout when dimensions change.
+      el.setAttribute('width', `${nat.width * scale}`);
+      el.setAttribute('height', `${nat.height * scale}`);
+      el.style.maxWidth = 'none';
+      el.style.position = 'absolute';
+      el.style.transform = `translate(${x}px, ${y}px)`;
+    } else {
+      el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    }
+
     el.style.transformOrigin = '0 0';
     cancelAnimationFrame(rafRef.current);
     rafRef.current = requestAnimationFrame(() => {
@@ -66,15 +87,13 @@ export function useCanvasTransform(containerRef: RefObject<HTMLDivElement | null
 
   const centerContent = useCallback(() => {
     const container = containerRef.current;
-    const el = getContent();
-    if (!container || !el) return;
-    const size = measureNaturalSize(el);
-    if (!size) return;
+    if (!container || !naturalSizeRef.current) return;
+    const { width, height } = naturalSizeRef.current;
     const t = tRef.current;
-    t.x = (container.clientWidth - size.width * t.scale) / 2;
-    t.y = (container.clientHeight - size.height * t.scale) / 2;
+    t.x = (container.clientWidth - width * t.scale) / 2;
+    t.y = (container.clientHeight - height * t.scale) / 2;
     applyTransform();
-  }, [containerRef, getContent, applyTransform]);
+  }, [containerRef, applyTransform]);
 
   // ── Zoom by step (for toolbar buttons) ─────────
 
@@ -105,26 +124,24 @@ export function useCanvasTransform(containerRef: RefObject<HTMLDivElement | null
 
   const fitToViewport = useCallback(() => {
     const container = containerRef.current;
-    const el = getContent();
-    if (!container || !el) return;
-    const size = measureNaturalSize(el);
-    if (!size) return;
+    if (!container || !naturalSizeRef.current) return;
+    const { width, height } = naturalSizeRef.current;
 
     const padding = 64; // 32px visual margin each side
     const availW = container.clientWidth - padding;
     const availH = container.clientHeight - padding;
     const scale = clamp(
-      Math.round(Math.min(availW / size.width, availH / size.height) * 100) / 100,
+      Math.round(Math.min(availW / width, availH / height) * 100) / 100,
       ZOOM_MIN,
       ZOOM_MAX
     );
 
     const t = tRef.current;
     t.scale = scale;
-    t.x = (container.clientWidth - size.width * scale) / 2;
-    t.y = (container.clientHeight - size.height * scale) / 2;
+    t.x = (container.clientWidth - width * scale) / 2;
+    t.y = (container.clientHeight - height * scale) / 2;
     applyTransform();
-  }, [containerRef, getContent, applyTransform]);
+  }, [containerRef, applyTransform]);
 
   // ── Wheel zoom (cursor-anchored, smooth) ───────
 
@@ -203,6 +220,8 @@ export function useCanvasTransform(containerRef: RefObject<HTMLDivElement | null
   const reapplyTransform = useCallback(() => {
     const el = getContent();
     if (!el) return;
+    // Capture natural size from the fresh SVG before any scaling is applied
+    naturalSizeRef.current = readNaturalSize(el);
     fitToViewport();
   }, [getContent, fitToViewport]);
 

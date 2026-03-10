@@ -51,7 +51,7 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
       {/* Render target — useMermaid sets innerHTML here */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-hidden"
+        className="relative flex-1 overflow-hidden"
       />
 
       {/* Empty state */}
