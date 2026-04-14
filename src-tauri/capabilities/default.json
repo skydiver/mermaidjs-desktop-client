@@ -5,20 +5,20 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "core:window:allow-set-position",
-    "core:window:allow-set-size",
-    "core:window:allow-maximize",
-    "store:default",
+    "core:window:allow-start-dragging",
+    "opener:default",
     "dialog:default",
-    {
-      "identifier": "fs:scope",
-      "allow": [{ "path": "$HOME/**" }]
-    },
+    "fs:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
     "fs:allow-write-file",
-    "fs:allow-create",
-    "fs:default",
-    "shell:allow-open"
+    "fs:allow-watch",
+    "fs:allow-unwatch",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$DIALOG/**" }]
+    },
+    "store:default",
+    "window-state:default"
   ]
 }

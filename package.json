@@ -1,49 +1,61 @@
 {
   "name": "mermaidjs-desktop-client",
-  "version": "2.4.1",
+  "private": true,
+  "version": "3.0.0",
+  "type": "module",
   "description": "Desktop editor for Mermaid diagrams with real-time preview, syntax highlighting, and SVG/PNG export.",
   "homepage": "https://github.com/skydiver/mermaidjs-desktop-client",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/skydiver/mermaidjs-desktop-client.git"
-  },
   "license": "MIT",
-  "author": {
-    "name": "Martín M.",
-    "email": "skydiver@users.noreply.github.com"
-  },
-  "type": "module",
+  "author": "Martín M.",
   "scripts": {
-    "build": "tsc && vite build",
-    "clean": "rimraf dist src-tauri/target",
     "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "dist": "tauri build && rimraf dist && mkdir dist && cp -R 'src-tauri/target/release/bundle/macos/Mermaid Desktop.app' dist/",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "clean": "rimraf dist src-tauri/target"
   },
   "dependencies": {
-    "@codemirror/commands": "^6.10.2",
-    "@codemirror/language": "^6.12.2",
-    "@codemirror/state": "^6.5.4",
-    "@codemirror/view": "^6.39.16",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/state": "^6.6.0",
+    "@codemirror/view": "^6.41.0",
     "@lezer/highlight": "^1.2.3",
+    "@mermaid-js/mermaid-zenuml": "^0.2.2",
+    "@tailwindcss/vite": "^4.2.2",
     "@tauri-apps/api": "^2.10.1",
-    "@tauri-apps/plugin-dialog": "^2.6.0",
-    "@tauri-apps/plugin-fs": "^2.4.5",
-    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-dialog": "^2.7.0",
+    "@tauri-apps/plugin-fs": "^2.5.0",
+    "@tauri-apps/plugin-opener": "^2.5.3",
     "@tauri-apps/plugin-store": "^2.4.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "codemirror": "^6.0.2",
-    "mermaid": "^11.12.3",
-    "remixicon": "^4.9.1"
+    "lucide-react": "^1.8.0",
+    "mermaid": "^11.14.0",
+    "radix-ui": "^1.4.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.6",
+    "@biomejs/biome": "^2.4.12",
     "@tauri-apps/cli": "^2.10.1",
-    "@types/node": "^25.3.5",
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
     "rimraf": "^6.1.3",
-    "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "shadcn": "^4.2.0",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.8",
+    "vitest": "^4.1.4"
   }
 }
