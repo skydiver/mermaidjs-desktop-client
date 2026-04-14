@@ -2,7 +2,13 @@ import { ExternalLink, FileCode, Info, Settings as SettingsIcon, X } from 'lucid
 import { useEffect, useState } from 'react';
 import { Dialog, DialogClose, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { type ThemePreference, useSettings } from '../hooks/useSettings';
@@ -43,7 +49,9 @@ function useMonospaceFonts(): { value: string; label: string }[] {
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return fonts;
@@ -169,7 +177,9 @@ function EditorSection() {
           <SettingRow label="Font">
             <Select
               value={settings.editorFontFamily || FONT_DEFAULT}
-              onValueChange={(v) => updateSettings({ editorFontFamily: v === FONT_DEFAULT ? '' : v })}
+              onValueChange={(v) =>
+                updateSettings({ editorFontFamily: v === FONT_DEFAULT ? '' : v })
+              }
             >
               <SelectTrigger className="w-48">
                 <SelectValue />
@@ -319,14 +329,12 @@ export default function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-      {open && (
-        <div className="fixed inset-x-0 bottom-0 top-10 z-50 bg-black/70" />
-      )}
+      {open && <div className="fixed inset-x-0 bottom-0 top-10 z-50 bg-black/70" />}
       <DialogContent
-          className="sm:max-w-4xl p-0 shadow-2xl"
-          showCloseButton={false}
-          onPointerDownOutside={(e) => e.preventDefault()}
-        >
+        className="sm:max-w-4xl p-0 shadow-2xl"
+        showCloseButton={false}
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <div className="flex h-[600px] overflow-hidden rounded-lg">
           {/* Sidebar */}

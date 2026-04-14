@@ -1,5 +1,5 @@
-import mermaid from 'mermaid';
 import zenuml from '@mermaid-js/mermaid-zenuml';
+import mermaid from 'mermaid';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { debounce } from '../lib/debounce';
 import { useSettings } from './useSettings';

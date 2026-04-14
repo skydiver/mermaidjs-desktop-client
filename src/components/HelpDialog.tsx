@@ -43,7 +43,10 @@ export default function HelpDialog({ open, onOpenChange }: HelpDialogProps) {
               </h4>
               <div className="divide-y divide-neutral-200 rounded-lg bg-neutral-50 px-3 dark:divide-slate-700/50 dark:bg-slate-700/30">
                 {group.shortcuts.map((shortcut) => (
-                  <div key={shortcut.keys} className="flex items-center justify-between py-2 text-sm">
+                  <div
+                    key={shortcut.keys}
+                    className="flex items-center justify-between py-2 text-sm"
+                  >
                     <span className="text-neutral-600 dark:text-slate-300">
                       {shortcut.description}
                     </span>

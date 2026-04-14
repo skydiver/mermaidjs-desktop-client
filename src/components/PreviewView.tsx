@@ -43,16 +43,17 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
   return (
     <div
       className={`relative flex flex-1 flex-col overflow-hidden ${isDiagramDark ? 'bg-slate-900' : 'bg-white'}`}
-      style={settings.showDotGrid ? {
-        backgroundImage: `radial-gradient(circle, ${isDiagramDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'} 1px, transparent 1px)`,
-        backgroundSize: '24px 24px',
-      } : undefined}
+      style={
+        settings.showDotGrid
+          ? {
+              backgroundImage: `radial-gradient(circle, ${isDiagramDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)'} 1px, transparent 1px)`,
+              backgroundSize: '24px 24px',
+            }
+          : undefined
+      }
     >
       {/* Render target — useMermaid sets innerHTML here */}
-      <div
-        ref={containerRef}
-        className="relative flex-1 overflow-hidden"
-      />
+      <div ref={containerRef} className="relative flex-1 overflow-hidden" />
 
       {/* Empty state */}
       {showEmpty && (
@@ -80,17 +81,23 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
 
       {/* Zoom controls */}
       {!showEmpty && !showError && (
-        <div className={`absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border px-1 py-0.5 shadow-sm backdrop-blur ${isDiagramDark ? 'border-neutral-700 bg-neutral-800/90' : 'border-neutral-200 bg-white/90'}`}>
+        <div
+          className={`absolute bottom-3 right-3 flex items-center gap-1 rounded-lg border px-1 py-0.5 shadow-sm backdrop-blur ${isDiagramDark ? 'border-neutral-700 bg-neutral-800/90' : 'border-neutral-200 bg-white/90'}`}
+        >
           <ZoomButton onClick={zoomOut} title="Zoom out" isDark={isDiagramDark}>
             <ZoomOut className="h-3.5 w-3.5" />
           </ZoomButton>
-          <span className={`min-w-[3rem] text-center text-xs tabular-nums ${isDiagramDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+          <span
+            className={`min-w-[3rem] text-center text-xs tabular-nums ${isDiagramDark ? 'text-neutral-400' : 'text-neutral-500'}`}
+          >
             {Math.round(displayScale * 100)}%
           </span>
           <ZoomButton onClick={zoomIn} title="Zoom in" isDark={isDiagramDark}>
             <ZoomIn className="h-3.5 w-3.5" />
           </ZoomButton>
-          <div className={`mx-0.5 h-4 w-px ${isDiagramDark ? 'bg-neutral-600' : 'bg-neutral-200'}`} />
+          <div
+            className={`mx-0.5 h-4 w-px ${isDiagramDark ? 'bg-neutral-600' : 'bg-neutral-200'}`}
+          />
           <ZoomButton onClick={resetView} title="Reset zoom" isDark={isDiagramDark}>
             <RotateCcw className="h-3.5 w-3.5" />
           </ZoomButton>

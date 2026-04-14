@@ -94,7 +94,7 @@ export function createMermaidLanguage(): Extension {
     },
     languageData: {
       commentTokens: { line: '%%' },
-      closeBrackets: { brackets: "()[]{}''\"\"" },
+      closeBrackets: { brackets: '()[]{}\'\'""' },
     },
   });
 }

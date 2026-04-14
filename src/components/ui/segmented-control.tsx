@@ -25,7 +25,7 @@ export function SegmentedControl<T extends string>({
       data-slot="segmented-control"
       className={cn(
         'relative grid rounded-lg bg-muted dark:bg-slate-700/50 p-1 shadow-xs',
-        className,
+        className
       )}
       style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}
     >
@@ -40,7 +40,7 @@ export function SegmentedControl<T extends string>({
             'relative z-10 rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
             value === opt.value
               ? 'text-foreground'
-              : 'text-muted-foreground hover:text-foreground/80',
+              : 'text-muted-foreground hover:text-foreground/80'
           )}
         >
           {opt.label}

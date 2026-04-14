@@ -37,7 +37,10 @@ const DIALOG_FILTERS = [
 
 // ── Hook ────────────────────────────────────────────────
 
-export function useFileHandling({ editorRef, onContentReplace }: UseFileHandlingOptions): UseFileHandlingReturn {
+export function useFileHandling({
+  editorRef,
+  onContentReplace,
+}: UseFileHandlingOptions): UseFileHandlingReturn {
   const [filePath, setFilePath] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);

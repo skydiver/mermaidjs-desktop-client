@@ -26,7 +26,9 @@ export default function EmptyState({ isDragOver = false }: EmptyStateProps) {
         <div className="text-center">
           <p
             className={`text-sm font-medium transition-colors ${
-              isDragOver ? 'text-blue-700 dark:text-blue-300' : 'text-neutral-600 dark:text-slate-300'
+              isDragOver
+                ? 'text-blue-700 dark:text-blue-300'
+                : 'text-neutral-600 dark:text-slate-300'
             }`}
           >
             Drop a .mmd file here

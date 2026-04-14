@@ -70,7 +70,10 @@ export default function Toolbar({
       data-tauri-drag-region
       className="flex h-10 shrink-0 items-center gap-1 border-b border-neutral-200 bg-neutral-50 pr-2 pl-[90px] dark:border-slate-700 dark:bg-slate-800"
     >
-      <span className="mr-1 text-xs font-bold text-neutral-600 dark:text-slate-300" data-tauri-drag-region>
+      <span
+        className="mr-1 text-xs font-bold text-neutral-600 dark:text-slate-300"
+        data-tauri-drag-region
+      >
         Mermaid Desktop
       </span>
 
@@ -88,7 +91,6 @@ export default function Toolbar({
           <ToolbarButton title="Save" disabled={!isDirty} onClick={onSaveFile}>
             <Save size={16} />
           </ToolbarButton>
-
         </>
       )}
 
