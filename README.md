@@ -85,7 +85,7 @@ Seven starter diagrams: Flowchart, Class, Sequence, Entity Relationship, State, 
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+
+- [Node.js](https://nodejs.org/) 22+
 - [pnpm](https://pnpm.io/)
 - [Rust toolchain](https://www.rust-lang.org/learn/get-started)
 - Platform-specific dependencies per the [Tauri prerequisites](https://tauri.app/start/prerequisites/)
@@ -100,31 +100,34 @@ pnpm install
 pnpm tauri dev
 ```
 
-For frontend-only development without native APIs:
-
-```bash
-pnpm dev
-# Open http://localhost:1420
-```
-
 ### Production Build
 
 ```bash
 pnpm tauri build
 # Produces a platform-specific bundle (.app, .msi, .deb, etc.)
+# Output: src-tauri/target/release/bundle/
 ```
+
+On macOS, a convenience script builds and copies the `.app` into a top-level `dist/` folder so you don't have to dig into the Cargo target directory:
+
+```bash
+pnpm dist
+# Output: dist/Mermaid Desktop.app
+```
+
+> **Note:** `pnpm dist` wipes the `dist/` folder on each run, and Vite also uses `dist/` as its frontend output directory. Running `pnpm build` or `pnpm tauri build` after `pnpm dist` will overwrite the `.app` with Vite's frontend bundle — re-run `pnpm dist` to regenerate.
 
 ---
 
 ## Scripts
 
-| Command            | Description                    |
-| ------------------ | ------------------------------ |
-| `pnpm tauri dev`   | Run the app with live reload   |
-| `pnpm tauri build` | Production build               |
-| `pnpm dev`         | Frontend only (no native APIs) |
-| `pnpm test`        | Run tests                      |
-| `pnpm lint`        | Lint and format check          |
+| Command            | Description                                 |
+| ------------------ | ------------------------------------------- |
+| `pnpm tauri dev`   | Run the app with live reload                |
+| `pnpm tauri build` | Production build (platform-specific bundle) |
+| `pnpm dist`        | macOS: build and copy `.app` into `dist/`   |
+| `pnpm test`        | Run tests                                   |
+| `pnpm lint`        | Lint and format check                       |
 
 ---
 
@@ -133,8 +136,8 @@ pnpm tauri build
 |              |                          |
 | ------------ | ------------------------ |
 | **Runtime**  | Tauri 2 (Rust + WebView) |
-| **Frontend** | React 19, TypeScript 5.9 |
-| **Build**    | Vite 7                   |
+| **Frontend** | React 19, TypeScript 6   |
+| **Build**    | Vite 8                   |
 | **Styling**  | Tailwind CSS 4, Radix UI |
 | **Editor**   | CodeMirror 6             |
 | **Diagrams** | Mermaid 11 + ZenUML      |

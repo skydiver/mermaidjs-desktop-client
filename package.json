@@ -12,6 +12,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
+    "dist": "tauri build && rimraf dist && mkdir dist && cp -R 'src-tauri/target/release/bundle/macos/Mermaid Desktop.app' dist/",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "biome check .",
