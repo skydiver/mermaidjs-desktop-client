@@ -46,11 +46,12 @@ Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), [CodeM
 
 ### File Management
 
-- **New / Open / Save / Save As** with native file dialogs
+- **New / Open / Save** with native file dialogs — untitled documents prompt for a location on first save
 - **Auto-save** — optional, saves automatically while you work
 - **External file watch** — detects changes made outside the app; auto-reloads if clean, prompts if dirty
 - **Drag and drop** — drop `.mmd`, `.mermaid`, or `.md` files to open
 - **File associations** — registered as editor for `.mmd` and `.mermaid`
+- **Input guards** — files larger than 5 MB, or whose contents look binary, are refused with an explanation rather than loaded
 
 ### Export
 
@@ -60,6 +61,8 @@ Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), [CodeM
 | PNG     | Minimum 512px on shortest side, themed background         |
 | PNG @2x | 2x scale, minimum 1024px, `@2x` filename suffix           |
 
+PNG exports are clamped to the browser canvas limits — 16,384px per axis and roughly 16.7M pixels of total area. Very large diagrams are scaled down to fit, preserving aspect ratio, instead of producing an empty file.
+
 ### Built-in Examples
 
 Seven starter diagrams: Flowchart, Class, Sequence, Entity Relationship, State, Gantt, and Git Graph.
@@ -67,7 +70,7 @@ Seven starter diagrams: Flowchart, Class, Sequence, Entity Relationship, State, 
 ### App
 
 - **Themes** — Light, Dark, or System for both app chrome and diagram rendering
-- **Resizable split pane** — 40/60 default, drag to resize, double-click to reset
+- **Resizable split pane** — 40/60 default, drag to resize, double-click to reset; focusable and adjustable with arrow keys (Home resets)
 - **Window state persistence** — size, position, and preferences saved between sessions
 - **Keyboard shortcuts**:
 
@@ -127,7 +130,10 @@ pnpm dist
 | `pnpm tauri build` | Production build (platform-specific bundle) |
 | `pnpm dist`        | macOS: build and copy `.app` into `dist/`   |
 | `pnpm test`        | Run tests                                   |
+| `pnpm test:watch`  | Run tests in watch mode                     |
+| `pnpm typecheck`   | Type-check without emitting                 |
 | `pnpm lint`        | Lint and format check                       |
+| `pnpm lint:fix`    | Lint and format, applying fixes             |
 
 ---
 

@@ -206,7 +206,7 @@ export function useFileHandling({
       await reportError('Failed to save diagram', error, {
         title: 'Save Failed',
         body: targetPath
-          ? `Could not save to "${targetPath}". Your changes are still in the editor — try Save As to a different location.`
+          ? `Could not save to "${targetPath}". Your changes are still in the editor — check that the file is writable and try again.`
           : 'Could not save the diagram. Your changes are still in the editor.',
       });
     }
