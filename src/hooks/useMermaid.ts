@@ -92,8 +92,11 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
   const renderFnRef = useRef(executeRender);
   renderFnRef.current = executeRender;
 
-  // Stable debounced render — created once, calls latest executeRender via ref
-  const debouncedRenderRef = useRef(
+  // Stable debounced render — created once, calls latest executeRender via
+  // ref. `useState` with an initializer rather than `useRef(debounce(...))`,
+  // which would re-evaluate `debounce(...)` on every render and discard all
+  // but the first result. Matches the form used in `useSettings`.
+  const [debouncedRender] = useState(() =>
     debounce((source: string, token: number) => {
       renderFnRef.current(source, token);
     }, RENDER_DELAY)
@@ -117,16 +120,19 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
 
   // Cancel debounced render on unmount
   useEffect(() => {
-    return () => debouncedRenderRef.current.cancel();
-  }, []);
+    return () => debouncedRender.cancel();
+  }, [debouncedRender]);
 
-  const schedule = useCallback((source: string) => {
-    lastSourceRef.current = source;
-    tokenRef.current += 1;
-    const token = tokenRef.current;
-    setStatus({ message: 'Rendering...', level: 'loading' });
-    debouncedRenderRef.current(source, token);
-  }, []);
+  const schedule = useCallback(
+    (source: string) => {
+      lastSourceRef.current = source;
+      tokenRef.current += 1;
+      const token = tokenRef.current;
+      setStatus({ message: 'Rendering...', level: 'loading' });
+      debouncedRender(source, token);
+    },
+    [debouncedRender]
+  );
 
   return { schedule, status };
 }

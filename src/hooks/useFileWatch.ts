@@ -56,7 +56,7 @@ export function useFileWatch(
       setExternallyModified(false);
     } catch (err) {
       // Explicit, user-initiated "Reload from disk" — always surface.
-      await reportError('File watch reload failed:', err, {
+      await reportError('User-initiated reload from disk failed:', err, {
         title: 'Reload Failed',
         body: `Could not reload "${path}" from disk.`,
       });
@@ -114,12 +114,15 @@ export function useFileWatch(
               // path until a subsequent read succeeds.
               if (shouldReportWatchFailure(path, lastReportedWatchFailurePathRef.current)) {
                 lastReportedWatchFailurePathRef.current = path;
-                await reportError('File watch reload failed:', err, {
+                await reportError('Watcher-initiated re-read failed:', err, {
                   title: 'File Changed On Disk',
                   body: `"${path}" changed on disk but could not be re-read. Further external changes to this file may not be detected until it is reopened.`,
                 });
               } else {
-                console.error('File watch reload failed:', err);
+                console.error(
+                  'Watcher-initiated re-read failed again (already reported for this path):',
+                  err
+                );
               }
             }
           },

@@ -136,7 +136,7 @@ pnpm dist
 |              |                          |
 | ------------ | ------------------------ |
 | **Runtime**  | Tauri 2 (Rust + WebView) |
-| **Frontend** | React 19, TypeScript 6   |
+| **Frontend** | React 19, TypeScript 7   |
 | **Build**    | Vite 8                   |
 | **Styling**  | Tailwind CSS 4, Radix UI |
 | **Editor**   | CodeMirror 6             |

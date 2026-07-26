@@ -152,7 +152,7 @@ function GeneralSection() {
       <div>
         <SubsectionHeader title="Behavior" />
         <div className="divide-y divide-neutral-200 rounded-lg bg-white px-4 dark:divide-slate-700/50 dark:bg-slate-800/50">
-          <SettingRow label="Auto-save documents">
+          <SettingRow label="Auto-save Documents">
             <Switch
               checked={settings.autoSave}
               onCheckedChange={(v) => updateSettings({ autoSave: v })}
