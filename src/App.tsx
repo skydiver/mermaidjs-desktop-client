@@ -7,6 +7,8 @@ import { useFileHandling } from './hooks/useFileHandling';
 import { useFileWatch } from './hooks/useFileWatch';
 import type { MermaidStatus } from './hooks/useMermaid';
 import { useSettings } from './hooks/useSettings';
+import { manageAsyncResource } from './lib/async-resource';
+import { shouldHandleFileShortcut } from './lib/keyboard-shortcuts';
 
 export default function App() {
   const editorRef = useRef<EditorViewHandle>(null);
@@ -17,7 +19,13 @@ export default function App() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [status, setStatus] = useState<MermaidStatus>({ message: 'Ready', level: 'idle' });
 
-  const fileHandling = useFileHandling({ editorRef, onContentReplace: setEditorText });
+  const { settings, isDiagramDark } = useSettings();
+
+  const fileHandling = useFileHandling({
+    editorRef,
+    onContentReplace: setEditorText,
+    isDiagramDark,
+  });
 
   const fileWatch = useFileWatch(
     fileHandling.filePath,
@@ -25,8 +33,6 @@ export default function App() {
     fileHandling.isDirty,
     fileHandling.reloadContent
   );
-
-  const { settings } = useSettings();
 
   // Auto-save: debounced save when enabled, file has a path, and content is dirty
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,6 +71,7 @@ export default function App() {
       }
 
       if (!(e.metaKey || e.ctrlKey)) return;
+      if (!shouldHandleFileShortcut(e.key, showSettings || showHelp)) return;
       switch (e.key) {
         case 'n':
           e.preventDefault();
@@ -93,7 +100,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [fileHandling, showSettings]);
+  }, [fileHandling, showSettings, showHelp]);
 
   // Menu events from native menu (Rust → JS)
   useEffect(() => {
@@ -118,31 +125,104 @@ export default function App() {
 
   // Drag-and-drop (Tauri native)
   useEffect(() => {
-    let unlisten: (() => void) | undefined;
-    async function setup() {
-      try {
-        const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-        unlisten = await getCurrentWebviewWindow().onDragDropEvent((event) => {
-          if (event.payload.type === 'enter' || event.payload.type === 'over') {
-            setIsDragOver(true);
-          } else if (event.payload.type === 'drop') {
-            setIsDragOver(false);
-            const paths = event.payload.paths;
-            const validFile = paths.find((p) => /\.(mmd|mermaid|md)$/i.test(p));
-            if (validFile) {
-              fileHandling.openFilePath(validFile);
+    let cancelled = false;
+
+    // `subscribe` resolves to a no-op release outside Tauri (Vite-only dev)
+    // so the helper always has a real, uniformly-releasable handle to manage.
+    const teardown = manageAsyncResource<() => void>(
+      async () => {
+        try {
+          const { getCurrentWebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+          return await getCurrentWebviewWindow().onDragDropEvent((event) => {
+            // If the effect was torn down before this listener resolved
+            // (StrictMode double-invoke, or a fast file switch), an orphaned
+            // listener could still fire on this stale closure and double-open
+            // a dropped file — guard against that explicitly.
+            if (cancelled) return;
+
+            if (event.payload.type === 'enter' || event.payload.type === 'over') {
+              setIsDragOver(true);
+            } else if (event.payload.type === 'drop') {
+              setIsDragOver(false);
+              const paths = event.payload.paths;
+              const validFile = paths.find((p) => /\.(mmd|mermaid|md)$/i.test(p));
+              if (validFile) {
+                fileHandling.openFilePath(validFile);
+              }
+            } else if (event.payload.type === 'leave') {
+              setIsDragOver(false);
             }
-          } else if (event.payload.type === 'leave') {
-            setIsDragOver(false);
-          }
-        });
+          });
+        } catch {
+          // Not in Tauri environment (Vite-only dev)
+          return () => {
+            // No listener was established — nothing to release.
+          };
+        }
+      },
+      (unlisten) => unlisten()
+    );
+
+    return () => {
+      cancelled = true;
+      teardown();
+    };
+  }, [fileHandling.openFilePath]);
+
+  // File association launch (Rust → JS): a `.mmd`/`.mermaid` opened via
+  // Finder is buffered in Rust state (`take_pending_file_open`) rather than
+  // delivered by a bare `emit`, because on a cold launch `RunEvent::Opened`
+  // can fire before this listener is registered and a dropped emit would
+  // silently fail to load the file. `drainPendingFile` is the single point
+  // of consumption for both routes — the Rust-side buffer is taken
+  // atomically, so a path can never be opened twice even if the cold-start
+  // drain and the `file-opened` event both fire close together.
+  useEffect(() => {
+    let cancelled = false;
+
+    const drainPendingFile = async () => {
+      if (cancelled) return;
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        // Re-check after the await. Taking the buffer is destructive, so a
+        // torn-down effect must not consume a path the live one still needs —
+        // under StrictMode's double-invoke the discarded instance would
+        // otherwise empty the buffer and the file would silently fail to open.
+        if (cancelled) return;
+        const path = await invoke<string | null>('take_pending_file_open');
+        if (!cancelled && path) {
+          fileHandling.openFilePath(path);
+        }
       } catch {
         // Not in Tauri environment (Vite-only dev)
       }
-    }
-    setup();
+    };
+
+    const teardown = manageAsyncResource<() => void>(
+      async () => {
+        try {
+          const { listen } = await import('@tauri-apps/api/event');
+          const unlisten = await listen('file-opened', () => {
+            if (cancelled) return;
+            drainPendingFile();
+          });
+          // Cold-start: a file may already be buffered before this listener
+          // was registered — drain it once on mount to cover that race.
+          drainPendingFile();
+          return unlisten;
+        } catch {
+          // Not in Tauri environment (Vite-only dev)
+          return () => {
+            // No listener was established — nothing to release.
+          };
+        }
+      },
+      (unlisten) => unlisten()
+    );
+
     return () => {
-      unlisten?.();
+      cancelled = true;
+      teardown();
     };
   }, [fileHandling.openFilePath]);
 

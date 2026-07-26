@@ -1,6 +1,7 @@
 import { save as showSaveDialog } from '@tauri-apps/plugin-dialog';
 import { writeFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import mermaid from 'mermaid';
+import { reportError, reportWarning } from '../error-reporting';
 
 // ── Types ───────────────────────────────────────────────
 
@@ -16,6 +17,20 @@ interface RenderedDiagram {
 
 const PNG_MIN_BASE = 512;
 const PNG_MIN_DOUBLE = 1024;
+
+// WebKit (the macOS system WebView Tauri renders through) caps canvas
+// dimensions at 16384px per axis. Past this, `canvas.toBlob()` returns
+// `null` with no thrown error — the silent-failure mode this constant
+// exists to prevent. Source: WebKit's `CanvasBase` size limit, empirically
+// confirmed via `canvas.toBlob` returning `null` past this size on macOS.
+const PNG_MAX_DIMENSION = 16384;
+
+// Safari/WebKit additionally caps total canvas *area* well below what the
+// per-dimension cap alone would allow for near-square diagrams — roughly
+// 16,777,216px² (≈4096x4096) on some devices/memory configurations. Both
+// caps are applied and whichever is more restrictive wins.
+const PNG_MAX_AREA = 16_777_216;
+
 const EXPORT_PADDING = 10;
 
 // ── Public API ──────────────────────────────────────────
@@ -23,11 +38,15 @@ const EXPORT_PADDING = 10;
 export async function exportDiagram(
   source: string,
   format: ExportFormat,
-  baseName: string
+  baseName: string,
+  isDiagramDark: boolean
 ): Promise<void> {
   const trimmed = source.trim();
   if (!trimmed.length) {
-    console.warn('Cannot export an empty diagram.');
+    await reportWarning('Cannot export an empty diagram.', {
+      title: 'Nothing to Export',
+      body: 'The diagram is empty, so there is nothing to export.',
+    });
     return;
   }
 
@@ -40,9 +59,12 @@ export async function exportDiagram(
     }
 
     const scale = format === 'pngx2' ? 2 : 1;
-    await exportAsPng(rendered, baseName, scale);
+    await exportAsPng(rendered, baseName, scale, isDiagramDark);
   } catch (error) {
-    console.error('Failed to export diagram', error);
+    await reportError('Failed to export diagram', error, {
+      title: 'Export Failed',
+      body: `Could not export the diagram as ${format.toUpperCase()}.`,
+    });
   }
 }
 
@@ -86,7 +108,8 @@ async function exportAsSvg(svg: string, baseName: string): Promise<void> {
 async function exportAsPng(
   diagram: RenderedDiagram,
   baseName: string,
-  scale: number
+  scale: number,
+  isDiagramDark: boolean
 ): Promise<void> {
   const suffix = scale > 1 ? '@2x' : '';
   const targetPath = await showSaveDialog({
@@ -101,7 +124,7 @@ async function exportAsPng(
     return;
   }
 
-  const pngBytes = await convertSvgToPng(diagram, scale);
+  const pngBytes = await convertSvgToPng(diagram, scale, isDiagramDark);
   await writeFile(targetPath, pngBytes);
 }
 
@@ -168,15 +191,71 @@ function sanitizeDimension(value: number | null | undefined): number {
   return value;
 }
 
-async function convertSvgToPng(diagram: RenderedDiagram, scale: number): Promise<Uint8Array> {
+/**
+ * Computes the actual pixel dimensions (and effective scale) used to render
+ * the export canvas, given the SVG's natural `width`/`height` and the
+ * requested export `scale` (1 for @1x, 2 for @2x).
+ *
+ * Two constraints are combined:
+ * - A *floor*: the shortest side should be at least `PNG_MIN_BASE`px
+ *   (`PNG_MIN_DOUBLE`px at @2x), so small diagrams still export at a
+ *   reasonable resolution.
+ * - A *ceiling*: neither dimension may exceed `PNG_MAX_DIMENSION`, and the
+ *   total area may not exceed `PNG_MAX_AREA` — both are platform limits of
+ *   the canvas itself, not aesthetic preferences.
+ *
+ * The floor and ceiling can conflict for extreme aspect ratios (e.g. a very
+ * wide, very short diagram at @2x wants a large scale to grow the short
+ * side, but that scale would blow the long side past the canvas limit). The
+ * ceiling always wins: a smaller-than-ideal but still-legible export beats a
+ * `canvas.toBlob()` that silently returns `null`.
+ *
+ * A single scalar is applied to both axes throughout, so the aspect ratio of
+ * the input is always preserved in the output (subject to ±1px rounding).
+ */
+export function computeExportDimensions(
+  width: number,
+  height: number,
+  scale: number
+): { scale: number; width: number; height: number } {
+  // `Math.max(1, NaN)` is `NaN`, not 1, so non-finite inputs must be rejected
+  // explicitly or they propagate all the way to a NaN-sized canvas.
+  const safeWidth = Number.isFinite(width) ? Math.max(1, width) : 1;
+  const safeHeight = Number.isFinite(height) ? Math.max(1, height) : 1;
+  const safeScale = Number.isFinite(scale) ? Math.max(1, scale) : 1;
+
+  const minDimension = safeScale > 1 ? PNG_MIN_DOUBLE : PNG_MIN_BASE;
+  const floorScale = Math.max(safeScale, minDimension / safeWidth, minDimension / safeHeight);
+
+  const maxScaleByDimension = PNG_MAX_DIMENSION / Math.max(safeWidth, safeHeight);
+  const maxScaleByArea = Math.sqrt(PNG_MAX_AREA / (safeWidth * safeHeight));
+  const ceilingScale = Math.min(maxScaleByDimension, maxScaleByArea);
+
+  const finalScale = Math.min(floorScale, ceilingScale);
+
+  const exportWidth = Math.min(PNG_MAX_DIMENSION, Math.max(1, Math.round(safeWidth * finalScale)));
+  const exportHeight = Math.min(
+    PNG_MAX_DIMENSION,
+    Math.max(1, Math.round(safeHeight * finalScale))
+  );
+
+  return { scale: finalScale, width: exportWidth, height: exportHeight };
+}
+
+async function convertSvgToPng(
+  diagram: RenderedDiagram,
+  scale: number,
+  isDiagramDark: boolean
+): Promise<Uint8Array> {
   const { svg, width, height } = diagram;
   const dataUrl = encodeSvgDataUri(svg);
 
   const image = await loadImage(dataUrl, width, height);
-  const minDimension = scale > 1 ? PNG_MIN_DOUBLE : PNG_MIN_BASE;
-  const requiredScale = Math.max(scale, minDimension / width, minDimension / height);
-  const exportWidth = Math.max(1, Math.round(width * requiredScale));
-  const exportHeight = Math.max(1, Math.round(height * requiredScale));
+  const { width: exportWidth, height: exportHeight } = computeExportDimensions(
+    width,
+    height,
+    scale
+  );
 
   const canvas = document.createElement('canvas');
   canvas.width = exportWidth;
@@ -189,8 +268,7 @@ async function convertSvgToPng(diagram: RenderedDiagram, scale: number): Promise
 
   context.save();
   context.globalAlpha = 1;
-  const isDark = document.documentElement.classList.contains('dark');
-  context.fillStyle = isDark ? '#1b2537' : '#ffffff';
+  context.fillStyle = isDiagramDark ? '#1b2537' : '#ffffff';
   context.fillRect(0, 0, exportWidth, exportHeight);
   context.restore();
 

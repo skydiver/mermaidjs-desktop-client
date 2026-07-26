@@ -2,6 +2,7 @@ import { ask, open as showOpenDialog, save as showSaveDialog } from '@tauri-apps
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { type RefObject, useCallback, useRef, useState } from 'react';
 import type { EditorViewHandle } from '../components/EditorView';
+import { reportError } from '../lib/error-reporting';
 import { type ExportFormat, exportDiagram, inferBaseName } from '../lib/export/export-diagram';
 
 // ── Types ───────────────────────────────────────────────
@@ -9,6 +10,13 @@ import { type ExportFormat, exportDiagram, inferBaseName } from '../lib/export/e
 interface UseFileHandlingOptions {
   editorRef: RefObject<EditorViewHandle | null>;
   onContentReplace: (content: string) => void;
+  /**
+   * Whether the diagram's own theme (`settings.diagramTheme`, independent of
+   * the app chrome theme) currently resolves to dark. Threaded through to
+   * `exportDiagram` so the exported PNG background matches what the preview
+   * actually shows.
+   */
+  isDiagramDark: boolean;
 }
 
 export interface UseFileHandlingReturn {
@@ -40,6 +48,7 @@ const DIALOG_FILTERS = [
 export function useFileHandling({
   editorRef,
   onContentReplace,
+  isDiagramDark,
 }: UseFileHandlingOptions): UseFileHandlingReturn {
   const [filePath, setFilePath] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -97,7 +106,10 @@ export function useFileHandling({
         setFilePath(path);
         setLastSavedAt(null);
       } catch (error) {
-        console.error('Failed to open file', error);
+        await reportError('Failed to open file', error, {
+          title: 'Unable to Open File',
+          body: `Could not open "${path}".`,
+        });
       }
     },
     [replaceContent]
@@ -118,7 +130,10 @@ export function useFileHandling({
 
       await openFilePath(path);
     } catch (error) {
-      console.error('Failed to open diagram', error);
+      await reportError('Failed to open diagram', error, {
+        title: 'Unable to Open File',
+        body: 'Could not open the selected file.',
+      });
     }
   }, [openFilePath]);
 
@@ -148,7 +163,15 @@ export function useFileHandling({
       setIsDirty(false);
       setLastSavedAt(new Date());
     } catch (error) {
-      console.error('Failed to save diagram', error);
+      // isDirty correctly stays true here so the status bar keeps showing
+      // "Modified" — but that alone is easy to miss, so make the failure
+      // unmistakable with a dialog too.
+      await reportError('Failed to save diagram', error, {
+        title: 'Save Failed',
+        body: targetPath
+          ? `Could not save to "${targetPath}". Your changes are still in the editor — try Save As to a different location.`
+          : 'Could not save the diagram. Your changes are still in the editor.',
+      });
     }
   }, [editorRef]);
 
@@ -158,9 +181,9 @@ export function useFileHandling({
       if (!editor) return;
       const content = editor.getContent();
       const baseName = inferBaseName(filePathRef.current);
-      await exportDiagram(content, format, baseName);
+      await exportDiagram(content, format, baseName, isDiagramDark);
     },
-    [editorRef]
+    [editorRef, isDiagramDark]
   );
 
   const loadExample = useCallback(
@@ -203,7 +226,10 @@ async function confirmDiscard(message: string): Promise<boolean> {
       kind: 'warning',
     });
   } catch (error) {
-    console.warn('Unable to show confirmation dialog', error);
+    await reportError('Unable to show confirmation dialog', error, {
+      title: 'Action Cancelled',
+      body: 'Could not show the confirmation dialog, so the action was cancelled to avoid discarding unsaved work.',
+    });
     return false;
   }
 }
