@@ -2191,7 +2191,7 @@ dependencies = [
 
 [[package]]
 name = "mermaidjs_desktop_client"
-version = "3.0.3"
+version = "3.1.0"
 dependencies = [
  "core-foundation 0.10.1",
  "core-text",
