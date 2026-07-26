@@ -14,9 +14,18 @@ export const editorHighlightStyle = HighlightStyle.define([
   { tag: tags.attributeName, color: 'var(--syntax-attribute)' },
 ]);
 
+// Only characters that cannot break out of a quoted CSS `font-family` value
+// are allowed through. Defence in depth: `editorFontFamily` should already
+// be sanitized by `validateSettings` before it reaches here, but this
+// module has its own trust boundary — a future caller could construct a
+// theme without going through the settings loader.
+const SAFE_FONT_FAMILY_PATTERN = /^[A-Za-z0-9 _-]+$/;
+
 export function createEditorTheme(fontFamily?: string, disableLigatures?: boolean): Extension {
-  const fontStack = fontFamily
-    ? `"${fontFamily}", "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace`
+  const safeFontFamily =
+    fontFamily && SAFE_FONT_FAMILY_PATTERN.test(fontFamily) ? fontFamily : undefined;
+  const fontStack = safeFontFamily
+    ? `"${safeFontFamily}", "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace`
     : '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace';
 
   return EditorView.theme({

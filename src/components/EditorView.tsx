@@ -35,6 +35,13 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
     onChangeRef.current = onChange;
     const { settings } = useSettings();
     const compartmentsRef = useRef(createSettingsCompartments());
+    // Captured once for the mount-only effect below: CodeMirror is created
+    // a single time with whatever text/settings are current at that moment,
+    // and all subsequent settings changes flow through the reconfigure
+    // effect via compartments instead of recreating the editor (which would
+    // discard undo history and cursor position).
+    const initialTextRef = useRef(initialText);
+    const initialSettingsRef = useRef(settings);
 
     useImperativeHandle(ref, () => ({
       replaceContent(text: string) {
@@ -62,7 +69,7 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
         bracketMatching(),
         indentOnInput(),
         createMermaidLanguage(),
-        ...createSettingsExtensions(compartmentsRef.current, settings),
+        ...createSettingsExtensions(compartmentsRef.current, initialSettingsRef.current),
         keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -78,7 +85,7 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
       ];
 
       const state = EditorState.create({
-        doc: initialText,
+        doc: initialTextRef.current,
         extensions,
       });
 
@@ -102,20 +109,41 @@ const EditorViewComponent = forwardRef<EditorViewHandle, EditorViewProps>(
       };
     }, []);
 
-    // Reconfigure editor when settings change
+    // Reconfigure editor when settings change. Captures only the fields
+    // this effect actually depends on, so unrelated settings changes
+    // (theme, autoSave, diagramTheme, ...) do not trigger a reconfigure.
+    const {
+      editorFontFamily,
+      editorFontSize,
+      disableLigatures,
+      wordWrap,
+      showInvisibles,
+      indentType,
+      indentSize,
+      syntaxHighlighting,
+    } = settings;
     useEffect(() => {
       const editor = editorRef.current;
       if (!editor) return;
-      reconfigureSettings(editor, compartmentsRef.current, settings);
+      reconfigureSettings(editor, compartmentsRef.current, {
+        editorFontFamily,
+        editorFontSize,
+        disableLigatures,
+        wordWrap,
+        showInvisibles,
+        indentType,
+        indentSize,
+        syntaxHighlighting,
+      });
     }, [
-      settings.editorFontFamily,
-      settings.editorFontSize,
-      settings.disableLigatures,
-      settings.wordWrap,
-      settings.showInvisibles,
-      settings.indentType,
-      settings.indentSize,
-      settings.syntaxHighlighting,
+      editorFontFamily,
+      editorFontSize,
+      disableLigatures,
+      wordWrap,
+      showInvisibles,
+      indentType,
+      indentSize,
+      syntaxHighlighting,
     ]);
 
     return <div ref={containerRef} className="h-full w-full" />;

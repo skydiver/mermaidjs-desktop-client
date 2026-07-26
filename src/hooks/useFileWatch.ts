@@ -1,5 +1,7 @@
 import { readTextFile } from '@tauri-apps/plugin-fs';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { manageAsyncResource } from '../lib/async-resource';
+import { reportError, shouldReportWatchFailure } from '../lib/error-reporting';
 
 export interface FileWatchState {
   /** True when the file on disk changed while the editor has unsaved changes */
@@ -37,6 +39,12 @@ export function useFileWatch(
   const filePathRef = useRef(filePath);
   filePathRef.current = filePath;
 
+  // Tracks the path of the most recently reported background watcher
+  // failure, so a watcher that keeps firing on the same broken file does not
+  // spam the user with repeated identical dialogs. Reset to null once a read
+  // for that path succeeds again, so a later, new failure is still reported.
+  const lastReportedWatchFailurePathRef = useRef<string | null>(null);
+
   const keepChanges = useCallback(() => setExternallyModified(false), []);
 
   const reload = useCallback(async () => {
@@ -47,7 +55,11 @@ export function useFileWatch(
       onReloadRef.current(content);
       setExternallyModified(false);
     } catch (err) {
-      console.error('File watch reload failed:', err);
+      // Explicit, user-initiated "Reload from disk" — always surface.
+      await reportError('User-initiated reload from disk failed:', err, {
+        title: 'Reload Failed',
+        body: `Could not reload "${path}" from disk.`,
+      });
     }
   }, []);
 
@@ -56,19 +68,24 @@ export function useFileWatch(
 
     setExternallyModified(false);
     let cancelled = false;
-    let unwatch: (() => void) | undefined;
+    const path = filePath;
 
-    async function startWatching(path: string) {
-      let fsModule: typeof import('@tauri-apps/plugin-fs');
-      try {
-        fsModule = await import('@tauri-apps/plugin-fs');
-      } catch {
-        // Not in Tauri environment (Vite-only dev)
-        return;
-      }
+    // `subscribe` resolves to a no-op release when the watch cannot be
+    // established (outside Tauri, or the plugin import itself fails) so the
+    // helper always has a real, uniformly-releasable handle to manage.
+    const teardown = manageAsyncResource<() => void>(
+      async () => {
+        let fsModule: typeof import('@tauri-apps/plugin-fs');
+        try {
+          fsModule = await import('@tauri-apps/plugin-fs');
+        } catch {
+          // Not in Tauri environment (Vite-only dev)
+          return () => {
+            // No watcher was established — nothing to release.
+          };
+        }
 
-      try {
-        unwatch = await fsModule.watch(
+        return fsModule.watch(
           path,
           async () => {
             if (cancelled) return;
@@ -76,6 +93,10 @@ export function useFileWatch(
             try {
               const content = await readTextFile(path);
               if (cancelled) return;
+
+              // Read succeeded — clear any prior failure record for this path
+              // so a future failure is reported again rather than suppressed.
+              lastReportedWatchFailurePathRef.current = null;
 
               // No actual change — ignore (e.g. our own save triggered the event)
               if (content === sourceTextRef.current) return;
@@ -87,21 +108,39 @@ export function useFileWatch(
 
               onReloadRef.current(content);
             } catch (err) {
-              console.error('File watch reload failed:', err);
+              // Background watcher failure with real user impact: what's on
+              // screen may no longer match disk. A watcher can fire repeatedly
+              // for the same broken file, so only report the first failure per
+              // path until a subsequent read succeeds.
+              if (shouldReportWatchFailure(path, lastReportedWatchFailurePathRef.current)) {
+                lastReportedWatchFailurePathRef.current = path;
+                await reportError('Watcher-initiated re-read failed:', err, {
+                  title: 'File Changed On Disk',
+                  body: `"${path}" changed on disk but could not be re-read. Further external changes to this file may not be detected until it is reopened.`,
+                });
+              } else {
+                console.error(
+                  'Watcher-initiated re-read failed again (already reported for this path):',
+                  err
+                );
+              }
             }
           },
           { delayMs: 1000 }
         );
-      } catch (err) {
-        console.warn('File watcher setup failed:', err);
+      },
+      (unwatch) => unwatch(),
+      (err) => {
+        void reportError('File watcher setup failed:', err, {
+          title: 'File Watching Unavailable',
+          body: `Changes to "${path}" made outside the app will not be detected automatically.`,
+        });
       }
-    }
-
-    startWatching(filePath);
+    );
 
     return () => {
       cancelled = true;
-      unwatch?.();
+      teardown();
     };
   }, [filePath]);
 

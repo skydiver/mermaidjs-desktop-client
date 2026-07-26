@@ -2,6 +2,7 @@ import zenuml from '@mermaid-js/mermaid-zenuml';
 import mermaid from 'mermaid';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { debounce } from '../lib/debounce';
+import { reportError } from '../lib/error-reporting';
 import { useSettings } from './useSettings';
 
 // ── Types ───────────────────────────────────────────────
@@ -22,7 +23,13 @@ const RENDER_DELAY = 300;
 try {
   await mermaid.registerExternalDiagrams([zenuml]);
 } catch (error) {
-  console.error('Failed to register ZenUML diagram type', error);
+  // Do not await — this runs at module-eval time, before the app has
+  // rendered, and blocking here would hold up first paint until the
+  // user dismisses the dialog. reportError never throws.
+  void reportError('Failed to register ZenUML diagram type', error, {
+    title: 'Diagram Type Unavailable',
+    body: 'ZenUML sequence diagrams could not be registered and will not render correctly.',
+  });
 }
 
 // ── Hook ────────────────────────────────────────────────
@@ -85,8 +92,11 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
   const renderFnRef = useRef(executeRender);
   renderFnRef.current = executeRender;
 
-  // Stable debounced render — created once, calls latest executeRender via ref
-  const debouncedRenderRef = useRef(
+  // Stable debounced render — created once, calls latest executeRender via
+  // ref. `useState` with an initializer rather than `useRef(debounce(...))`,
+  // which would re-evaluate `debounce(...)` on every render and discard all
+  // but the first result. Matches the form used in `useSettings`.
+  const [debouncedRender] = useState(() =>
     debounce((source: string, token: number) => {
       renderFnRef.current(source, token);
     }, RENDER_DELAY)
@@ -110,16 +120,19 @@ export function useMermaid(containerRef: RefObject<HTMLElement | null>): {
 
   // Cancel debounced render on unmount
   useEffect(() => {
-    return () => debouncedRenderRef.current.cancel();
-  }, []);
+    return () => debouncedRender.cancel();
+  }, [debouncedRender]);
 
-  const schedule = useCallback((source: string) => {
-    lastSourceRef.current = source;
-    tokenRef.current += 1;
-    const token = tokenRef.current;
-    setStatus({ message: 'Rendering...', level: 'loading' });
-    debouncedRenderRef.current(source, token);
-  }, []);
+  const schedule = useCallback(
+    (source: string) => {
+      lastSourceRef.current = source;
+      tokenRef.current += 1;
+      const token = tokenRef.current;
+      setStatus({ message: 'Rendering...', level: 'loading' });
+      debouncedRender(source, token);
+    },
+    [debouncedRender]
+  );
 
   return { schedule, status };
 }

@@ -1,14 +1,23 @@
 import { ask, open as showOpenDialog, save as showSaveDialog } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
 import { type RefObject, useCallback, useRef, useState } from 'react';
 import type { EditorViewHandle } from '../components/EditorView';
+import { reportError, reportWarning } from '../lib/error-reporting';
 import { type ExportFormat, exportDiagram, inferBaseName } from '../lib/export/export-diagram';
+import { isFileTooLarge, looksBinary, MAX_OPEN_FILE_BYTES } from '../lib/file-guard';
 
 // ── Types ───────────────────────────────────────────────
 
 interface UseFileHandlingOptions {
   editorRef: RefObject<EditorViewHandle | null>;
   onContentReplace: (content: string) => void;
+  /**
+   * Whether the diagram's own theme (`settings.diagramTheme`, independent of
+   * the app chrome theme) currently resolves to dark. Threaded through to
+   * `exportDiagram` so the exported PNG background matches what the preview
+   * actually shows.
+   */
+  isDiagramDark: boolean;
 }
 
 export interface UseFileHandlingReturn {
@@ -30,6 +39,12 @@ export interface UseFileHandlingReturn {
 
 // ── Constants ───────────────────────────────────────────
 
+// "All Files" is kept deliberately: a diagram saved with an unusual
+// extension is a real, legitimate case, and dropping the filter would only
+// stop that — it would not add any safety. The actual guard against opening
+// something inappropriate (a huge log, a binary) is the size/content check
+// in `openFilePath` below, which applies regardless of which filter was
+// used to pick the file.
 const DIALOG_FILTERS = [
   { name: 'Mermaid Diagram', extensions: ['mmd', 'mermaid', 'md'] },
   { name: 'All Files', extensions: ['*'] },
@@ -40,6 +55,7 @@ const DIALOG_FILTERS = [
 export function useFileHandling({
   editorRef,
   onContentReplace,
+  isDiagramDark,
 }: UseFileHandlingOptions): UseFileHandlingReturn {
   const [filePath, setFilePath] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -71,6 +87,15 @@ export function useFileHandling({
       suppressDirtyRef.current = true;
       onContentReplace(content);
       editorRef.current?.replaceContent(content);
+      // CodeMirror's update listener runs synchronously inside `dispatch`, so
+      // any `markDirty` caused by this replacement has already consumed the
+      // flag by now. Clearing it here rather than leaving `markDirty` to do
+      // it matters when the replacement is a no-op — `replaceContent`
+      // short-circuits on identical text and never dispatches, which would
+      // otherwise leave the flag armed to swallow the user's next real edit
+      // (reachable via ⌘N on an already-empty editor, or re-selecting the
+      // loaded example).
+      suppressDirtyRef.current = false;
       isDirtyRef.current = false;
       setIsDirty(false);
     },
@@ -88,16 +113,40 @@ export function useFileHandling({
     setLastSavedAt(null);
   }, [replaceContent]);
 
+  // Shared entry point for all three ways a file gets opened: the Open
+  // dialog, drag-and-drop, and file-association launches from Finder. Every
+  // route funnels through here, so the size/type guard below covers all of
+  // them rather than only the dialog path.
   const openFilePath = useCallback(
     async (path: string) => {
       try {
+        const info = await stat(path);
+        if (isFileTooLarge(info.size)) {
+          await reportWarning(`Refused to open oversize file: ${path} (${info.size} bytes)`, {
+            title: 'File Too Large',
+            body: `"${path}" is ${formatBytes(info.size)}, which is above the ${formatBytes(MAX_OPEN_FILE_BYTES)} limit for diagram source. Choose a smaller file.`,
+          });
+          return;
+        }
+
         const content = await readTextFile(path);
+        if (looksBinary(content)) {
+          await reportWarning(`Refused to open file that looks binary: ${path}`, {
+            title: 'File Does Not Look Like Text',
+            body: `"${path}" does not look like a text-based diagram file and was not opened.`,
+          });
+          return;
+        }
+
         replaceContent(content);
         setHasDocument(true);
         setFilePath(path);
         setLastSavedAt(null);
       } catch (error) {
-        console.error('Failed to open file', error);
+        await reportError('Failed to open file', error, {
+          title: 'Unable to Open File',
+          body: `Could not open "${path}".`,
+        });
       }
     },
     [replaceContent]
@@ -118,7 +167,10 @@ export function useFileHandling({
 
       await openFilePath(path);
     } catch (error) {
-      console.error('Failed to open diagram', error);
+      await reportError('Failed to open diagram', error, {
+        title: 'Unable to Open File',
+        body: 'Could not open the selected file.',
+      });
     }
   }, [openFilePath]);
 
@@ -148,7 +200,15 @@ export function useFileHandling({
       setIsDirty(false);
       setLastSavedAt(new Date());
     } catch (error) {
-      console.error('Failed to save diagram', error);
+      // isDirty correctly stays true here so the status bar keeps showing
+      // "Modified" — but that alone is easy to miss, so make the failure
+      // unmistakable with a dialog too.
+      await reportError('Failed to save diagram', error, {
+        title: 'Save Failed',
+        body: targetPath
+          ? `Could not save to "${targetPath}". Your changes are still in the editor — check that the file is writable and try again.`
+          : 'Could not save the diagram. Your changes are still in the editor.',
+      });
     }
   }, [editorRef]);
 
@@ -158,9 +218,9 @@ export function useFileHandling({
       if (!editor) return;
       const content = editor.getContent();
       const baseName = inferBaseName(filePathRef.current);
-      await exportDiagram(content, format, baseName);
+      await exportDiagram(content, format, baseName, isDiagramDark);
     },
-    [editorRef]
+    [editorRef, isDiagramDark]
   );
 
   const loadExample = useCallback(
@@ -196,6 +256,11 @@ export function useFileHandling({
 
 // ── Helpers ─────────────────────────────────────────────
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 async function confirmDiscard(message: string): Promise<boolean> {
   try {
     return await ask(message, {
@@ -203,7 +268,10 @@ async function confirmDiscard(message: string): Promise<boolean> {
       kind: 'warning',
     });
   } catch (error) {
-    console.warn('Unable to show confirmation dialog', error);
+    await reportError('Unable to show confirmation dialog', error, {
+      title: 'Action Cancelled',
+      body: 'Could not show the confirmation dialog, so the action was cancelled to avoid discarding unsaved work.',
+    });
     return false;
   }
 }

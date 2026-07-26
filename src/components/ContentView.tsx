@@ -13,6 +13,7 @@ import Toolbar from './Toolbar';
 const DEFAULT_RATIO = 0.4;
 const MIN_RATIO = 0.2;
 const MAX_RATIO = 0.8;
+const KEYBOARD_RATIO_STEP = 0.02;
 
 // ── Props ───────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ export default function ContentView({
   const startRatioRef = useRef(DEFAULT_RATIO);
 
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
+    (e: React.PointerEvent<HTMLHRElement>) => {
       draggingRef.current = true;
       startXRef.current = e.clientX;
       startRatioRef.current = editorRatio;
@@ -85,7 +86,7 @@ export default function ContentView({
     [editorRatio]
   );
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLHRElement>) => {
     if (!draggingRef.current || !containerRef.current) return;
     const containerWidth = containerRef.current.getBoundingClientRect().width;
     const delta = e.clientX - startXRef.current;
@@ -99,6 +100,25 @@ export default function ContentView({
 
   const handleDoubleClick = useCallback(() => {
     setEditorRatio(DEFAULT_RATIO);
+  }, []);
+
+  const handleDividerKeyDown = useCallback((e: React.KeyboardEvent<HTMLHRElement>) => {
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        setEditorRatio((prev) => Math.max(MIN_RATIO, prev - KEYBOARD_RATIO_STEP));
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        setEditorRatio((prev) => Math.min(MAX_RATIO, prev + KEYBOARD_RATIO_STEP));
+        break;
+      case 'Home':
+        e.preventDefault();
+        setEditorRatio(DEFAULT_RATIO);
+        break;
+      default:
+        break;
+    }
   }, []);
 
   return (
@@ -148,16 +168,24 @@ export default function ContentView({
             <EditorView ref={editorRef} initialText={editorText} onChange={onEditorChange} />
           </div>
 
-          {/* Resize divider */}
-          <div
-            className="group flex w-1 shrink-0 cursor-col-resize items-center justify-center hover:bg-blue-500/20 active:bg-blue-500/30"
+          {/* Resize divider — a real <hr> carries the implicit `separator`
+              accessible role, so no explicit `role` attribute is needed.
+              The visual grip is a `::before` pseudo-element since <hr> is a
+              void element and cannot have DOM children. */}
+          <hr
+            aria-label="Resize editor and preview panels"
+            aria-orientation="vertical"
+            aria-valuenow={Math.round(editorRatio * 100)}
+            aria-valuemin={Math.round(MIN_RATIO * 100)}
+            aria-valuemax={Math.round(MAX_RATIO * 100)}
+            tabIndex={0}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onDoubleClick={handleDoubleClick}
-          >
-            <div className="h-8 w-0.5 rounded-full bg-neutral-300 transition-colors group-hover:bg-blue-500 group-active:bg-blue-600 dark:bg-slate-600 dark:group-hover:bg-blue-400" />
-          </div>
+            onKeyDown={handleDividerKeyDown}
+            className="m-0 flex w-1 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent before:h-8 before:w-0.5 before:rounded-full before:bg-neutral-300 before:transition-colors before:content-[''] hover:bg-blue-500/20 hover:before:bg-blue-500 active:bg-blue-500/30 active:before:bg-blue-600 focus-visible:bg-blue-500/20 dark:before:bg-slate-600 dark:hover:before:bg-blue-400"
+          />
 
           {/* Preview panel */}
           <div className="flex flex-col" style={{ flex: `${1 - editorRatio} 1 0` }}>

@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import { debounce } from '../lib/debounce';
+import { validateSettings } from '../lib/settings/validate-settings';
 
 // ── Types ───────────────────────────────────────────────
 
@@ -80,13 +81,17 @@ function getStore() {
   return storePromise;
 }
 
-async function loadFromStore(): Promise<Partial<AppSettings>> {
+async function loadFromStore(): Promise<AppSettings> {
   try {
     const store = await getStore();
-    const value = await store.get<AppSettings>(STORE_KEY);
-    return value ?? {};
+    // `settings.json` is a trust boundary — it is a plain file writable by
+    // the user or any local process. `store.get` returns `unknown` at
+    // runtime despite the type parameter, so it must be validated before
+    // it reaches application state.
+    const value = await store.get(STORE_KEY);
+    return validateSettings(value);
   } catch {
-    return {};
+    return DEFAULT_SETTINGS;
   }
 }
 
@@ -119,8 +124,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   // Load persisted settings on mount
   useEffect(() => {
-    loadFromStore().then((persisted) => {
-      setSettings((prev) => ({ ...prev, ...persisted }));
+    loadFromStore().then((validated) => {
+      setSettings(validated);
       setLoaded(true);
     });
   }, []);
