@@ -162,9 +162,15 @@ body {
   }
 }
 
-/* Desktop app — disable all focus rings globally */
-*:focus,
-*:focus-visible {
+/* Desktop app — disable the mouse-click focus ring only.
+   `:focus` matches ANY focus (mouse or keyboard); `:focus-visible` matches
+   only focus the browser judges should be visible (keyboard/programmatic).
+   A keyboard-focused element matches BOTH selectors, so a bare `*:focus`
+   suppression would still win on specificity ties and hide keyboard focus
+   too. `:not(:focus-visible)` excludes exactly that overlap, leaving
+   `:focus-visible` — and the component-layer `focus-visible:ring-*`
+   styles — untouched. */
+*:focus:not(:focus-visible) {
   outline: none !important;
   box-shadow: none !important;
 }
