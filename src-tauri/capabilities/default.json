@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Capability for the main window. No static fs:scope allowlist is declared here — `$DIALOG` is not a real Tauri path variable, so an entry like { \"path\": \"$DIALOG/**\" } would silently compile to a dead literal glob. Actual fs access is gated by runtime scope mutation: tauri-plugin-dialog calls scope.allow_file() after a dialog pick, tauri-plugin-fs does the same for drag-drop, and src-tauri/src/lib.rs's RunEvent::Opened handler does it for file-association launches.",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -14,10 +14,7 @@
     "fs:allow-write-file",
     "fs:allow-watch",
     "fs:allow-unwatch",
-    {
-      "identifier": "fs:scope",
-      "allow": [{ "path": "$DIALOG/**" }]
-    },
+    "fs:allow-stat",
     "store:default",
     "window-state:default"
   ]

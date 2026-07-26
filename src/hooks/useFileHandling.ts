@@ -1,9 +1,10 @@
 import { ask, open as showOpenDialog, save as showSaveDialog } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
 import { type RefObject, useCallback, useRef, useState } from 'react';
 import type { EditorViewHandle } from '../components/EditorView';
-import { reportError } from '../lib/error-reporting';
+import { reportError, reportWarning } from '../lib/error-reporting';
 import { type ExportFormat, exportDiagram, inferBaseName } from '../lib/export/export-diagram';
+import { isFileTooLarge, looksBinary, MAX_OPEN_FILE_BYTES } from '../lib/file-guard';
 
 // ── Types ───────────────────────────────────────────────
 
@@ -38,6 +39,12 @@ export interface UseFileHandlingReturn {
 
 // ── Constants ───────────────────────────────────────────
 
+// "All Files" is kept deliberately: a diagram saved with an unusual
+// extension is a real, legitimate case, and dropping the filter would only
+// stop that — it would not add any safety. The actual guard against opening
+// something inappropriate (a huge log, a binary) is the size/content check
+// in `openFilePath` below, which applies regardless of which filter was
+// used to pick the file.
 const DIALOG_FILTERS = [
   { name: 'Mermaid Diagram', extensions: ['mmd', 'mermaid', 'md'] },
   { name: 'All Files', extensions: ['*'] },
@@ -97,10 +104,31 @@ export function useFileHandling({
     setLastSavedAt(null);
   }, [replaceContent]);
 
+  // Shared entry point for all three ways a file gets opened: the Open
+  // dialog, drag-and-drop, and file-association launches from Finder. Every
+  // route funnels through here, so the size/type guard below covers all of
+  // them rather than only the dialog path.
   const openFilePath = useCallback(
     async (path: string) => {
       try {
+        const info = await stat(path);
+        if (isFileTooLarge(info.size)) {
+          await reportWarning(`Refused to open oversize file: ${path} (${info.size} bytes)`, {
+            title: 'File Too Large',
+            body: `"${path}" is ${formatBytes(info.size)}, which is above the ${formatBytes(MAX_OPEN_FILE_BYTES)} limit for diagram source. Choose a smaller file.`,
+          });
+          return;
+        }
+
         const content = await readTextFile(path);
+        if (looksBinary(content)) {
+          await reportWarning(`Refused to open file that looks binary: ${path}`, {
+            title: 'File Does Not Look Like Text',
+            body: `"${path}" does not look like a text-based diagram file and was not opened.`,
+          });
+          return;
+        }
+
         replaceContent(content);
         setHasDocument(true);
         setFilePath(path);
@@ -218,6 +246,11 @@ export function useFileHandling({
 }
 
 // ── Helpers ─────────────────────────────────────────────
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 async function confirmDiscard(message: string): Promise<boolean> {
   try {
