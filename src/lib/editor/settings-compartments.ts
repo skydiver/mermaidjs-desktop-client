@@ -30,6 +30,29 @@ function createFontSizeTheme(size: number) {
   });
 }
 
+// Defence in depth: `settings.indentSize` should already be validated by
+// `validateSettings` before it reaches here, but `String.prototype.repeat`
+// throws a `RangeError` for a negative or absurdly large count, and this
+// module has its own trust boundary — a future caller could reconfigure
+// the editor without going through the settings loader. Clamp to a sane
+// range rather than trusting the input.
+function safeIndentUnit(indentType: AppSettings['indentType'], indentSize: number): string {
+  if (indentType === 'tab') return '\t';
+  const safeSize =
+    Number.isInteger(indentSize) && indentSize >= 1 && indentSize <= 16 ? indentSize : 2;
+  return ' '.repeat(safeSize);
+}
+
+function indentConfigExtensions(
+  indentType: AppSettings['indentType'],
+  indentSize: number
+): Extension[] {
+  return [
+    indentUnit.of(safeIndentUnit(indentType, indentSize)),
+    EditorState.tabSize.of(indentSize),
+  ];
+}
+
 export function createSettingsExtensions(
   compartments: EditorSettingsCompartments,
   settings: AppSettings
@@ -39,10 +62,7 @@ export function createSettingsExtensions(
     compartments.fontSize.of(createFontSizeTheme(settings.editorFontSize)),
     compartments.lineWrapping.of(settings.wordWrap ? EditorView.lineWrapping : []),
     compartments.whitespace.of(settings.showInvisibles ? highlightWhitespace() : []),
-    compartments.indentConfig.of([
-      indentUnit.of(settings.indentType === 'tab' ? '\t' : ' '.repeat(settings.indentSize)),
-      EditorState.tabSize.of(settings.indentSize),
-    ]),
+    compartments.indentConfig.of(indentConfigExtensions(settings.indentType, settings.indentSize)),
     compartments.syntaxHighlighting.of(
       settings.syntaxHighlighting ? syntaxHighlighting(editorHighlightStyle) : []
     ),
@@ -62,10 +82,9 @@ export function reconfigureSettings(
       compartments.fontSize.reconfigure(createFontSizeTheme(settings.editorFontSize)),
       compartments.lineWrapping.reconfigure(settings.wordWrap ? EditorView.lineWrapping : []),
       compartments.whitespace.reconfigure(settings.showInvisibles ? highlightWhitespace() : []),
-      compartments.indentConfig.reconfigure([
-        indentUnit.of(settings.indentType === 'tab' ? '\t' : ' '.repeat(settings.indentSize)),
-        EditorState.tabSize.of(settings.indentSize),
-      ]),
+      compartments.indentConfig.reconfigure(
+        indentConfigExtensions(settings.indentType, settings.indentSize)
+      ),
       compartments.syntaxHighlighting.reconfigure(
         settings.syntaxHighlighting ? syntaxHighlighting(editorHighlightStyle) : []
       ),
