@@ -4,6 +4,23 @@ import { EditorView, highlightWhitespace } from '@codemirror/view';
 import type { AppSettings } from '@/hooks/useSettings';
 import { createEditorTheme, editorHighlightStyle } from './theme';
 
+// The subset of AppSettings that actually affects CodeMirror compartment
+// configuration. Narrowing the parameter type (rather than accepting the
+// full AppSettings) lets callers construct an object literal from exactly
+// the fields they depend on, so a `useEffect` dependency array can list
+// those same fields and have its captures match them precisely.
+export type EditorSettingsSubset = Pick<
+  AppSettings,
+  | 'editorFontFamily'
+  | 'editorFontSize'
+  | 'disableLigatures'
+  | 'wordWrap'
+  | 'showInvisibles'
+  | 'indentType'
+  | 'indentSize'
+  | 'syntaxHighlighting'
+>;
+
 export interface EditorSettingsCompartments {
   theme: Compartment;
   fontSize: Compartment;
@@ -55,7 +72,7 @@ function indentConfigExtensions(
 
 export function createSettingsExtensions(
   compartments: EditorSettingsCompartments,
-  settings: AppSettings
+  settings: EditorSettingsSubset
 ): Extension[] {
   return [
     compartments.theme.of(createEditorTheme(settings.editorFontFamily, settings.disableLigatures)),
@@ -72,7 +89,7 @@ export function createSettingsExtensions(
 export function reconfigureSettings(
   view: EditorView,
   compartments: EditorSettingsCompartments,
-  settings: AppSettings
+  settings: EditorSettingsSubset
 ): void {
   view.dispatch({
     effects: [

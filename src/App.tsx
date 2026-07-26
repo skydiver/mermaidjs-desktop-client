@@ -8,7 +8,10 @@ import { useFileWatch } from './hooks/useFileWatch';
 import type { MermaidStatus } from './hooks/useMermaid';
 import { useSettings } from './hooks/useSettings';
 import { manageAsyncResource } from './lib/async-resource';
+import { debounce } from './lib/debounce';
 import { shouldHandleFileShortcut } from './lib/keyboard-shortcuts';
+
+const AUTO_SAVE_DEBOUNCE_MS = 1000;
 
 export default function App() {
   const editorRef = useRef<EditorViewHandle>(null);
@@ -34,27 +37,54 @@ export default function App() {
     fileHandling.reloadContent
   );
 
-  // Auto-save: debounced save when enabled, file has a path, and content is dirty
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Auto-save: writes ~1s after typing stops, when enabled and the file has
+  // a path. Triggered directly from `handleEditorChange` (every keystroke)
+  // rather than from a `useEffect` keyed on `isDirty` — `isDirty` only
+  // flips false → true once per edit session, so an effect depending on it
+  // would arm the timer once and then fire on a fixed ~1s cadence for as
+  // long as typing continued, instead of debouncing against it. Debouncing
+  // on the change callback itself resets the timer on every keystroke, so a
+  // single write happens only once typing actually pauses.
+  const saveFileRef = useRef(fileHandling.saveFile);
+  saveFileRef.current = fileHandling.saveFile;
+
+  // The document an in-flight timer was armed for, versus the document
+  // currently open. A timer armed for file A must not fire once the user has
+  // moved on: after ⌘N the path is `null`, and `saveFile()` with no path
+  // opens a native Save dialog — an unprompted modal for a document the user
+  // never asked to save. The timer is therefore gated on identity at fire
+  // time rather than cancelled from an effect, since a cleanup-only
+  // dependency is invisible to the exhaustive-deps analysis.
+  const armedForPathRef = useRef<string | null>(null);
+  const filePathRef = useRef(fileHandling.filePath);
+  filePathRef.current = fileHandling.filePath;
+
+  const debouncedAutoSaveRef = useRef<ReturnType<typeof debounce<[]>> | null>(null);
+  if (!debouncedAutoSaveRef.current) {
+    debouncedAutoSaveRef.current = debounce(() => {
+      if (armedForPathRef.current !== filePathRef.current) return;
+      saveFileRef.current();
+    }, AUTO_SAVE_DEBOUNCE_MS);
+  }
+
   useEffect(() => {
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    if (!settings.autoSave || !fileHandling.filePath || !fileHandling.isDirty) return;
+    if (!settings.autoSave) debouncedAutoSaveRef.current?.cancel();
+  }, [settings.autoSave]);
 
-    autoSaveTimerRef.current = setTimeout(() => {
-      fileHandling.saveFile();
-    }, 1000);
-
-    return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    };
-  }, [settings.autoSave, fileHandling.filePath, fileHandling.isDirty, fileHandling.saveFile]);
+  useEffect(() => {
+    return () => debouncedAutoSaveRef.current?.cancel();
+  }, []);
 
   const handleEditorChange = useCallback(
     (text: string) => {
       setEditorText(text);
       fileHandling.markDirty();
+      if (settings.autoSave && fileHandling.filePath) {
+        armedForPathRef.current = fileHandling.filePath;
+        debouncedAutoSaveRef.current?.();
+      }
     },
-    [fileHandling.markDirty]
+    [fileHandling.markDirty, settings.autoSave, fileHandling.filePath]
   );
 
   const handlePreviewStatusChange = useCallback((s: MermaidStatus) => {
@@ -100,7 +130,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [fileHandling, showSettings, showHelp]);
+  }, [fileHandling.newFile, fileHandling.openFile, fileHandling.saveFile, showSettings, showHelp]);
 
   // Menu events from native menu (Rust → JS)
   useEffect(() => {

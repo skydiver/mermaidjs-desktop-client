@@ -32,6 +32,60 @@
     "enabled": true,
     "rules": {
       "preset": "none",
+      "a11y": {
+        "noAccessKey": "error",
+        "noAmbiguousAnchorText": "error",
+        "noAriaHiddenOnFocusable": "error",
+        "noAriaUnsupportedElements": "error",
+        "noAutofocus": "error",
+        "noDistractingElements": "error",
+        "noHeaderScope": "error",
+        "noInteractiveElementToNoninteractiveRole": "error",
+        "noLabelWithoutControl": "error",
+        "noNoninteractiveElementInteractions": "error",
+        "noNoninteractiveElementToInteractiveRole": "error",
+        "noNoninteractiveTabindex": "error",
+        "noPositiveTabindex": "error",
+        "noRedundantAlt": "error",
+        "noRedundantRoles": "error",
+        "noStaticElementInteractions": "error",
+        "noSvgWithoutTitle": "error",
+        "useAltText": "error",
+        "useAnchorContent": "error",
+        "useAriaActivedescendantWithTabindex": "error",
+        "useAriaPropsForRole": "error",
+        "useAriaPropsSupportedByRole": "error",
+        "useButtonType": "error",
+        "useFocusableInteractive": "error",
+        "useGenericFontNames": "error",
+        "useHeadingContent": "error",
+        "useHtmlLang": "error",
+        "useIframeTitle": "error",
+        "useKeyWithClickEvents": "error",
+        "useKeyWithMouseEvents": "error",
+        "useMediaCaption": "error",
+        "useSemanticElements": "error",
+        "useValidAnchor": "error",
+        "useValidAriaProps": "error",
+        "useValidAriaRole": "error",
+        "useValidAriaValues": "error",
+        "useValidAutocomplete": "error",
+        "useValidLang": "error"
+      },
+      "security": {
+        "noBlankTarget": "error",
+        "noDangerouslySetInnerHtml": "error",
+        "noDangerouslySetInnerHtmlWithChildren": "error",
+        "noGlobalEval": "error",
+        "noScriptUrl": "error",
+        // Entropy-heuristic false positives across this codebase: long
+        // Tailwind utility-class strings (button.tsx, select.tsx),
+        // CodeMirror's bracket-matching config string (language.ts), and
+        // vitest `describe()` names all trip the "high entropy string"
+        // check with no actual secret present. Kept off rather than
+        // suppressed per-site.
+        "noSecrets": "off"
+      },
       "complexity": {
         "noExtraBooleanCast": "error",
         "noUselessCatch": "error",
@@ -62,7 +116,9 @@
         "useIsNan": "error",
         "useValidForDirection": "error",
         "useYield": "error",
-        "useValidTypeof": "error"
+        "useValidTypeof": "error",
+        "useExhaustiveDependencies": "error",
+        "useHookAtTopLevel": "error"
       },
       "style": {
         "noNamespace": "error",
