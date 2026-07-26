@@ -18,7 +18,12 @@ export function SegmentedControl<T extends string>({
   onChange,
   className,
 }: SegmentedControlProps<T>) {
+  // `findIndex` returns -1 when `value` matches no option — a persisted
+  // setting outside the option set, say. Left unguarded that becomes
+  // `translateX(-100%)` and the pill animates outside its own container, so
+  // the indicator is hidden instead of mispositioned.
   const activeIndex = options.findIndex((o) => o.value === value);
+  const hasActiveOption = activeIndex >= 0;
 
   return (
     <div
@@ -52,7 +57,8 @@ export function SegmentedControl<T extends string>({
         style={{
           width: `calc((100% - 8px) / ${options.length})`,
           left: 4,
-          transform: `translateX(${activeIndex * 100}%)`,
+          transform: `translateX(${Math.max(0, activeIndex) * 100}%)`,
+          visibility: hasActiveOption ? undefined : 'hidden',
         }}
       />
     </div>

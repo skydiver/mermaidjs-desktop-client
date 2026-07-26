@@ -87,6 +87,15 @@ export function useFileHandling({
       suppressDirtyRef.current = true;
       onContentReplace(content);
       editorRef.current?.replaceContent(content);
+      // CodeMirror's update listener runs synchronously inside `dispatch`, so
+      // any `markDirty` caused by this replacement has already consumed the
+      // flag by now. Clearing it here rather than leaving `markDirty` to do
+      // it matters when the replacement is a no-op — `replaceContent`
+      // short-circuits on identical text and never dispatches, which would
+      // otherwise leave the flag armed to swallow the user's next real edit
+      // (reachable via ⌘N on an already-empty editor, or re-selecting the
+      // loaded example).
+      suppressDirtyRef.current = false;
       isDirtyRef.current = false;
       setIsDirty(false);
     },

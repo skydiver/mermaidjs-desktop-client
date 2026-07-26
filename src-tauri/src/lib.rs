@@ -13,6 +13,14 @@ use tauri_plugin_fs::FsExt;
 /// once on mount to cover that race. See `PendingFileOpen`.
 const FILE_OPENED_EVENT: &str = "file-opened";
 
+/// Events emitted to the webview when the corresponding native menu item is
+/// chosen. These go through `Window::emit` (and `listen()` on the frontend)
+/// rather than `Window::eval` with a `dispatchEvent` source string: the
+/// payload is then serialized and type-checked by Tauri instead of being
+/// injected as JavaScript source, and emit failures surface as an `Err`.
+const MENU_ABOUT_EVENT: &str = "menu-about";
+const MENU_SETTINGS_EVENT: &str = "menu-settings";
+
 /// Holds the most recently opened-from-Finder file path until the frontend
 /// drains it via `take_pending_file_open`. `Mutex::take` (via `Option::take`)
 /// makes the drain atomic, so a path delivered through the cold-start drain
@@ -64,26 +72,33 @@ fn list_monospace_fonts() -> Vec<String> {
     use core_text::font_collection::create_for_all_families;
     use core_text::font_descriptor::kCTFontMonoSpaceTrait;
     use core_text::font_descriptor::TraitAccessors;
+    use std::collections::BTreeSet;
 
     let collection = create_for_all_families();
-    let descriptors = collection.get_descriptors();
+    let Some(descriptors) = collection.get_descriptors() else {
+        return Vec::new();
+    };
 
-    let mut fonts: Vec<String> = Vec::new();
-    if let Some(descriptors) = descriptors {
-        for i in 0..descriptors.len() {
-            let descriptor = descriptors.get(i).unwrap();
-            let traits = descriptor.traits();
-            let symbolic = traits.symbolic_traits();
-            if (symbolic & kCTFontMonoSpaceTrait) != 0 {
-                let name = descriptor.family_name();
-                if !name.starts_with('.') && !fonts.contains(&name) {
-                    fonts.push(name);
-                }
-            }
+    // A `BTreeSet` dedupes and orders in a single step. The previous `Vec`
+    // needed a linear `contains` per family — O(n²) string comparisons over
+    // every installed family — plus a final `sort`.
+    let mut fonts: BTreeSet<String> = BTreeSet::new();
+    for i in 0..descriptors.len() {
+        // The index comes from `0..len()`, so this can never miss; still,
+        // `get` returning `Option` is not worth a panic inside a command.
+        let Some(descriptor) = descriptors.get(i) else {
+            continue;
+        };
+        let traits = descriptor.traits();
+        if (traits.symbolic_traits() & kCTFontMonoSpaceTrait) == 0 {
+            continue;
+        }
+        let name = descriptor.family_name();
+        if !name.starts_with('.') {
+            fonts.insert(name);
         }
     }
-    fonts.sort();
-    fonts
+    fonts.into_iter().collect()
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -157,20 +172,20 @@ pub fn run() {
             Ok(())
         })
         .on_menu_event(|app, event| {
-            match event.id().as_ref() {
-                "about" => {
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.eval("window.dispatchEvent(new Event('menu-about'))");
-                        let _ = window.set_focus();
-                    }
-                }
-                "settings" => {
-                    if let Some(window) = app.get_webview_window("main") {
-                        let _ = window.eval("window.dispatchEvent(new Event('menu-settings'))");
-                        let _ = window.set_focus();
-                    }
-                }
-                _ => {}
+            let event_name = match event.id().as_ref() {
+                "about" => MENU_ABOUT_EVENT,
+                "settings" => MENU_SETTINGS_EVENT,
+                _ => return,
+            };
+
+            let Some(window) = app.get_webview_window("main") else {
+                return;
+            };
+            if let Err(error) = window.emit(event_name, ()) {
+                eprintln!("Failed to emit {event_name}: {error}");
+            }
+            if let Err(error) = window.set_focus() {
+                eprintln!("Failed to focus the main window: {error}");
             }
         })
         .build(tauri::generate_context!())

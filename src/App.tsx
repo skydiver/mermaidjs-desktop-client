@@ -132,24 +132,46 @@ export default function App() {
     return () => window.removeEventListener('keydown', handler);
   }, [fileHandling.newFile, fileHandling.openFile, fileHandling.saveFile, showSettings, showHelp]);
 
-  // Menu events from native menu (Rust → JS)
+  // Menu events from the native menu (Rust → JS). Delivered as Tauri events
+  // rather than DOM events: the Rust side emits them instead of evaluating a
+  // `dispatchEvent` source string in the webview.
   useEffect(() => {
-    const onMenuSettings = () => {
+    let cancelled = false;
+
+    const openSettingsAt = (section: SectionId) => {
+      if (cancelled) return;
       setShowHelp(false);
-      setSettingsSection('general');
-      setShowSettings(true);
-    };
-    const onMenuAbout = () => {
-      setShowHelp(false);
-      setSettingsSection('about');
+      setSettingsSection(section);
       setShowSettings(true);
     };
 
-    window.addEventListener('menu-settings', onMenuSettings);
-    window.addEventListener('menu-about', onMenuAbout);
+    const teardown = manageAsyncResource<() => void>(
+      async () => {
+        try {
+          const { listen } = await import('@tauri-apps/api/event');
+          // Registered together so a failure part-way through cannot leave
+          // one listener attached with no way to release it.
+          const unlisteners = await Promise.all([
+            listen('menu-settings', () => openSettingsAt('general')),
+            listen('menu-about', () => openSettingsAt('about')),
+          ]);
+          return () => {
+            for (const unlisten of unlisteners) unlisten();
+          };
+        } catch {
+          // Not in Tauri environment (Vite-only dev) — there is no native
+          // menu to emit these, so there is nothing to listen for.
+          return () => {
+            // No listener was established — nothing to release.
+          };
+        }
+      },
+      (unlisten) => unlisten()
+    );
+
     return () => {
-      window.removeEventListener('menu-settings', onMenuSettings);
-      window.removeEventListener('menu-about', onMenuAbout);
+      cancelled = true;
+      teardown();
     };
   }, []);
 
