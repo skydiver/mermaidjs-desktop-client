@@ -2,6 +2,7 @@ import zenuml from '@mermaid-js/mermaid-zenuml';
 import mermaid from 'mermaid';
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
 import { debounce } from '../lib/debounce';
+import { reportError } from '../lib/error-reporting';
 import { useSettings } from './useSettings';
 
 // ── Types ───────────────────────────────────────────────
@@ -22,7 +23,13 @@ const RENDER_DELAY = 300;
 try {
   await mermaid.registerExternalDiagrams([zenuml]);
 } catch (error) {
-  console.error('Failed to register ZenUML diagram type', error);
+  // Do not await — this runs at module-eval time, before the app has
+  // rendered, and blocking here would hold up first paint until the
+  // user dismisses the dialog. reportError never throws.
+  void reportError('Failed to register ZenUML diagram type', error, {
+    title: 'Diagram Type Unavailable',
+    body: 'ZenUML sequence diagrams could not be registered and will not render correctly.',
+  });
 }
 
 // ── Hook ────────────────────────────────────────────────
