@@ -1,7 +1,12 @@
 use std::sync::Mutex;
 use std::sync::PoisonError;
 
-use tauri::menu::{MenuBuilder, MenuItem, PredefinedMenuItem, SubmenuBuilder};
+use tauri::menu::{MenuBuilder, MenuItem, SubmenuBuilder};
+// Every `PredefinedMenuItem` still referenced by name lives in the macOS-only
+// menu; the Linux/Windows menu reaches its supported predefines through
+// `SubmenuBuilder`'s `cut()`/`copy()`/`paste()`/`select_all()` helpers.
+#[cfg(target_os = "macos")]
+use tauri::menu::PredefinedMenuItem;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_fs::FsExt;
 
@@ -25,6 +30,12 @@ const FILE_OPENED_EVENT: &str = "file-opened";
 /// injected as JavaScript source, and emit failures surface as an `Err`.
 const MENU_ABOUT_EVENT: &str = "menu-about";
 const MENU_SETTINGS_EVENT: &str = "menu-settings";
+
+/// Id of the custom Quit item used off macOS. Handled directly in
+/// `on_menu_event` rather than emitted to the webview — quitting is a
+/// Rust-side concern and there is nothing for the frontend to do with it.
+#[cfg(not(target_os = "macos"))]
+const MENU_QUIT_ID: &str = "quit";
 
 /// Holds the most recently opened-from-Finder file path until the frontend
 /// drains it via `take_pending_file_open`. `Mutex::take` (via `Option::take`)
@@ -245,52 +256,116 @@ pub fn run() {
             )))]
             handle_cli_file_open(app.handle());
 
-            let app_menu = SubmenuBuilder::new(app, "MermaidJS Desktop")
-                .item(&MenuItem::with_id(
-                    app,
-                    "about",
-                    "About MermaidJS Desktop",
-                    true,
-                    None::<&str>,
-                )?)
-                .separator()
-                .item(&MenuItem::with_id(
-                    app,
-                    "settings",
-                    "Settings...",
-                    true,
-                    Some("CmdOrCtrl+,"),
-                )?)
-                .separator()
-                .item(&PredefinedMenuItem::services(app, None)?)
-                .separator()
-                .item(&PredefinedMenuItem::hide(app, Some("Hide MermaidJS Desktop"))?)
-                .item(&PredefinedMenuItem::hide_others(app, None)?)
-                .item(&PredefinedMenuItem::show_all(app, None)?)
-                .separator()
-                .item(&PredefinedMenuItem::quit(app, Some("Quit MermaidJS Desktop"))?)
-                .build()?;
+            #[cfg(target_os = "macos")]
+            let menu = {
+                let app_menu = SubmenuBuilder::new(app, "MermaidJS Desktop")
+                    .item(&MenuItem::with_id(
+                        app,
+                        "about",
+                        "About MermaidJS Desktop",
+                        true,
+                        None::<&str>,
+                    )?)
+                    .separator()
+                    .item(&MenuItem::with_id(
+                        app,
+                        "settings",
+                        "Settings...",
+                        true,
+                        Some("CmdOrCtrl+,"),
+                    )?)
+                    .separator()
+                    .item(&PredefinedMenuItem::services(app, None)?)
+                    .separator()
+                    .item(&PredefinedMenuItem::hide(app, Some("Hide MermaidJS Desktop"))?)
+                    .item(&PredefinedMenuItem::hide_others(app, None)?)
+                    .item(&PredefinedMenuItem::show_all(app, None)?)
+                    .separator()
+                    .item(&PredefinedMenuItem::quit(app, Some("Quit MermaidJS Desktop"))?)
+                    .build()?;
 
-            let edit_menu = SubmenuBuilder::new(app, "Edit")
-                .undo()
-                .redo()
-                .separator()
-                .cut()
-                .copy()
-                .paste()
-                .select_all()
-                .build()?;
+                let edit_menu = SubmenuBuilder::new(app, "Edit")
+                    .undo()
+                    .redo()
+                    .separator()
+                    .cut()
+                    .copy()
+                    .paste()
+                    .select_all()
+                    .build()?;
 
-            let menu = MenuBuilder::new(app)
-                .item(&app_menu)
-                .item(&edit_menu)
-                .build()?;
+                MenuBuilder::new(app)
+                    .item(&app_menu)
+                    .item(&edit_menu)
+                    .build()?
+            };
+
+            // muda documents `services`, `hide`, `hide_others`, `show_all`,
+            // `quit`, `undo` and `redo` as "Linux: Unsupported" — they are
+            // dropped silently rather than erroring, which is why the macOS
+            // menu above renders here as an App menu holding nothing but
+            // About/Settings and an Edit menu whose first two entries do
+            // nothing. This variant carries only items that actually work:
+            // the two custom items, a custom Quit (the predefined one is
+            // among the unsupported), and the clipboard predefines, which
+            // *are* supported on Linux. Undo/redo are left out instead of
+            // shown dead — CodeMirror already handles Ctrl+Z / Ctrl+Shift+Z
+            // inside the webview, so the accelerators work regardless.
+            #[cfg(not(target_os = "macos"))]
+            let menu = {
+                let file_menu = SubmenuBuilder::new(app, "File")
+                    .item(&MenuItem::with_id(
+                        app,
+                        "about",
+                        "About Mermaid Desktop",
+                        true,
+                        None::<&str>,
+                    )?)
+                    .item(&MenuItem::with_id(
+                        app,
+                        "settings",
+                        "Settings...",
+                        true,
+                        Some("CmdOrCtrl+,"),
+                    )?)
+                    .separator()
+                    .item(&MenuItem::with_id(
+                        app,
+                        MENU_QUIT_ID,
+                        "Quit",
+                        true,
+                        Some("CmdOrCtrl+Q"),
+                    )?)
+                    .build()?;
+
+                let edit_menu = SubmenuBuilder::new(app, "Edit")
+                    .cut()
+                    .copy()
+                    .paste()
+                    .separator()
+                    .select_all()
+                    .build()?;
+
+                MenuBuilder::new(app)
+                    .item(&file_menu)
+                    .item(&edit_menu)
+                    .build()?
+            };
 
             app.set_menu(menu)?;
 
             Ok(())
         })
         .on_menu_event(|app, event| {
+            // `PredefinedMenuItem::quit` is unsupported on Linux, so off
+            // macOS this is a plain custom item and the exit has to be
+            // issued by hand.
+            #[cfg(not(target_os = "macos"))]
+            if event.id().as_ref() == MENU_QUIT_ID {
+                app.exit(0);
+                return;
+            }
+
             let event_name = match event.id().as_ref() {
                 "about" => MENU_ABOUT_EVENT,
                 "settings" => MENU_SETTINGS_EVENT,
