@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Without this, `.mmd` files are sniffed as plain text and the only way to
+  reach the app is "Open With…". Installing into /usr/share/mime/packages
+  gives the extensions a MIME type of their own that the desktop entry's
+  MimeType line can claim as the default handler.
+
+  No postinst is needed: the shared-mime-info package owns a dpkg trigger on
+  this directory and runs update-mime-database itself after unpack.
+-->
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="text/vnd.mermaid">
+    <comment>Mermaid diagram</comment>
+    <sub-class-of type="text/plain"/>
+    <glob pattern="*.mmd"/>
+    <glob pattern="*.mermaid"/>
+  </mime-type>
+</mime-info>

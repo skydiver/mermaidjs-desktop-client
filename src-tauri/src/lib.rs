@@ -11,6 +11,11 @@ use tauri_plugin_fs::FsExt;
 /// before the webview's listener is registered, and a dropped emit is
 /// exactly the bug this exists to fix — the frontend therefore also drains
 /// once on mount to cover that race. See `PendingFileOpen`.
+///
+/// Only the `RunEvent::Opened` platforms emit this. The argv route used
+/// everywhere else runs during `setup`, before any webview exists, and is
+/// picked up solely by that cold-start drain — see `handle_cli_file_open`.
+#[cfg(any(target_os = "macos", target_os = "ios", target_os = "android"))]
 const FILE_OPENED_EVENT: &str = "file-opened";
 
 /// Events emitted to the webview when the corresponding native menu item is
@@ -64,6 +69,48 @@ fn handle_opened_urls(app_handle: &AppHandle, urls: Vec<tauri::Url>) {
     }
 
     let _ = app_handle.emit(FILE_OPENED_EVENT, ());
+}
+
+/// Linux and Windows deliver a file-association launch as a plain `argv`
+/// entry; only macOS/iOS/Android get `RunEvent::Opened`. Without this the
+/// `.desktop` MimeType registration generated from `bundle.fileAssociations`
+/// still launches the app when a `.mmd` is double-clicked, but the path is
+/// dropped and the editor opens empty.
+///
+/// Mirrors `handle_opened_urls`: grant the fs plugin's scope read access,
+/// then buffer the path for the frontend. No `FILE_OPENED_EVENT` emit here —
+/// this runs inside `setup`, long before a webview listener could exist, so
+/// `App.tsx`'s drain-once-on-mount is the only route that can observe it.
+#[cfg(not(any(target_os = "macos", target_os = "ios", target_os = "android")))]
+fn handle_cli_file_open(app_handle: &AppHandle) {
+    // argv[0] is the executable and WebKitGTK/Tauri inject their own flags,
+    // so select the first argument that names an existing file rather than
+    // trusting a fixed position. Canonicalizing matters because the scope
+    // entry and the frontend's later read both have to resolve the path
+    // independently of whatever cwd the app was launched from.
+    let Some(path) = std::env::args_os()
+        .skip(1)
+        .map(std::path::PathBuf::from)
+        .find(|path| path.is_file())
+    else {
+        return;
+    };
+    let path = path.canonicalize().unwrap_or(path);
+    let Some(path_str) = path.to_str() else {
+        return;
+    };
+    let path_str = path_str.to_owned();
+
+    if let Some(scope) = app_handle.try_fs_scope() {
+        let _ = scope.allow_file(&path_str);
+    }
+
+    if let Some(state) = app_handle.try_state::<PendingFileOpen>() {
+        *state
+            .0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner) = Some(path_str);
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -189,6 +236,15 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(|app| {
+            // Must run before the webview mounts: the frontend drains the
+            // buffered path once on mount, and there is no second chance.
+            #[cfg(not(any(
+                target_os = "macos",
+                target_os = "ios",
+                target_os = "android"
+            )))]
+            handle_cli_file_open(app.handle());
+
             let app_menu = SubmenuBuilder::new(app, "MermaidJS Desktop")
                 .item(&MenuItem::with_id(
                     app,
