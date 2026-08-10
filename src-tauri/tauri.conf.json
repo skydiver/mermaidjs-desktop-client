@@ -42,6 +42,14 @@
         "mimeType": "text/plain",
         "role": "Editor"
       }
-    ]
+    ],
+    "linux": {
+      "deb": {
+        "desktopTemplate": "linux/desktop-entry.template",
+        "files": {
+          "/usr/share/mime/packages/mermaid-desktop.xml": "linux/mermaid-desktop.xml"
+        }
+      }
+    }
   }
 }

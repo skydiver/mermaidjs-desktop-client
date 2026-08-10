@@ -1,0 +1,26 @@
+{{!
+  `%f` on Exec is the whole point of this template. Tauri's built-in deb entry
+  emits a bare `Exec=`, and a desktop entry without a field code is passed no
+  arguments at all — so a `.mmd` double-clicked in a file manager would launch
+  the app with an empty editor no matter what the Rust side does. `%f` (single
+  local file) matches `handle_cli_file_open`, which takes the first argv entry
+  naming an existing file.
+
+  Categories is also set here because upstream leaves it empty, which is
+  invalid per the desktop entry spec and makes some menu implementations drop
+  the entry entirely. Exactly one main category (Graphics) — listing two makes
+  the app appear twice in the menu, which desktop-file-validate flags.
+
+  These are Handlebars comments, so none of this text reaches the installed
+  file — keep it that way, a shipped .desktop should be pure key=value.
+}}
+[Desktop Entry]
+Type=Application
+Name={{name}}
+Comment={{comment}}
+Exec={{exec}} %f
+Icon={{icon}}
+Terminal=false
+Categories=Graphics;2DGraphics;VectorGraphics;
+MimeType=text/vnd.mermaid;text/plain;
+StartupWMClass={{exec}}
