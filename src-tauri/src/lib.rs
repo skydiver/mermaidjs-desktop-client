@@ -54,6 +54,24 @@ fn take_pending_file_open(state: tauri::State<'_, PendingFileOpen>) -> Option<St
         .take()
 }
 
+/// Grants the fs plugin's scope read access to `path` and buffers it for the
+/// frontend to drain via `take_pending_file_open`.
+///
+/// Shared by both file-association routes - `RunEvent::Opened` on macOS/iOS/Android
+/// and the argv route everywhere else - which differ only in how they discover
+/// the path, not in what they do with it. Deliberately carries no `cfg`: the two
+/// callers' cfgs are complementary and exhaustive, so exactly one of them exists
+/// on any target and this is never dead code.
+fn buffer_pending_file(app_handle: &AppHandle, path: String) {
+    if let Some(scope) = app_handle.try_fs_scope() {
+        let _ = scope.allow_file(&path);
+    }
+
+    if let Some(state) = app_handle.try_state::<PendingFileOpen>() {
+        *state.0.lock().unwrap_or_else(PoisonError::into_inner) = Some(path);
+    }
+}
+
 /// Converts the `file://` URLs from `RunEvent::Opened` into a usable path,
 /// grants the fs plugin's scope read access to it (mirroring the drag-drop
 /// precedent in `tauri-plugin-fs`), and buffers it for the frontend to pick
@@ -66,18 +84,8 @@ fn handle_opened_urls(app_handle: &AppHandle, urls: Vec<tauri::Url>) {
     let Some(path_str) = path.to_str() else {
         return;
     };
-    let path_str = path_str.to_owned();
 
-    if let Some(scope) = app_handle.try_fs_scope() {
-        let _ = scope.allow_file(&path_str);
-    }
-
-    if let Some(state) = app_handle.try_state::<PendingFileOpen>() {
-        *state
-            .0
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner) = Some(path_str);
-    }
+    buffer_pending_file(app_handle, path_str.to_string());
 
     let _ = app_handle.emit(FILE_OPENED_EVENT, ());
 }
@@ -110,18 +118,8 @@ fn handle_cli_file_open(app_handle: &AppHandle) {
     let Some(path_str) = path.to_str() else {
         return;
     };
-    let path_str = path_str.to_owned();
 
-    if let Some(scope) = app_handle.try_fs_scope() {
-        let _ = scope.allow_file(&path_str);
-    }
-
-    if let Some(state) = app_handle.try_state::<PendingFileOpen>() {
-        *state
-            .0
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner) = Some(path_str);
-    }
+    buffer_pending_file(app_handle, path_str.to_string());
 }
 
 #[cfg(target_os = "macos")]
