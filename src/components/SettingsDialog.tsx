@@ -94,22 +94,11 @@ function SubsectionHeader({ title }: { title: string }) {
   );
 }
 
-function SettingRow({
-  label,
-  description,
-  children,
-}: {
-  label: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
+function SettingRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between py-2">
       <div>
         <span className="text-sm font-medium text-neutral-700 dark:text-slate-200">{label}</span>
-        {description && (
-          <p className="text-xs text-neutral-400 dark:text-slate-400">{description}</p>
-        )}
       </div>
       {children}
     </div>
