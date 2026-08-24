@@ -40,12 +40,10 @@ const MERMAID_KEYWORDS = [
   'and',
 ] as const;
 
-export type MermaidKeyword = (typeof MERMAID_KEYWORDS)[number];
-
 const ARROW_TOKENS = ['-..->', '-->', '<--', '==>', '<==', '.->', '->', '<-', '=='];
 
 export function createMermaidLanguage(): Extension {
-  const keywordSet = new Set(MERMAID_KEYWORDS.map((word: MermaidKeyword) => word.toLowerCase()));
+  const keywordSet = new Set(MERMAID_KEYWORDS.map((word) => word.toLowerCase()));
   const operatorPattern = /[-+*/=<>!]+/;
 
   return StreamLanguage.define({
