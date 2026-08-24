@@ -2,6 +2,7 @@ import { HighlightStyle } from '@codemirror/language';
 import type { Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
+import { CSS_SAFE_FONT_FAMILY_PATTERN } from '@/lib/css-safe-font';
 
 export const editorHighlightStyle = HighlightStyle.define([
   { tag: tags.keyword, color: 'var(--syntax-keyword)' },
@@ -14,16 +15,9 @@ export const editorHighlightStyle = HighlightStyle.define([
   { tag: tags.attributeName, color: 'var(--syntax-attribute)' },
 ]);
 
-// Only characters that cannot break out of a quoted CSS `font-family` value
-// are allowed through. Defence in depth: `editorFontFamily` should already
-// be sanitized by `validateSettings` before it reaches here, but this
-// module has its own trust boundary — a future caller could construct a
-// theme without going through the settings loader.
-const SAFE_FONT_FAMILY_PATTERN = /^[A-Za-z0-9 _-]+$/;
-
 export function createEditorTheme(fontFamily?: string, disableLigatures?: boolean): Extension {
   const safeFontFamily =
-    fontFamily && SAFE_FONT_FAMILY_PATTERN.test(fontFamily) ? fontFamily : undefined;
+    fontFamily && CSS_SAFE_FONT_FAMILY_PATTERN.test(fontFamily) ? fontFamily : undefined;
   const fontStack = safeFontFamily
     ? `"${safeFontFamily}", "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace`
     : '"JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, monospace';
