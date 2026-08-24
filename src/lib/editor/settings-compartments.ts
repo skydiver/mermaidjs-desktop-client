@@ -53,7 +53,11 @@ function createFontSizeTheme(size: number) {
 // module has its own trust boundary — a future caller could reconfigure
 // the editor without going through the settings loader. Clamp to a sane
 // range rather than trusting the input.
-function safeIndentUnit(indentType: AppSettings['indentType'], indentSize: number): string {
+//
+// Exported for its tests: the clamp only triggers on values outside
+// `AppSettings['indentSize']`, which cannot be expressed through
+// `createSettingsExtensions` without a type assertion.
+export function safeIndentUnit(indentType: AppSettings['indentType'], indentSize: number): string {
   if (indentType === 'tab') return '\t';
   const safeSize =
     Number.isInteger(indentSize) && indentSize >= 1 && indentSize <= 16 ? indentSize : 2;
@@ -105,8 +109,8 @@ export function reconfigureSettings(
   settings: EditorSettingsSubset
 ): void {
   view.dispatch({
-    effects: settingsPairs(compartments, settings).map(
-      ([compartment, extension]) => compartment.reconfigure(extension)
+    effects: settingsPairs(compartments, settings).map(([compartment, extension]) =>
+      compartment.reconfigure(extension)
     ),
   });
 }
