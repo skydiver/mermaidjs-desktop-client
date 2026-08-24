@@ -1,4 +1,5 @@
 import { type AppSettings, DEFAULT_SETTINGS, type ThemePreference } from '@/hooks/useSettings';
+import { CSS_SAFE_FONT_FAMILY_PATTERN } from '@/lib/css-safe-font';
 
 // ── Constants ───────────────────────────────────────────
 
@@ -7,17 +8,6 @@ const INDENT_TYPES = new Set<AppSettings['indentType']>(['space', 'tab']);
 const THEME_VALUES = new Set<ThemePreference>(['system', 'light', 'dark']);
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 24;
-
-// `editorFontFamily` is a CSS trust boundary — see `theme.ts`'s
-// `createEditorTheme`, which interpolates this value raw into a CSS
-// declaration. Reject anything outside this class rather than allowlisting
-// against `list_monospace_fonts` (macOS-only, empty in Vite-only dev — see
-// the W-2 audit trap note). Verified against real monospace family names
-// (JetBrains Mono, SF Mono, PT Mono, IBM Plex Mono, Menlo, Consolas,
-// Fira Code) — all pass. Non-Latin-script family names (e.g. some CJK
-// system fonts) would be rejected and fall back to the default font stack;
-// that is a safe degradation, not a crash or an injection.
-const FONT_FAMILY_PATTERN = /^[A-Za-z0-9 _-]+$/;
 
 // ── Helpers ─────────────────────────────────────────────
 
@@ -51,7 +41,7 @@ function pickFontSize(value: unknown): number {
 function pickFontFamily(value: unknown): string {
   if (typeof value !== 'string') return DEFAULT_SETTINGS.editorFontFamily;
   if (value === '') return '';
-  return FONT_FAMILY_PATTERN.test(value) ? value : DEFAULT_SETTINGS.editorFontFamily;
+  return CSS_SAFE_FONT_FAMILY_PATTERN.test(value) ? value : DEFAULT_SETTINGS.editorFontFamily;
 }
 
 // ── Validation ──────────────────────────────────────────
