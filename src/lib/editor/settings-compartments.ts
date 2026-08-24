@@ -70,20 +70,33 @@ function indentConfigExtensions(
   ];
 }
 
+// Each configurable compartment paired with the extension its current setting resolves to.
+// Both the initial configuration and the live reconfiguration derive from this one list, so a compartment can no longer
+// be wired up in one path and forgotten in the other.
+function settingsPairs(
+  compartments: EditorSettingsCompartments,
+  settings: EditorSettingsSubset
+): [Compartment, Extension][] {
+  return [
+    [compartments.theme, createEditorTheme(settings.editorFontFamily, settings.disableLigatures)],
+    [compartments.fontSize, createFontSizeTheme(settings.editorFontSize)],
+    [compartments.lineWrapping, settings.wordWrap ? EditorView.lineWrapping : []],
+    [compartments.whitespace, settings.showInvisibles ? highlightWhitespace() : []],
+    [compartments.indentConfig, indentConfigExtensions(settings.indentType, settings.indentSize)],
+    [
+      compartments.syntaxHighlighting,
+      settings.syntaxHighlighting ? syntaxHighlighting(editorHighlightStyle) : [],
+    ],
+  ];
+}
+
 export function createSettingsExtensions(
   compartments: EditorSettingsCompartments,
   settings: EditorSettingsSubset
 ): Extension[] {
-  return [
-    compartments.theme.of(createEditorTheme(settings.editorFontFamily, settings.disableLigatures)),
-    compartments.fontSize.of(createFontSizeTheme(settings.editorFontSize)),
-    compartments.lineWrapping.of(settings.wordWrap ? EditorView.lineWrapping : []),
-    compartments.whitespace.of(settings.showInvisibles ? highlightWhitespace() : []),
-    compartments.indentConfig.of(indentConfigExtensions(settings.indentType, settings.indentSize)),
-    compartments.syntaxHighlighting.of(
-      settings.syntaxHighlighting ? syntaxHighlighting(editorHighlightStyle) : []
-    ),
-  ];
+  return settingsPairs(compartments, settings).map(([compartment, extension]) =>
+    compartment.of(extension)
+  );
 }
 
 export function reconfigureSettings(
@@ -92,19 +105,8 @@ export function reconfigureSettings(
   settings: EditorSettingsSubset
 ): void {
   view.dispatch({
-    effects: [
-      compartments.theme.reconfigure(
-        createEditorTheme(settings.editorFontFamily, settings.disableLigatures)
-      ),
-      compartments.fontSize.reconfigure(createFontSizeTheme(settings.editorFontSize)),
-      compartments.lineWrapping.reconfigure(settings.wordWrap ? EditorView.lineWrapping : []),
-      compartments.whitespace.reconfigure(settings.showInvisibles ? highlightWhitespace() : []),
-      compartments.indentConfig.reconfigure(
-        indentConfigExtensions(settings.indentType, settings.indentSize)
-      ),
-      compartments.syntaxHighlighting.reconfigure(
-        settings.syntaxHighlighting ? syntaxHighlighting(editorHighlightStyle) : []
-      ),
-    ],
+    effects: settingsPairs(compartments, settings).map(
+      ([compartment, extension]) => compartment.reconfigure(extension)
+    ),
   });
 }
