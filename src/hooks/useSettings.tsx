@@ -46,7 +46,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 export interface SettingsContextValue {
   settings: AppSettings;
-  isDark: boolean;
   isDiagramDark: boolean;
   updateSettings(patch: Partial<AppSettings>): void;
   resetSettings(): void;
@@ -170,8 +169,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [persistSettings]);
 
   const contextValue = useMemo(
-    () => ({ settings, isDark, isDiagramDark, updateSettings, resetSettings }),
-    [settings, isDark, isDiagramDark, updateSettings, resetSettings]
+    () => ({ settings, isDiagramDark, updateSettings, resetSettings }),
+    [settings, isDiagramDark, updateSettings, resetSettings]
   );
 
   // Don't render children until store is loaded to avoid flash
