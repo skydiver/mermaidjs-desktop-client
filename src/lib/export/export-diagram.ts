@@ -248,9 +248,15 @@ async function convertSvgToPng(
   isDiagramDark: boolean
 ): Promise<Uint8Array> {
   const { svg, width, height } = diagram;
-  const dataUrl = encodeSvgDataUri(svg);
+  // An object URL rather than a data URL: the data URL grew with the diagram
+  // and carried an engine-specific length ceiling, past which `loadImage`
+  // would reject and the export would fail. Object URLs have no such ceiling.
+  const svgUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
 
-  const image = await loadImage(dataUrl, width, height);
+  // Revoked on both paths, or the URL leaks whenever a load fails. Safe once
+  // loaded — the element holds the decoded image, not the URL it came from.
+  const image = await loadImage(svgUrl, width, height).finally(() => URL.revokeObjectURL(svgUrl));
+
   const { width: exportWidth, height: exportHeight } = computeExportDimensions(
     width,
     height,
@@ -290,16 +296,6 @@ async function convertSvgToPng(
 
   const arrayBuffer = await pngBlob.arrayBuffer();
   return new Uint8Array(arrayBuffer);
-}
-
-function encodeSvgDataUri(svg: string): string {
-  const encoded = encodeURIComponent(svg)
-    .replace(/%0A/g, '')
-    .replace(/%20/g, ' ')
-    .replace(/%3D/g, '=')
-    .replace(/%3A/g, ':')
-    .replace(/%2F/g, '/');
-  return `data:image/svg+xml;charset=utf-8,${encoded}`;
 }
 
 function loadImage(url: string, width: number, height: number): Promise<HTMLImageElement> {
