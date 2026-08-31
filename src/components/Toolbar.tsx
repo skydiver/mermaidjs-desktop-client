@@ -1,4 +1,4 @@
-import { FilePlus, FolderOpen, HelpCircle, Save, Settings } from 'lucide-react';
+import { FilePlus, FolderOpen, HelpCircle, Save, Settings, Sparkles } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { ExportFormat } from '../lib/export/export-diagram';
 import ExamplesDropdown from './ExamplesDropdown';
@@ -15,6 +15,8 @@ interface ToolbarProps {
   isDirty: boolean;
   hasContent: boolean;
   disabled?: boolean;
+  aiPanelOpen: boolean;
+  onToggleAIPanel: () => void;
 }
 
 export default function Toolbar({
@@ -28,6 +30,8 @@ export default function Toolbar({
   isDirty,
   hasContent,
   disabled = false,
+  aiPanelOpen,
+  onToggleAIPanel,
 }: ToolbarProps) {
   // Vanilla JS drag handler — React synthetic events don't work reliably
   // with Tauri's startDragging() which needs the native mousedown event context.
@@ -104,6 +108,18 @@ export default function Toolbar({
 
           <Separator />
 
+          {/* AI assistant — a toggle, so it carries pressed state rather than
+              behaving like the one-shot actions around it. */}
+          <ToolbarButton
+            title={aiPanelOpen ? 'Hide AI assistant (⌘⇧A)' : 'Show AI assistant (⌘⇧A)'}
+            pressed={aiPanelOpen}
+            onClick={onToggleAIPanel}
+          >
+            <Sparkles size={16} />
+          </ToolbarButton>
+
+          <Separator />
+
           {/* Help & Settings */}
           <ToolbarButton title="Help" onClick={onOpenHelp}>
             <HelpCircle size={16} />
@@ -120,11 +136,14 @@ export default function Toolbar({
 function ToolbarButton({
   title,
   disabled,
+  pressed,
   onClick,
   children,
 }: {
   title: string;
   disabled?: boolean;
+  /** Marks the button as a toggle: renders active styling and exposes `aria-pressed`. Omitted for the one-shot actions. */
+  pressed?: boolean;
   onClick: () => void;
   children: React.ReactNode;
 }) {
@@ -133,11 +152,14 @@ function ToolbarButton({
       type="button"
       title={title}
       disabled={disabled}
+      aria-pressed={pressed}
       onClick={onClick}
       className={`flex h-7 items-center justify-center rounded px-1.5 transition-colors ${
         disabled
           ? 'cursor-default text-neutral-300 dark:text-slate-600'
-          : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
+          : pressed
+            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900'
+            : 'text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200'
       }`}
     >
       {children}

@@ -33,6 +33,13 @@ export interface UseFileHandlingReturn {
   saveFile: () => Promise<void>;
   exportFile: (format: ExportFormat) => Promise<void>;
   loadExample: (content: string) => Promise<void>;
+  /**
+   * Replace editor content with an AI suggestion (or with the snapshot a
+   * cancelled suggestion restores). Unlike `replaceContent`, this marks the
+   * document dirty: an applied suggestion is a real change to the diagram
+   * and must be saveable, and must re-arm auto-save exactly as typing does.
+   */
+  applyAiSuggestion: (content: string) => void;
   /** Replace editor content without marking dirty (for external reload) */
   reloadContent: (content: string) => void;
 }
@@ -223,6 +230,20 @@ export function useFileHandling({
     [editorRef, isDiagramDark]
   );
 
+  // Deliberately does NOT go through `replaceContent`: that helper arms
+  // `suppressDirtyRef` and clears the dirty flag, which is right for opening
+  // a file or loading an example (the buffer then matches its source), but
+  // wrong here — an AI suggestion is an unsaved modification like any other.
+  // Writing straight to the editor lets CodeMirror's update listener fire
+  // normally, so `App`'s change handler marks the document dirty and re-arms
+  // auto-save on the same path a keystroke takes.
+  const applyAiSuggestion = useCallback(
+    (content: string) => {
+      editorRef.current?.replaceContent(content);
+    },
+    [editorRef]
+  );
+
   const loadExample = useCallback(
     async (content: string) => {
       if (isDirtyRef.current) {
@@ -250,6 +271,7 @@ export function useFileHandling({
     saveFile,
     exportFile,
     loadExample,
+    applyAiSuggestion,
     reloadContent: replaceContent,
   };
 }

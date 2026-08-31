@@ -1,6 +1,9 @@
 import { type Ref, useCallback, useRef, useState } from 'react';
+import type { UseAIChatReturn } from '../hooks/useAIChat';
 import type { MermaidStatus, RenderStatus } from '../hooks/useMermaid';
+import { DEFAULT_SETTINGS, useSettings } from '../hooks/useSettings';
 import type { ExportFormat } from '../lib/export/export-diagram';
+import AIPanel from './AIPanel';
 import type { EditorViewHandle } from './EditorView';
 import EditorView from './EditorView';
 import EmptyState from './EmptyState';
@@ -14,6 +17,14 @@ const DEFAULT_RATIO = 0.4;
 const MIN_RATIO = 0.2;
 const MAX_RATIO = 0.8;
 const KEYBOARD_RATIO_STEP = 0.02;
+
+// Bounds for the AI panel. Mirrors the clamp in `validate-settings.ts` so a
+// hand-edited `settings.json` and a drag can never disagree about the range.
+const MIN_AI_WIDTH = 280;
+const MAX_AI_WIDTH = 600;
+const KEYBOARD_AI_WIDTH_STEP = 16;
+/** Sourced from the settings defaults so "reset" here and a fresh install agree. */
+const DEFAULT_AI_WIDTH = DEFAULT_SETTINGS.aiPanelWidth;
 
 // ── Props ───────────────────────────────────────────────
 
@@ -41,6 +52,10 @@ interface ContentViewProps {
   onReloadFromDisk?: () => void;
   onKeepChanges?: () => void;
   toolbarDisabled?: boolean;
+  aiChat: UseAIChatReturn;
+  showAIPanel: boolean;
+  onToggleAIPanel: () => void;
+  onOpenAiSettings: () => void;
 }
 
 // ── Component ───────────────────────────────────────────
@@ -69,7 +84,12 @@ export default function ContentView({
   onReloadFromDisk,
   onKeepChanges,
   toolbarDisabled = false,
+  aiChat,
+  showAIPanel,
+  onToggleAIPanel,
+  onOpenAiSettings,
 }: ContentViewProps) {
+  const { settings, updateSettings } = useSettings();
   const [editorRatio, setEditorRatio] = useState(DEFAULT_RATIO);
   const containerRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
@@ -101,6 +121,60 @@ export default function ContentView({
   const handleDoubleClick = useCallback(() => {
     setEditorRatio(DEFAULT_RATIO);
   }, []);
+
+  // AI panel width. Dragged from the divider on the panel's left edge, so a
+  // rightward drag narrows it — width is measured from the container's right
+  // edge rather than accumulated from a delta, which keeps the panel pinned
+  // to the pointer even if a move event is dropped.
+  const aiWidth = settings.aiPanelWidth;
+  const aiDraggingRef = useRef(false);
+
+  const commitAiWidth = useCallback(
+    (width: number) => {
+      updateSettings({ aiPanelWidth: Math.min(MAX_AI_WIDTH, Math.max(MIN_AI_WIDTH, width)) });
+    },
+    [updateSettings]
+  );
+
+  const handleAiPointerDown = useCallback((e: React.PointerEvent<HTMLHRElement>) => {
+    aiDraggingRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, []);
+
+  const handleAiPointerMove = useCallback(
+    (e: React.PointerEvent<HTMLHRElement>) => {
+      if (!aiDraggingRef.current || !containerRef.current) return;
+      const right = containerRef.current.getBoundingClientRect().right;
+      commitAiWidth(right - e.clientX);
+    },
+    [commitAiWidth]
+  );
+
+  const handleAiPointerUp = useCallback(() => {
+    aiDraggingRef.current = false;
+  }, []);
+
+  const handleAiDividerKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLHRElement>) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          commitAiWidth(aiWidth + KEYBOARD_AI_WIDTH_STEP);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          commitAiWidth(aiWidth - KEYBOARD_AI_WIDTH_STEP);
+          break;
+        case 'Home':
+          e.preventDefault();
+          commitAiWidth(DEFAULT_AI_WIDTH);
+          break;
+        default:
+          break;
+      }
+    },
+    [aiWidth, commitAiWidth]
+  );
 
   const handleDividerKeyDown = useCallback((e: React.KeyboardEvent<HTMLHRElement>) => {
     switch (e.key) {
@@ -134,6 +208,8 @@ export default function ContentView({
         isDirty={isDirty}
         hasContent={hasContent}
         disabled={toolbarDisabled}
+        aiPanelOpen={showAIPanel}
+        onToggleAIPanel={onToggleAIPanel}
       />
 
       {/* External modification warning */}
@@ -190,6 +266,54 @@ export default function ContentView({
           {/* Preview panel */}
           <div className="flex flex-col" style={{ flex: `${1 - editorRatio} 1 0` }}>
             <PreviewView source={editorText} onStatusChange={onPreviewStatusChange} />
+          </div>
+
+          {/* AI panel resize divider — only reachable while the panel is open,
+              so it is not rendered (and not focusable) when collapsed. */}
+          {showAIPanel && (
+            <hr
+              aria-label="Resize AI panel"
+              aria-orientation="vertical"
+              aria-valuenow={aiWidth}
+              aria-valuemin={MIN_AI_WIDTH}
+              aria-valuemax={MAX_AI_WIDTH}
+              tabIndex={0}
+              onPointerDown={handleAiPointerDown}
+              onPointerMove={handleAiPointerMove}
+              onPointerUp={handleAiPointerUp}
+              onDoubleClick={() => commitAiWidth(DEFAULT_AI_WIDTH)}
+              onKeyDown={handleAiDividerKeyDown}
+              className="m-0 flex w-1 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent before:h-8 before:w-0.5 before:rounded-full before:bg-neutral-300 before:transition-colors before:content-[''] hover:bg-blue-500/20 hover:before:bg-blue-500 active:bg-blue-500/30 active:before:bg-blue-600 focus-visible:bg-blue-500/20 dark:before:bg-slate-600 dark:hover:before:bg-blue-400"
+            />
+          )}
+
+          {/* AI panel. The wrapper animates its width between 0 and `aiWidth`
+              while the inner element stays at full width, so the panel slides
+              in from the right instead of its contents reflowing on every
+              frame of the transition. `motion-safe:` leaves the animation out
+              for users who ask the OS to reduce motion. */}
+          <div
+            className="shrink-0 overflow-hidden border-l border-neutral-200 motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out dark:border-slate-700"
+            style={{ width: showAIPanel ? aiWidth : 0 }}
+            // Kept mounted while collapsed so the conversation survives a
+            // toggle; hidden from assistive tech and tab order at width 0.
+            aria-hidden={!showAIPanel}
+            inert={!showAIPanel}
+          >
+            <div className="h-full" style={{ width: aiWidth }}>
+              <AIPanel
+                messages={aiChat.messages}
+                isStreaming={aiChat.isStreaming}
+                pendingSuggestion={aiChat.pendingSuggestion}
+                error={aiChat.error}
+                onSend={aiChat.send}
+                onStop={aiChat.stop}
+                onAcceptPending={aiChat.acceptPending}
+                onCancelPending={aiChat.cancelPending}
+                onClose={onToggleAIPanel}
+                onOpenAiSettings={onOpenAiSettings}
+              />
+            </div>
           </div>
 
           {/* Drop overlay */}

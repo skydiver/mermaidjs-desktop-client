@@ -3,6 +3,7 @@ import ContentView from './components/ContentView';
 import type { EditorViewHandle } from './components/EditorView';
 import HelpDialog from './components/HelpDialog';
 import SettingsDialog, { type SectionId } from './components/SettingsDialog';
+import { useAIChat } from './hooks/useAIChat';
 import { useFileHandling } from './hooks/useFileHandling';
 import { useFileWatch } from './hooks/useFileWatch';
 import type { MermaidStatus } from './hooks/useMermaid';
@@ -20,6 +21,7 @@ export default function App() {
   const [settingsSection, setSettingsSection] = useState<SectionId>('general');
   const [showHelp, setShowHelp] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [showAIPanel, setShowAIPanel] = useState(false);
   const [status, setStatus] = useState<MermaidStatus>({ message: 'Ready', level: 'idle' });
 
   const { settings, isDiagramDark } = useSettings();
@@ -36,6 +38,17 @@ export default function App() {
     fileHandling.isDirty,
     fileHandling.reloadContent
   );
+
+  // The assistant reads and writes the editor through the same handle the
+  // rest of the app uses, rather than through `editorText`: that state lags
+  // by a render, and a suggestion must be composed against — and its
+  // snapshot taken from — exactly what the buffer holds at that instant.
+  const getDiagramSource = useCallback(() => editorRef.current?.getContent() ?? '', []);
+
+  const aiChat = useAIChat({
+    getDiagramSource,
+    applySuggestion: fileHandling.applyAiSuggestion,
+  });
 
   // Auto-save: writes ~1s after typing stops, when enabled and the file has
   // a path. Triggered directly from `handleEditorChange` (every keystroke)
@@ -79,12 +92,42 @@ export default function App() {
     (text: string) => {
       setEditorText(text);
       fileHandling.markDirty();
+      // Every document change routes through here, including the assistant's
+      // own writes — `notifyUserEdit` distinguishes the two internally and
+      // only expires the pending Apply/Cancel on a genuine hand-edit. Called
+      // before the auto-save arming below purely for readability; the two are
+      // independent.
+      aiChat.notifyUserEdit();
       if (settings.autoSave && fileHandling.filePath) {
         armedForPathRef.current = fileHandling.filePath;
         debouncedAutoSaveRef.current?.();
       }
     },
-    [fileHandling.markDirty, settings.autoSave, fileHandling.filePath]
+    [fileHandling.markDirty, settings.autoSave, fileHandling.filePath, aiChat.notifyUserEdit]
+  );
+
+  // Switching documents ends the conversation: the assistant's context is the
+  // diagram in front of it, so carrying turns about the previous file across a
+  // New/Open/example load would have it edit one diagram while discussing
+  // another. Also drops any pending suggestion, whose snapshot belongs to a
+  // buffer that no longer exists.
+  const { reset: resetChat } = aiChat;
+  const newFile = useCallback(async () => {
+    await fileHandling.newFile();
+    resetChat();
+  }, [fileHandling.newFile, resetChat]);
+
+  const openFile = useCallback(async () => {
+    await fileHandling.openFile();
+    resetChat();
+  }, [fileHandling.openFile, resetChat]);
+
+  const loadExample = useCallback(
+    async (content: string) => {
+      await fileHandling.loadExample(content);
+      resetChat();
+    },
+    [fileHandling.loadExample, resetChat]
   );
 
   const handlePreviewStatusChange = useCallback((s: MermaidStatus) => {
@@ -103,13 +146,17 @@ export default function App() {
       if (!(e.metaKey || e.ctrlKey)) return;
       if (!shouldHandleFileShortcut(e.key, showSettings || showHelp)) return;
       switch (e.key) {
+        case 'A':
+          e.preventDefault();
+          setShowAIPanel((prev) => !prev);
+          break;
         case 'n':
           e.preventDefault();
-          fileHandling.newFile();
+          newFile();
           break;
         case 'o':
           e.preventDefault();
-          fileHandling.openFile();
+          openFile();
           break;
         case 's':
           e.preventDefault();
@@ -130,7 +177,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [fileHandling.newFile, fileHandling.openFile, fileHandling.saveFile, showSettings, showHelp]);
+  }, [newFile, openFile, fileHandling.saveFile, showSettings, showHelp]);
 
   // Menu events from the native menu (Rust → JS). Delivered as Tauri events
   // rather than DOM events: the Rust side emits them instead of evaluating a
@@ -292,11 +339,19 @@ export default function App() {
         hasContent={editorText.trim().length > 0}
         hasDocument={fileHandling.hasDocument}
         onPreviewStatusChange={handlePreviewStatusChange}
-        onNewFile={fileHandling.newFile}
-        onOpenFile={fileHandling.openFile}
+        onNewFile={newFile}
+        onOpenFile={openFile}
         onSaveFile={fileHandling.saveFile}
-        onSelectExample={fileHandling.loadExample}
+        onSelectExample={loadExample}
         onExport={fileHandling.exportFile}
+        aiChat={aiChat}
+        showAIPanel={showAIPanel}
+        onToggleAIPanel={() => setShowAIPanel((prev) => !prev)}
+        onOpenAiSettings={() => {
+          setShowHelp(false);
+          setSettingsSection('ai');
+          setShowSettings(true);
+        }}
         onOpenHelp={() => {
           setShowSettings(false);
           setShowHelp(true);

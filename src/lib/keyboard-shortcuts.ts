@@ -1,9 +1,11 @@
 // ── Constants ────────────────────────────────────────────
 
-/** Keys whose ⌘/Ctrl-modified action opens a native dialog or mutates the
- * document (New/Open/Save) and must stay inert while a modal is open,
- * matching `toolbarDisabled={showSettings || showHelp}`. */
-const MODAL_GATED_KEYS = new Set(['n', 'o', 's']);
+/** Keys whose ⌘/Ctrl-modified action opens a native dialog, mutates the
+ * document (New/Open/Save), or restructures the workspace behind the modal
+ * (⌘⇧A toggles the AI panel — `'A'` is uppercase because Shift is held).
+ * All must stay inert while a modal is open, matching
+ * `toolbarDisabled={showSettings || showHelp}`. */
+const MODAL_GATED_KEYS = new Set(['n', 'o', 's', 'A']);
 
 // ── Helpers ──────────────────────────────────────────────
 

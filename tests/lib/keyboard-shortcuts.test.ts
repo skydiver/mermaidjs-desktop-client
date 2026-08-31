@@ -14,6 +14,12 @@ describe('shouldHandleFileShortcut', () => {
     expect(shouldHandleFileShortcut('s', true)).toBe(false);
   });
 
+  it('blocks the AI panel toggle while a modal is open', () => {
+    // Uppercase because ⌘⇧A is reported by KeyboardEvent.key as 'A'.
+    expect(shouldHandleFileShortcut('A', true)).toBe(false);
+    expect(shouldHandleFileShortcut('A', false)).toBe(true);
+  });
+
   it('leaves other shortcuts unaffected regardless of modal state', () => {
     expect(shouldHandleFileShortcut(',', true)).toBe(true);
     expect(shouldHandleFileShortcut('?', true)).toBe(true);
