@@ -34,7 +34,16 @@ export default function ChatMessage({
             : 'bg-neutral-100 text-neutral-800 dark:bg-slate-800 dark:text-slate-100'
         }`}
       >
-        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        {/* An assistant bubble with no content yet is a request in flight —
+            the placeholder is pushed on send and filled by the first chunk, and
+            it is dropped outright if the request fails, so an empty one always
+            means "waiting". Before this, the wait rendered as a bare empty pill
+            with no sign the app was doing anything. */}
+        {!isUser && message.content.length === 0 ? (
+          <ThinkingDots />
+        ) : (
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        )}
 
         {mermaidBlock && <MermaidCodeBlock source={mermaidBlock} />}
 
@@ -76,6 +85,26 @@ export function ChatErrorMessage({ message, onRetry }: { message: string; onRetr
 }
 
 // ── Sub-components ──────────────────────────────────────
+
+/**
+ * Three pulsing dots shown while the assistant's first chunk is still on its
+ * way. `motion-safe:` keeps it static for users who ask the OS to reduce
+ * motion, and the status role announces the wait rather than leaving a screen
+ * reader on a silent empty bubble.
+ */
+function ThinkingDots() {
+  return (
+    <span className="flex items-center gap-1 py-1" role="status" aria-label="Waiting for a reply">
+      {[0, 150, 300].map((delay) => (
+        <span
+          key={delay}
+          className="size-1.5 rounded-full bg-current opacity-40 motion-safe:animate-bounce"
+          style={{ animationDelay: `${delay}ms` }}
+        />
+      ))}
+    </span>
+  );
+}
 
 function MermaidCodeBlock({ source }: { source: string }) {
   const [copied, setCopied] = useState(false);
