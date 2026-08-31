@@ -63,6 +63,21 @@ Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), [CodeM
 
 PNG exports are clamped to the browser canvas limits — 16,384px per axis and roughly 16.7M pixels of total area. Very large diagrams are scaled down to fit, preserving aspect ratio, instead of producing an empty file.
 
+### AI Assistant
+
+A collapsible right-hand panel (⌘⇧A) that generates and edits diagrams in conversation. Describe a change, and the assistant rewrites the diagram — its reply is applied to the editor straight away, with **Apply** to keep it or **Cancel** to restore exactly what was there before. Hand-editing the diagram accepts the suggestion implicitly. Each turn sends the current editor content, so the assistant always works from what is actually on screen, including your own edits.
+
+| Provider          | Needs                     |
+| ----------------- | ------------------------- |
+| Anthropic         | API key + model           |
+| OpenAI            | API key + model           |
+| Ollama            | Base URL + model          |
+| OpenAI Compatible | API key, base URL + model |
+
+Configure any or all of them under **Settings → AI**, and switch between them from the panel's dropdown. Each has a **Test** button that verifies the credentials before you rely on them.
+
+All provider requests are made from the Rust backend, never the webview — the app's `default-src 'self'` content security policy is unchanged. **API keys are stored in the OS keychain** (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux), never in `settings.json`, and are never sent to the frontend after being saved.
+
 ### Built-in Examples
 
 Seven starter diagrams: Flowchart, Class, Sequence, Entity Relationship, State, Gantt, and Git Graph.
@@ -74,13 +89,14 @@ Seven starter diagrams: Flowchart, Class, Sequence, Entity Relationship, State, 
 - **Window state persistence** — size, position, and preferences saved between sessions
 - **Keyboard shortcuts**:
 
-| Shortcut          | Action      |
-| ----------------- | ----------- |
-| Cmd/Ctrl + N      | New diagram |
-| Cmd/Ctrl + O      | Open file   |
-| Cmd/Ctrl + S      | Save        |
-| Cmd/Ctrl + ,      | Settings    |
-| Cmd/Ctrl + ? / F1 | Help        |
+| Shortcut             | Action              |
+| -------------------- | ------------------- |
+| Cmd/Ctrl + N         | New diagram         |
+| Cmd/Ctrl + O         | Open file           |
+| Cmd/Ctrl + S         | Save                |
+| Cmd/Ctrl + ,         | Settings            |
+| Cmd/Ctrl + ? / F1    | Help                |
+| Cmd/Ctrl + Shift + A | Toggle AI assistant |
 
 ---
 

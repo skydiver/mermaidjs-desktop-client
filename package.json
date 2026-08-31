@@ -1,7 +1,7 @@
 {
   "name": "mermaidjs-desktop-client",
   "private": true,
-  "version": "3.1.2",
+  "version": "4.0.0",
   "type": "module",
   "description": "Desktop editor for Mermaid diagrams with real-time preview, syntax highlighting, and SVG/PNG export.",
   "homepage": "https://github.com/skydiver/mermaidjs-desktop-client",
