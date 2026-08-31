@@ -4,15 +4,18 @@ import { Button } from '@/components/ui/button';
 import { useSettings } from '@/hooks/useSettings';
 import { isProviderConfigured } from '@/lib/ai/provider-configured';
 import { AI_PROVIDERS, type AiProviderId, type AiProviderListing } from '@/lib/ai/types';
-import { SubsectionHeader } from './shared';
+import { SettingRow, SubsectionHeader } from './shared';
 
 // ── Shared input styling ─────────────────────────────────
 // Not extracted to `ui/input.tsx` — this is the only place in the app that
 // needs a free-text field, so a shared primitive would be one more file for
 // a single caller. If a second consumer appears, promote this to `ui/`.
 
+// Width is applied per call site rather than baked in: the rows follow the
+// SettingRow pattern (label left, control right), and the API key field shares
+// its row with a Save/Remove button so it has to be narrower than the others.
 const INPUT_CLASS =
-  'w-full rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500';
+  'rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500';
 
 // ── Test-connection state ────────────────────────────────
 
@@ -210,19 +213,18 @@ function ProviderRow({
       </button>
 
       {expanded && (
-        <div className="mt-3 space-y-3 pl-5">
+        // Same divided-row rhythm as the General and Editor sections, indented
+        // under the provider it belongs to.
+        <div className="mt-1 divide-y divide-neutral-200 pl-5 dark:divide-slate-700/50">
           {needsApiKey && (
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-neutral-500 dark:text-slate-400">
-                API Key
-              </span>
+            <SettingRow label="API Key">
               {hasApiKey ? (
                 <div className="flex items-center gap-2">
                   <input
                     type="password"
                     value="••••••••"
                     disabled
-                    className={INPUT_CLASS}
+                    className={`${INPUT_CLASS} w-40`}
                     aria-label={`${label} API key (saved)`}
                   />
                   <Button size="sm" variant="outline" disabled={savingKey} onClick={removeKey}>
@@ -240,7 +242,7 @@ function ProviderRow({
                     }}
                     placeholder="sk-…"
                     disabled={savingKey}
-                    className={INPUT_CLASS}
+                    className={`${INPUT_CLASS} w-40`}
                     aria-label={`${label} API key`}
                   />
                   <Button
@@ -253,70 +255,67 @@ function ProviderRow({
                   </Button>
                 </div>
               )}
-            </div>
+            </SettingRow>
           )}
 
-          <div className="space-y-1">
-            <span className="text-xs font-medium text-neutral-500 dark:text-slate-400">Model</span>
+          <SettingRow label="Model">
             <input
               type="text"
               value={config.model}
               onChange={(e) => onModelChange(e.target.value)}
               placeholder={modelPlaceholder}
-              className={INPUT_CLASS}
+              className={`${INPUT_CLASS} w-56`}
               aria-label={`${label} model`}
             />
-          </div>
+          </SettingRow>
 
           {needsBaseUrl && (
-            <div className="space-y-1">
-              <span className="text-xs font-medium text-neutral-500 dark:text-slate-400">
-                Base URL
-              </span>
+            <SettingRow label="Base URL">
               <input
                 type="text"
                 value={config.baseUrl ?? ''}
                 onChange={(e) => onBaseUrlChange(e.target.value)}
                 placeholder="http://localhost:11434"
-                className={INPUT_CLASS}
+                className={`${INPUT_CLASS} w-56`}
                 aria-label={`${label} base URL`}
               />
-            </div>
+            </SettingRow>
           )}
 
-          {/* Result sits to the left of the button and the pair is aligned to
-              the form's right edge, so the row reads as an action on the
-              fields above it rather than a control floating under them. */}
-          <div className="flex items-center justify-end gap-2 pt-0.5">
-            {testState.status === 'ok' && (
-              <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="size-3.5" />
-                Connection OK
-              </span>
-            )}
-            {testState.status === 'error' && (
-              <span
-                className="flex min-w-0 items-center gap-1 text-xs text-red-600 dark:text-red-400"
-                title={testState.message}
-              >
-                <TriangleAlert className="size-3.5 shrink-0" />
-                <span className="truncate">{testState.message}</span>
-              </span>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={runTest}
-              disabled={testState.status === 'testing'}
-            >
-              {testState.status === 'testing' ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Zap className="size-3.5" />
+          <SettingRow label="Connection">
+            <div className="flex min-w-0 items-center gap-2">
+              {testState.status === 'ok' && (
+                <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="size-3.5" />
+                  OK
+                </span>
               )}
-              Test connection
-            </Button>
-          </div>
+              {testState.status === 'error' && (
+                // Constrained and truncated so a long provider error cannot
+                // push the button out of the row; the full text is on hover.
+                <span
+                  className="flex min-w-0 max-w-[9rem] items-center gap-1 text-xs text-red-600 dark:text-red-400"
+                  title={testState.message}
+                >
+                  <TriangleAlert className="size-3.5 shrink-0" />
+                  <span className="truncate">{testState.message}</span>
+                </span>
+              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={runTest}
+                disabled={testState.status === 'testing'}
+              >
+                {testState.status === 'testing' ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Zap className="size-3.5" />
+                )}
+                Test
+              </Button>
+            </div>
+          </SettingRow>
         </div>
       )}
     </div>
