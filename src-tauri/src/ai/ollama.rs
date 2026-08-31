@@ -36,7 +36,7 @@ pub async fn send(
         .json(&build_request_body(messages, model))
         .send()
         .await
-        .map_err(|e| AiError::Request(format!("failed to connect to Ollama at {base_url}: {e}")))?;
+        .map_err(|e| AiError::Request(format!("Failed to connect to Ollama at {base_url}: {e}")))?;
 
     let status = response.status();
     if !status.is_success() {

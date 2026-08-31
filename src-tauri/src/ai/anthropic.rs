@@ -38,7 +38,7 @@ pub async fn send(
     let api_key = keyring::get_api_key("anthropic")
         .map_err(AiError::Request)?
         .ok_or_else(|| {
-            AiError::Auth("no Anthropic API key stored — add one in Settings".into())
+            AiError::Auth("No Anthropic API key stored — add one in Settings".into())
         })?;
 
     let response = client

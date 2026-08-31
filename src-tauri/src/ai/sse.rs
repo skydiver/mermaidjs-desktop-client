@@ -192,7 +192,7 @@ pub async fn open_sse(response: reqwest::Response, api_key: Option<&str>) -> Res
         };
 
         return Err(match status.as_u16() {
-            401 => AiError::Auth(format!("authentication failed: {body}")),
+            401 => AiError::Auth(format!("Authentication failed: {body}")),
             429 => AiError::RateLimited {
                 retry_after_secs: retry_after.unwrap_or(60),
             },

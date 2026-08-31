@@ -53,7 +53,7 @@ pub async fn send(
         .map_err(AiError::Request)?
         .ok_or_else(|| {
             AiError::Auth(format!(
-                "no {display_name} API key stored — add one in Settings"
+                "No {display_name} API key stored — add one in Settings"
             ))
         })?;
 
@@ -136,7 +136,7 @@ fn apply_event(
     }
 
     let parsed: Value = serde_json::from_str(data)
-        .map_err(|e| AiError::Stream(format!("invalid JSON in stream: {e}")))?;
+        .map_err(|e| AiError::Stream(format!("Invalid JSON in stream: {e}")))?;
 
     if let Some(err) = parsed.get("error") {
         let raw_message = err

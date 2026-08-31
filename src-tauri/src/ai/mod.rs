@@ -82,7 +82,7 @@ pub enum AiError {
 
     /// HTTP 429. Carries the `retry-after` the provider sent, if any, so a
     /// caller can decide whether to retry.
-    #[error("rate limited — retry after {retry_after_secs}s")]
+    #[error("Rate limited — retry after {retry_after_secs}s")]
     RateLimited { retry_after_secs: u64 },
 
     /// The response stream itself broke: a dropped connection, or bytes
@@ -142,7 +142,7 @@ pub fn validate_provider_config(
     base_url: Option<&str>,
 ) -> Result<(), AiError> {
     if model.trim().is_empty() {
-        return Err(AiError::Config("a model is required".into()));
+        return Err(AiError::Config("Model is required".into()));
     }
 
     let base_url_missing = base_url.map(str::trim).unwrap_or("").is_empty();
@@ -150,13 +150,13 @@ pub fn validate_provider_config(
     match provider_id {
         "anthropic" | "openai" => Ok(()),
         "ollama" if base_url_missing => {
-            Err(AiError::Config("a base URL is required for Ollama".into()))
+            Err(AiError::Config("Base URL is required for Ollama".into()))
         }
         "openai-compatible" if base_url_missing => Err(AiError::Config(
-            "a base URL is required for OpenAI Compatible".into(),
+            "Base URL is required for OpenAI Compatible".into(),
         )),
         "ollama" | "openai-compatible" => Ok(()),
-        other => Err(AiError::Config(format!("unknown AI provider: {other}"))),
+        other => Err(AiError::Config(format!("Unknown AI provider: {other}"))),
     }
 }
 
@@ -206,7 +206,7 @@ pub async fn send_message(
             let base_url = base_url.expect("validated above");
             ollama::send(client, base_url, model, messages, chunk_tx).await
         }
-        other => Err(AiError::Config(format!("unknown AI provider: {other}"))),
+        other => Err(AiError::Config(format!("Unknown AI provider: {other}"))),
     }
 }
 
