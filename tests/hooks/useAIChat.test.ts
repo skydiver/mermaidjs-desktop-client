@@ -146,6 +146,49 @@ describe('useAIChat', () => {
     expect(result.current.isStreaming).toBe(false);
   });
 
+  // The accumulator that makes `done` independent of React's render timing has
+  // to be cleared per stream. Left uncleared, the second reply appended to the
+  // first and the extractor matched a block spanning both, so the editor got
+  // the previous diagram, the prose between the replies, and the new diagram.
+  it('applies only the newest reply when a second message is sent', async () => {
+    let editorContent = '';
+    const getDiagramSource = vi.fn(() => editorContent);
+    const applySuggestion = vi.fn((source: string) => {
+      editorContent = source;
+    });
+
+    const { result } = renderHook(() => useAIChat({ getDiagramSource, applySuggestion }), {
+      wrapper: wrapperFor(makeSettings()),
+    });
+
+    await waitForListener();
+
+    act(() => result.current.send('draw a flowchart'));
+    await waitForSend();
+    emit({
+      type: 'text-delta',
+      streamId: lastStreamId(),
+      text: 'First:\n```mermaid\ngraph TD\nA --> B\n```',
+    });
+    emit({ type: 'done', streamId: lastStreamId(), tokensIn: 1, tokensOut: 1 });
+    expect(editorContent).toBe('graph TD\nA --> B');
+
+    act(() => result.current.send('add another node'));
+    await waitFor(() =>
+      expect(invokeMock.mock.calls.filter((c) => c[0] === 'send_ai_message')).toHaveLength(2)
+    );
+    emit({
+      type: 'text-delta',
+      streamId: lastStreamId(),
+      text: 'Expanded:\n```mermaid\ngraph TD\nA --> B\nB --> C\n```',
+    });
+    emit({ type: 'done', streamId: lastStreamId(), tokensIn: 1, tokensOut: 1 });
+
+    expect(editorContent).toBe('graph TD\nA --> B\nB --> C');
+    expect(editorContent).not.toContain('```');
+    expect(editorContent).not.toContain('Expanded');
+  });
+
   it('cancelPending restores the pre-suggestion snapshot', async () => {
     let editorContent = 'original diagram';
     const getDiagramSource = vi.fn(() => editorContent);

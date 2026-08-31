@@ -214,6 +214,12 @@ export function useAIChat({
         // AFTER that cancellation, not before, or it would be wiped out.
         await cancelInFlight();
         currentAssistantIdRef.current = assistantId;
+        // Start this reply from empty. Without it the accumulator carries the
+        // previous reply's text, so the extractor runs over both concatenated
+        // and applies a block spanning from the earlier reply's fence — the
+        // editor ends up holding the old diagram, the prose between them, and
+        // the new diagram.
+        streamTextRef.current = '';
 
         const streamId = newId();
         currentStreamIdRef.current = streamId;
