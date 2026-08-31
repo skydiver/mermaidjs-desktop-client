@@ -40,7 +40,10 @@ export default function ChatMessage({
 
         {isPending && (
           <div className="mt-2 flex gap-2">
-            <Button size="xs" variant="secondary" onClick={onAccept}>
+            {/* Apply is the affirmative action, so it carries the primary
+                variant — the borderless `secondary` read as unstyled next to
+                the bordered controls around it. */}
+            <Button size="xs" onClick={onAccept}>
               <Check className="size-3" />
               Apply
             </Button>
@@ -94,14 +97,10 @@ function MermaidCodeBlock({ source }: { source: string }) {
         <span className="text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-slate-500">
           mermaid
         </span>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-        >
+        <Button size="xs" variant="ghost" onClick={handleCopy}>
           {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
           {copied ? 'Copied' : 'Copy'}
-        </button>
+        </Button>
       </div>
       <pre className="overflow-x-auto p-2 font-mono text-xs text-neutral-700 dark:text-slate-300">
         {source}

@@ -72,14 +72,10 @@ export default function AIPanel({
             AI Assistant
           </h2>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
-        >
+        <Button size="icon-xs" variant="ghost" onClick={onClose}>
           <X className="size-4" />
           <span className="sr-only">Close AI panel</span>
-        </button>
+        </Button>
       </div>
 
       {/* Provider picker */}
@@ -120,12 +116,12 @@ export default function AIPanel({
         </div>
       )}
 
-      <ChatComposer
-        isStreaming={isStreaming}
-        disabledReason={hasActiveProvider ? null : 'Configure an AI provider to start chatting.'}
-        onSend={onSend}
-        onStop={onStop}
-      />
+      {/* No composer until a provider is configured: a permanently disabled
+          textarea invites typing into a dead control, while the empty state
+          above already carries the one useful action (open AI settings). */}
+      {hasActiveProvider && (
+        <ChatComposer isStreaming={isStreaming} onSend={onSend} onStop={onStop} />
+      )}
     </div>
   );
 }
