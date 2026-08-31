@@ -191,12 +191,22 @@ pub async fn open_sse(response: reqwest::Response, api_key: Option<&str>) -> Res
             None => body,
         };
 
+        // The provider's own sentence when it gave one, otherwise the status
+        // plus the raw body so nothing is lost when the shape is unfamiliar.
+        let message = super::provider_message(&body);
+
         return Err(match status.as_u16() {
-            401 => AiError::Auth(format!("Authentication failed: {body}")),
+            401 => AiError::Auth(match message {
+                Some(message) => format!("Authentication failed: {message}"),
+                None => format!("Authentication failed: {body}"),
+            }),
             429 => AiError::RateLimited {
                 retry_after_secs: retry_after.unwrap_or(60),
             },
-            code => AiError::Request(format!("HTTP {code} — {body}")),
+            code => AiError::Request(match message {
+                Some(message) => message,
+                None => format!("HTTP {code} — {body}"),
+            }),
         });
     }
 

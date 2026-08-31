@@ -44,7 +44,10 @@ pub async fn send(
             .text()
             .await
             .unwrap_or_else(|_| "(failed to read error body)".into());
-        return Err(AiError::Request(format!("HTTP {} — {body}", status.as_u16())));
+        return Err(AiError::Request(match super::provider_message(&body) {
+            Some(message) => message,
+            None => format!("HTTP {} — {body}", status.as_u16()),
+        }));
     }
 
     let mut byte_stream = response.bytes_stream();

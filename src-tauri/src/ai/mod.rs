@@ -112,6 +112,40 @@ pub(crate) fn redact(message: &str, api_key: &str) -> String {
     }
 }
 
+/// Turns a provider's HTTP error body into the sentence it actually contains.
+///
+/// Every provider here reports failures as JSON, but not in the same shape:
+/// Ollama uses a bare `{"error": "..."}` string, while OpenAI, Anthropic and
+/// most OpenAI-compatible gateways nest it as `{"error": {"message": "..."}}`.
+/// Without this, a wrong model name surfaces in Settings as
+/// `HTTP 404 — {"error":"model 'x' not found"}` — the answer is in there, but
+/// the reader has to parse JSON to find it, and a narrow field truncates it
+/// away entirely.
+///
+/// Returns `None` when the body isn't JSON or carries no recognizable message,
+/// so the caller can fall back to reporting the status and the raw body rather
+/// than swallowing a failure it couldn't interpret.
+pub(crate) fn provider_message(body: &str) -> Option<String> {
+    let json: serde_json::Value = serde_json::from_str(body).ok()?;
+
+    let message = json
+        .get("error")
+        .and_then(|error| error.as_str().or_else(|| error.get("message")?.as_str()))
+        // A few gateways skip the `error` envelope and return `{"message": …}`.
+        .or_else(|| json.get("message")?.as_str())?
+        .trim();
+
+    if message.is_empty() {
+        return None;
+    }
+
+    // Providers write these lowercase ("model 'x' not found"); the UI shows
+    // them as standalone sentences, matching the app's own error strings.
+    let mut chars = message.chars();
+    let first = chars.next()?;
+    Some(first.to_uppercase().collect::<String>() + chars.as_str())
+}
+
 // ---------------------------------------------------------------------------
 // Provider identifiers
 // ---------------------------------------------------------------------------
@@ -260,6 +294,38 @@ mod tests {
         assert_eq!(redact("key sk-abc123 leaked", "sk-abc123"), "key [REDACTED] leaked");
         assert_eq!(redact("no key here", "sk-abc123"), "no key here");
         assert_eq!(redact("anything", ""), "anything");
+    }
+
+    #[test]
+    fn provider_message_reads_ollamas_bare_error_string() {
+        assert_eq!(
+            provider_message(r#"{"error":"model 'gemma4:26b' not found"}"#).as_deref(),
+            Some("Model 'gemma4:26b' not found")
+        );
+    }
+
+    #[test]
+    fn provider_message_reads_the_nested_openai_shape() {
+        let body = r#"{"error":{"message":"invalid api key","type":"invalid_request_error"}}"#;
+        assert_eq!(provider_message(body).as_deref(), Some("Invalid api key"));
+    }
+
+    #[test]
+    fn provider_message_reads_a_bare_message_field() {
+        assert_eq!(
+            provider_message(r#"{"message":"upstream timeout"}"#).as_deref(),
+            Some("Upstream timeout")
+        );
+    }
+
+    #[test]
+    fn provider_message_gives_up_on_unrecognized_bodies() {
+        // The caller falls back to the status plus the raw body for these, so
+        // an unfamiliar shape is never silently reported as a success.
+        assert_eq!(provider_message("<html>502 Bad Gateway</html>"), None);
+        assert_eq!(provider_message(r#"{"detail":"nope"}"#), None);
+        assert_eq!(provider_message(r#"{"error":"   "}"#), None);
+        assert_eq!(provider_message(""), None);
     }
 
     #[test]

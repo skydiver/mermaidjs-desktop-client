@@ -283,22 +283,11 @@ function ProviderRow({
           )}
 
           <SettingRow label="Connection">
-            <div className="flex min-w-0 items-center gap-2">
+            <div className="flex items-center gap-2">
               {testState.status === 'ok' && (
                 <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                   <CheckCircle2 className="size-3.5" />
                   OK
-                </span>
-              )}
-              {testState.status === 'error' && (
-                // Constrained and truncated so a long provider error cannot
-                // push the button out of the row; the full text is on hover.
-                <span
-                  className="flex min-w-0 max-w-[9rem] items-center gap-1 text-xs text-red-600 dark:text-red-400"
-                  title={testState.message}
-                >
-                  <TriangleAlert className="size-3.5 shrink-0" />
-                  <span className="truncate">{testState.message}</span>
                 </span>
               )}
               <Button
@@ -316,6 +305,17 @@ function ProviderRow({
               </Button>
             </div>
           </SettingRow>
+
+          {/* Errors get their own full-width line below the row rather than
+              sharing it with the button: a provider's message is the whole
+              point of testing ("Model 'x' not found"), and squeezing it beside
+              a control truncated away the part that identifies the problem. */}
+          {testState.status === 'error' && (
+            <div className="flex items-start gap-1.5 py-2 text-xs text-red-600 dark:text-red-400">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+              <span className="break-words">{testState.message}</span>
+            </div>
+          )}
         </div>
       )}
     </div>
