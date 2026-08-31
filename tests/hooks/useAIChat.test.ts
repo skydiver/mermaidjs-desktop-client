@@ -92,6 +92,32 @@ afterEach(() => {
 // ── Tests ────────────────────────────────────────────────
 
 describe('useAIChat', () => {
+  // The provider id is the KEY the config is stored under, not a field on it,
+  // so passing the stored object straight through omitted `provider` and the
+  // backend rejected every send with "missing field `provider`". The Settings
+  // test button assembled its own config and so never hit this, which is why
+  // testing a provider succeeded while sending to it failed.
+  it('sends a config carrying the provider id, model and base URL', async () => {
+    const { result } = renderHook(
+      () => useAIChat({ getDiagramSource: () => 'graph TD\nA --> B', applySuggestion: vi.fn() }),
+      { wrapper: wrapperFor(makeSettings()) }
+    );
+
+    await waitForListener();
+    act(() => result.current.send('draw a flowchart'));
+    await waitForSend();
+
+    const [command, args] =
+      invokeMock.mock.calls.find(([name]) => name === 'send_ai_message') ?? [];
+    expect(command).toBe('send_ai_message');
+    expect((args as { config: unknown }).config).toEqual({
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-5',
+      baseUrl: undefined,
+    });
+    expect((args as { diagramSource: string }).diagramSource).toBe('graph TD\nA --> B');
+  });
+
   it('applies the extracted mermaid block to the editor when the stream completes', async () => {
     let editorContent = 'graph TD\nA --> B';
     const getDiagramSource = vi.fn(() => editorContent);

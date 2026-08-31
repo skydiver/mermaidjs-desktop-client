@@ -174,11 +174,22 @@ export function useAIChat({
       if (!trimmed) return;
 
       const { activeProvider, providers } = settingsRef.current.ai;
-      const config = activeProvider ? providers[activeProvider] : undefined;
-      if (!activeProvider || !isConfigured(config)) {
+      const providerConfig = activeProvider ? providers[activeProvider] : undefined;
+      if (!activeProvider || !isConfigured(providerConfig)) {
         setError('No AI provider is configured. Open AI settings to add one.');
         return;
       }
+
+      // The stored config holds only `model`/`baseUrl` — the provider id is the
+      // key it is stored under, not a field on it — while the backend's
+      // `AiRequestConfig` needs the id too, to pick which provider to call and
+      // which keychain entry to read. Assembled here rather than passing the
+      // stored object straight through.
+      const config = {
+        provider: activeProvider,
+        model: providerConfig.model,
+        baseUrl: providerConfig.baseUrl,
+      };
 
       setError(null);
       // A new send always supersedes whatever was pending — the previous
