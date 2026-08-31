@@ -26,6 +26,18 @@ const KEYBOARD_AI_WIDTH_STEP = 16;
 /** Sourced from the settings defaults so "reset" here and a fresh install agree. */
 const DEFAULT_AI_WIDTH = DEFAULT_SETTINGS.aiPanelWidth;
 
+/**
+ * Shared by both pane dividers so they cannot drift apart.
+ *
+ * `h-full` is load-bearing: Tailwind's Preflight sets `hr { height: 0 }`, and
+ * an explicit height stops `align-self: stretch` from stretching the element.
+ * Without it the divider is a 4x0 box — only the overflowing `::before` grip
+ * paints, so the hit area is a ~32px sliver at the very top and the divider
+ * looks draggable while being, in practice, impossible to grab.
+ */
+const DIVIDER_CLASS =
+  "m-0 flex h-full w-1 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent before:h-8 before:w-0.5 before:rounded-full before:bg-neutral-300 before:transition-colors before:content-[''] hover:bg-blue-500/20 hover:before:bg-blue-500 active:bg-blue-500/30 active:before:bg-blue-600 focus-visible:bg-blue-500/20 dark:before:bg-slate-600 dark:hover:before:bg-blue-400";
+
 // ── Props ───────────────────────────────────────────────
 
 interface ContentViewProps {
@@ -104,12 +116,20 @@ export default function ContentView({
   const containerRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
+  // Suppresses text selection across the workspace while either divider is
+  // being dragged. State rather than a ref: it has to re-render to apply the
+  // class.
+  const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef(0);
   const startRatioRef = useRef(DEFAULT_RATIO);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent<HTMLHRElement>) => {
+      // Without this the browser begins a text selection under the pointer,
+      // which then extends across the editor and preview for the whole drag.
+      e.preventDefault();
       draggingRef.current = true;
+      setIsResizing(true);
       startXRef.current = e.clientX;
       startRatioRef.current = editorRatio;
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -127,6 +147,7 @@ export default function ContentView({
 
   const handlePointerUp = useCallback(() => {
     draggingRef.current = false;
+    setIsResizing(false);
   }, []);
 
   const handleDoubleClick = useCallback(() => {
@@ -148,7 +169,9 @@ export default function ContentView({
   );
 
   const handleAiPointerDown = useCallback((e: React.PointerEvent<HTMLHRElement>) => {
+    e.preventDefault(); // See handlePointerDown — stops a text selection starting.
     aiDraggingRef.current = true;
+    setIsResizing(true);
     e.currentTarget.setPointerCapture(e.pointerId);
   }, []);
 
@@ -163,6 +186,7 @@ export default function ContentView({
 
   const handleAiPointerUp = useCallback(() => {
     aiDraggingRef.current = false;
+    setIsResizing(false);
   }, []);
 
   const handleAiDividerKeyDown = useCallback(
@@ -248,7 +272,7 @@ export default function ContentView({
           than a child of it, so it is available from the empty state too —
           generating a diagram from nothing is the assistant's primary use, and
           nesting it under `hasDocument` made the toggle a no-op there. */}
-      <div ref={rowRef} className="flex min-h-0 flex-1">
+      <div ref={rowRef} className={`flex min-h-0 flex-1 ${isResizing ? 'select-none' : ''}`}>
         {hasDocument ? (
           /* Workspace: Editor + Divider + Preview */
           <div ref={containerRef} className="relative flex min-h-0 flex-1">
@@ -276,7 +300,7 @@ export default function ContentView({
               onPointerUp={handlePointerUp}
               onDoubleClick={handleDoubleClick}
               onKeyDown={handleDividerKeyDown}
-              className="m-0 flex w-1 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent before:h-8 before:w-0.5 before:rounded-full before:bg-neutral-300 before:transition-colors before:content-[''] hover:bg-blue-500/20 hover:before:bg-blue-500 active:bg-blue-500/30 active:before:bg-blue-600 focus-visible:bg-blue-500/20 dark:before:bg-slate-600 dark:hover:before:bg-blue-400"
+              className={DIVIDER_CLASS}
             />
 
             {/* Preview panel */}
@@ -317,7 +341,7 @@ export default function ContentView({
             onPointerUp={handleAiPointerUp}
             onDoubleClick={() => commitAiWidth(DEFAULT_AI_WIDTH)}
             onKeyDown={handleAiDividerKeyDown}
-            className="m-0 flex w-1 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent before:h-8 before:w-0.5 before:rounded-full before:bg-neutral-300 before:transition-colors before:content-[''] hover:bg-blue-500/20 hover:before:bg-blue-500 active:bg-blue-500/30 active:before:bg-blue-600 focus-visible:bg-blue-500/20 dark:before:bg-slate-600 dark:hover:before:bg-blue-400"
+            className={DIVIDER_CLASS}
           />
         )}
 
