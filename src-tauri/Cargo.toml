@@ -21,7 +21,26 @@ tauri-plugin-store = "2"
 tauri-plugin-window-state = "2.4.1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# AI provider layer (src/ai/, commands/ai.rs): rustls avoids a system
+# OpenSSL dependency across the three desktop targets. `stream` is needed
+# for `bytes_stream()` on SSE/NDJSON provider responses.
+reqwest = { version = "0.13", features = ["json", "stream", "rustls"], default-features = false }
+# `macros` (for `#[tokio::test]`) and `rt` (a runtime for those tests to
+# run on) are additions beyond the original brief's list, needed only for
+# the AI layer's unit tests — see ai/sse.rs's `open_sse` tests.
+tokio = { version = "1", features = ["sync", "time", "rt", "macros"] }
+tokio-util = "0.7"
+futures = "0.3"
+bytes = "1"
+thiserror = "2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10"
 core-text = "20"
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service"] }
