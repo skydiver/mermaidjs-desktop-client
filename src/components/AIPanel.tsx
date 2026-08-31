@@ -5,7 +5,7 @@ import ChatMessage, { ChatErrorMessage } from '@/components/ai/ChatMessage';
 import ProviderPicker from '@/components/ai/ProviderPicker';
 import { Button } from '@/components/ui/button';
 import type { PendingSuggestion } from '@/hooks/useAIChat';
-import { useSettings } from '@/hooks/useSettings';
+import { useConfiguredProviders } from '@/hooks/useConfiguredProviders';
 import type { AiMessage } from '@/lib/ai/types';
 
 // ── Props ───────────────────────────────────────────────
@@ -43,14 +43,15 @@ export default function AIPanel({
   onClose,
   onOpenAiSettings,
 }: AIPanelProps) {
-  const { settings } = useSettings();
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // A provider is only ever assigned to `activeProvider` via ProviderPicker,
-  // which lists exclusively configured providers — so its presence is a
-  // reliable-enough proxy for "the panel is usable" without re-deriving the
-  // full keychain-aware configured check here too.
-  const hasActiveProvider = settings.ai.activeProvider !== null;
+  // Gated on whether any provider is USABLE, not on whether one is active.
+  // Keying off `activeProvider` deadlocked the panel: only the picker could
+  // set it, and the picker only rendered once it was set, so a freshly
+  // configured provider never became reachable. The hook also selects one when
+  // none is active, so `hasProvider` implies there is something to send with.
+  const { configured } = useConfiguredProviders();
+  const hasProvider = configured.length > 0;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `messages.length`/`isStreaming` intentionally re-trigger the scroll — the effect body only reads the ref, but it must re-run on every new message and on stream start/stop.
   useEffect(() => {
@@ -79,14 +80,14 @@ export default function AIPanel({
       </div>
 
       {/* Provider picker */}
-      {hasActiveProvider && (
+      {hasProvider && (
         <div className="border-b border-neutral-200 p-2 dark:border-slate-700">
           <ProviderPicker />
         </div>
       )}
 
       {/* Message list / empty state */}
-      {!hasActiveProvider ? (
+      {!hasProvider ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
           <p className="text-sm text-neutral-500 dark:text-slate-400">
             No AI provider is configured yet.
@@ -123,9 +124,7 @@ export default function AIPanel({
       {/* No composer until a provider is configured: a permanently disabled
           textarea invites typing into a dead control, while the empty state
           above already carries the one useful action (open AI settings). */}
-      {hasActiveProvider && (
-        <ChatComposer isStreaming={isStreaming} onSend={onSend} onStop={onStop} />
-      )}
+      {hasProvider && <ChatComposer isStreaming={isStreaming} onSend={onSend} onStop={onStop} />}
     </div>
   );
 }

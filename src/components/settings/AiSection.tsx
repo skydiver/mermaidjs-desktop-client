@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/hooks/useSettings';
 import { isProviderConfigured } from '@/lib/ai/provider-configured';
+import { notifyProvidersChanged } from '@/lib/ai/provider-events';
 import { AI_PROVIDERS, type AiProviderId, type AiProviderListing } from '@/lib/ai/types';
 import { SettingRow, SubsectionHeader } from './shared';
 
@@ -148,6 +149,10 @@ function ProviderRow({
       await invoke('save_ai_api_key', { provider: id, apiKey: value });
       setKeyDraft('');
       onKeyChanged();
+      // A keychain write is invisible to React state, so anything else
+      // deriving "is this provider usable" — the AI panel, via
+      // useConfiguredProviders — has to be told to re-read it.
+      notifyProvidersChanged();
     } catch {
       // Not in Tauri, or the keychain write failed — the draft stays in the
       // field so the user can see what they typed and retry, rather than
@@ -163,6 +168,9 @@ function ProviderRow({
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('delete_ai_api_key', { provider: id });
       onKeyChanged();
+      // Removing a key can make a provider unusable while it is the active
+      // one; the panel has to re-read so it can fall back or empty out.
+      notifyProvidersChanged();
     } catch {
       // Not in Tauri, or the keychain delete failed — nothing more to do
       // here; the "Configured" state simply won't have changed.
