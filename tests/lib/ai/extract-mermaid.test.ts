@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractMermaid } from '../../../src/lib/ai/extract-mermaid';
+import { extractMermaid, stripMermaidBlocks } from '../../../src/lib/ai/extract-mermaid';
 
 describe('extractMermaid', () => {
   it('returns null when there is no fenced code block', () => {
@@ -96,5 +96,64 @@ describe('extractMermaid', () => {
   it('trims leading and trailing blank lines from the extracted block', () => {
     const reply = ['```mermaid', '', '  graph TD', '  A --> B', '', '```'].join('\n');
     expect(extractMermaid(reply)).toBe('graph TD\n  A --> B');
+  });
+});
+
+describe('stripMermaidBlocks', () => {
+  it('removes a closed mermaid block and keeps the prose around it', () => {
+    const reply = [
+      "Here's the flow:",
+      '',
+      '```mermaid',
+      'graph TD',
+      '  A --> B',
+      '```',
+      '',
+      'Let me know if you want more detail.',
+    ].join('\n');
+
+    expect(stripMermaidBlocks(reply)).toBe(
+      "Here's the flow:\n\nLet me know if you want more detail."
+    );
+  });
+
+  // The streaming case: until the closing fence arrives the block is not a
+  // block, and hiding it would look like the assistant had stalled.
+  it('leaves an unterminated block visible', () => {
+    const reply = ["Here's the flow:", '', '```mermaid', 'graph TD', '  A --> B'].join('\n');
+    expect(stripMermaidBlocks(reply)).toBe(reply.trim());
+  });
+
+  it('leaves blocks of other languages alone', () => {
+    const reply = ['Config:', '```json', '{"a":1}', '```'].join('\n');
+    expect(stripMermaidBlocks(reply)).toBe(reply.trim());
+  });
+
+  it('removes every mermaid block, not just the last', () => {
+    const reply = [
+      'First:',
+      '```mermaid',
+      'graph TD',
+      'A --> B',
+      '```',
+      'Second:',
+      '```mmd',
+      'graph LR',
+      'C --> D',
+      '```',
+    ].join('\n');
+
+    expect(stripMermaidBlocks(reply)).toBe('First:\nSecond:');
+  });
+
+  it('returns an empty string when the reply is nothing but a diagram', () => {
+    const reply = '```mermaid\ngraph TD\nA --> B\n```';
+    expect(stripMermaidBlocks(reply)).toBe('');
+  });
+
+  it('leaves a reply with no code blocks untouched', () => {
+    expect(stripMermaidBlocks('Which direction should it flow?')).toBe(
+      'Which direction should it flow?'
+    );
   });
 });

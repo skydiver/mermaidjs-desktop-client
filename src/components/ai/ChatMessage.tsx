@@ -1,7 +1,7 @@
 import { AlertTriangle, Check, Copy, RotateCcw, X } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { extractMermaid } from '@/lib/ai/extract-mermaid';
+import { extractMermaid, stripMermaidBlocks } from '@/lib/ai/extract-mermaid';
 import type { AiMessage } from '@/lib/ai/types';
 
 // ── Props ───────────────────────────────────────────────
@@ -24,6 +24,10 @@ export default function ChatMessage({
 }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const mermaidBlock = isUser ? null : extractMermaid(message.content);
+  // The diagram gets its own highlighted, copyable box below, so it is removed
+  // from the prose rather than shown twice. A block still streaming has no
+  // closing fence yet and is left in place until it does.
+  const prose = isUser ? message.content : stripMermaidBlocks(message.content);
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -42,7 +46,10 @@ export default function ChatMessage({
         {!isUser && message.content.length === 0 ? (
           <ThinkingDots />
         ) : (
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          // A reply that is nothing but a diagram leaves no prose behind, so
+          // the paragraph is dropped entirely rather than rendered empty and
+          // padding the bubble.
+          prose.length > 0 && <p className="whitespace-pre-wrap break-words">{prose}</p>
         )}
 
         {mermaidBlock && <MermaidCodeBlock source={mermaidBlock} />}
