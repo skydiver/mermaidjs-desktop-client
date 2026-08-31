@@ -327,14 +327,21 @@ export default function ContentView({
             frame of the transition. `motion-safe:` leaves the animation out
             for users who ask the OS to reduce motion. */}
         <div
-          className="shrink-0 overflow-hidden border-l border-neutral-200 motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out dark:border-slate-700"
+          className="relative shrink-0 overflow-hidden border-l border-neutral-200 motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out dark:border-slate-700"
           style={{ width: showAIPanel ? aiWidth : 0 }}
           // Kept mounted while collapsed so the conversation survives a
           // toggle; hidden from assistive tech and tab order at width 0.
           aria-hidden={!showAIPanel}
           inert={!showAIPanel}
         >
-          <div className="h-full" style={{ width: aiWidth }}>
+          {/* Absolutely positioned, NOT a normal-flow child. At full width
+              inside a zero-width wrapper it would otherwise hang 360px off the
+              right of the document: `overflow-hidden` clips the pixels, but an
+              in-flow child still counts toward the document's scroll width.
+              Chrome hides that; WKWebView reserves the space and paints an
+              unfilled strip beside the window. Out of flow, the panel keeps its
+              full width for the reveal without ever widening the document. */}
+          <div className="absolute inset-y-0 right-0" style={{ width: aiWidth }}>
             <AIPanel
               messages={aiChat.messages}
               isStreaming={aiChat.isStreaming}
