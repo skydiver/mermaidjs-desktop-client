@@ -6,6 +6,15 @@ import { Button } from '@/components/ui/button';
 
 const MAX_TEXTAREA_HEIGHT = 160;
 
+/**
+ * Height of the composer's single-line state, shared by the textarea and the
+ * send button so the two line up exactly: 20px line box + 12px vertical
+ * padding (`py-1.5`) + 2px borders. Declared once because the button has no
+ * way to derive it from the textarea, and an approximate match reads as a
+ * misalignment at this size.
+ */
+const COMPOSER_ROW_HEIGHT = 34;
+
 // ── Props ───────────────────────────────────────────────
 
 interface ChatComposerProps {
@@ -31,11 +40,13 @@ export default function ChatComposer({ isStreaming, onSend, onStop }: ChatCompos
     el.style.height = 'auto';
     // `scrollHeight` covers content plus padding but NOT borders, while
     // Preflight puts every element in `border-box` — assigning it directly
-    // leaves the field permanently 2px shy of its own content, clipping the
-    // descenders on the last line. `offsetHeight - clientHeight` is exactly
-    // that border, measured rather than hard-coded.
+    // leaves the field permanently 2px shy of its own content, which both
+    // clips the descenders and stops it lining up with the button.
+    // `offsetHeight - clientHeight` is exactly that border, measured rather
+    // than hard-coded.
     const borders = el.offsetHeight - el.clientHeight;
-    el.style.height = `${Math.min(el.scrollHeight + borders, MAX_TEXTAREA_HEIGHT)}px`;
+    const content = Math.max(el.scrollHeight + borders, COMPOSER_ROW_HEIGHT);
+    el.style.height = `${Math.min(content, MAX_TEXTAREA_HEIGHT)}px`;
   }, [text]);
 
   const submit = useCallback(() => {
@@ -54,29 +65,43 @@ export default function ChatComposer({ isStreaming, onSend, onStop }: ChatCompos
   };
 
   return (
-    <div className="flex flex-col gap-2 border-t border-neutral-200 p-2 dark:border-slate-700">
+    // Button beside the textarea rather than on its own row below it: the
+    // panel is narrow and vertical space is the scarce resource here. Aligned
+    // to the bottom so it stays level with the last line as the field grows.
+    <div className="flex items-end gap-2 border-t border-neutral-200 p-2 dark:border-slate-700">
       <textarea
         ref={textareaRef}
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Ask the assistant to draw or change a diagram… (⌘/Ctrl+Enter to send)"
+        placeholder="Describe a diagram… (⌘↵)"
         rows={1}
-        className="max-h-40 w-full resize-none rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+        className="max-h-40 min-w-0 flex-1 resize-none rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-800 outline-none placeholder:text-neutral-400 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
       />
-      <div className="flex justify-end">
-        {isStreaming ? (
-          <Button size="sm" variant="destructive" onClick={onStop}>
-            <Square className="size-3.5" />
-            Stop
-          </Button>
-        ) : (
-          <Button size="sm" onClick={submit} disabled={!text.trim()}>
-            <Send className="size-3.5" />
-            Send
-          </Button>
-        )}
-      </div>
+      {/* Icon-only, so the label moves to `title` and a screen-reader span. */}
+      {isStreaming ? (
+        <Button
+          size="icon-sm"
+          variant="destructive"
+          title="Stop generating"
+          style={{ height: COMPOSER_ROW_HEIGHT, width: COMPOSER_ROW_HEIGHT }}
+          onClick={onStop}
+        >
+          <Square className="size-3.5" />
+          <span className="sr-only">Stop generating</span>
+        </Button>
+      ) : (
+        <Button
+          size="icon-sm"
+          title="Send (⌘/Ctrl+Enter)"
+          style={{ height: COMPOSER_ROW_HEIGHT, width: COMPOSER_ROW_HEIGHT }}
+          onClick={submit}
+          disabled={!text.trim()}
+        >
+          <Send className="size-3.5" />
+          <span className="sr-only">Send</span>
+        </Button>
+      )}
     </div>
   );
 }
