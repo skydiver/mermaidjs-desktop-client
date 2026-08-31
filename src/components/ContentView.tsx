@@ -53,6 +53,12 @@ interface ContentViewProps {
   onKeepChanges?: () => void;
   toolbarDisabled?: boolean;
   aiChat: UseAIChatReturn;
+  /**
+   * Sends a chat message. Not `aiChat.send` directly: sending from the empty
+   * state has to create a document first, so the editor exists to receive the
+   * suggestion when the reply lands.
+   */
+  onAiSend: (text: string) => void;
   showAIPanel: boolean;
   onToggleAIPanel: () => void;
   onOpenAiSettings: () => void;
@@ -85,13 +91,18 @@ export default function ContentView({
   onKeepChanges,
   toolbarDisabled = false,
   aiChat,
+  onAiSend,
   showAIPanel,
   onToggleAIPanel,
   onOpenAiSettings,
 }: ContentViewProps) {
   const { settings, updateSettings } = useSettings();
   const [editorRatio, setEditorRatio] = useState(DEFAULT_RATIO);
+  // `containerRef` spans only the editor/preview split, so the ratio drag is
+  // measured against that area alone. `rowRef` spans the split AND the AI
+  // panel, giving the panel drag the true right edge of the workspace.
   const containerRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
   const startXRef = useRef(0);
   const startRatioRef = useRef(DEFAULT_RATIO);
@@ -143,8 +154,8 @@ export default function ContentView({
 
   const handleAiPointerMove = useCallback(
     (e: React.PointerEvent<HTMLHRElement>) => {
-      if (!aiDraggingRef.current || !containerRef.current) return;
-      const right = containerRef.current.getBoundingClientRect().right;
+      if (!aiDraggingRef.current || !rowRef.current) return;
+      const right = rowRef.current.getBoundingClientRect().right;
       commitAiWidth(right - e.clientX);
     },
     [commitAiWidth]
@@ -233,104 +244,112 @@ export default function ContentView({
         </div>
       )}
 
-      {hasDocument ? (
-        /* Workspace: Editor + Divider + Preview */
-        <div ref={containerRef} className="relative flex min-h-0 flex-1">
-          {/* Editor panel */}
-          <div
-            className="flex flex-col border-r border-neutral-200 dark:border-slate-700"
-            style={{ flex: `${editorRatio} 1 0` }}
-          >
-            <EditorView ref={editorRef} initialText={editorText} onChange={onEditorChange} />
-          </div>
+      {/* Workspace row. The AI panel is a sibling of the document area rather
+          than a child of it, so it is available from the empty state too —
+          generating a diagram from nothing is the assistant's primary use, and
+          nesting it under `hasDocument` made the toggle a no-op there. */}
+      <div ref={rowRef} className="flex min-h-0 flex-1">
+        {hasDocument ? (
+          /* Workspace: Editor + Divider + Preview */
+          <div ref={containerRef} className="relative flex min-h-0 flex-1">
+            {/* Editor panel */}
+            <div
+              className="flex flex-col border-r border-neutral-200 dark:border-slate-700"
+              style={{ flex: `${editorRatio} 1 0` }}
+            >
+              <EditorView ref={editorRef} initialText={editorText} onChange={onEditorChange} />
+            </div>
 
-          {/* Resize divider — a real <hr> carries the implicit `separator`
+            {/* Resize divider — a real <hr> carries the implicit `separator`
               accessible role, so no explicit `role` attribute is needed.
               The visual grip is a `::before` pseudo-element since <hr> is a
               void element and cannot have DOM children. */}
-          <hr
-            aria-label="Resize editor and preview panels"
-            aria-orientation="vertical"
-            aria-valuenow={Math.round(editorRatio * 100)}
-            aria-valuemin={Math.round(MIN_RATIO * 100)}
-            aria-valuemax={Math.round(MAX_RATIO * 100)}
-            tabIndex={0}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onDoubleClick={handleDoubleClick}
-            onKeyDown={handleDividerKeyDown}
-            className="m-0 flex w-1 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent before:h-8 before:w-0.5 before:rounded-full before:bg-neutral-300 before:transition-colors before:content-[''] hover:bg-blue-500/20 hover:before:bg-blue-500 active:bg-blue-500/30 active:before:bg-blue-600 focus-visible:bg-blue-500/20 dark:before:bg-slate-600 dark:hover:before:bg-blue-400"
-          />
-
-          {/* Preview panel */}
-          <div className="flex flex-col" style={{ flex: `${1 - editorRatio} 1 0` }}>
-            <PreviewView source={editorText} onStatusChange={onPreviewStatusChange} />
-          </div>
-
-          {/* AI panel resize divider — only reachable while the panel is open,
-              so it is not rendered (and not focusable) when collapsed. */}
-          {showAIPanel && (
             <hr
-              aria-label="Resize AI panel"
+              aria-label="Resize editor and preview panels"
               aria-orientation="vertical"
-              aria-valuenow={aiWidth}
-              aria-valuemin={MIN_AI_WIDTH}
-              aria-valuemax={MAX_AI_WIDTH}
+              aria-valuenow={Math.round(editorRatio * 100)}
+              aria-valuemin={Math.round(MIN_RATIO * 100)}
+              aria-valuemax={Math.round(MAX_RATIO * 100)}
               tabIndex={0}
-              onPointerDown={handleAiPointerDown}
-              onPointerMove={handleAiPointerMove}
-              onPointerUp={handleAiPointerUp}
-              onDoubleClick={() => commitAiWidth(DEFAULT_AI_WIDTH)}
-              onKeyDown={handleAiDividerKeyDown}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onDoubleClick={handleDoubleClick}
+              onKeyDown={handleDividerKeyDown}
               className="m-0 flex w-1 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent before:h-8 before:w-0.5 before:rounded-full before:bg-neutral-300 before:transition-colors before:content-[''] hover:bg-blue-500/20 hover:before:bg-blue-500 active:bg-blue-500/30 active:before:bg-blue-600 focus-visible:bg-blue-500/20 dark:before:bg-slate-600 dark:hover:before:bg-blue-400"
             />
-          )}
 
-          {/* AI panel. The wrapper animates its width between 0 and `aiWidth`
-              while the inner element stays at full width, so the panel slides
-              in from the right instead of its contents reflowing on every
-              frame of the transition. `motion-safe:` leaves the animation out
-              for users who ask the OS to reduce motion. */}
-          <div
-            className="shrink-0 overflow-hidden border-l border-neutral-200 motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out dark:border-slate-700"
-            style={{ width: showAIPanel ? aiWidth : 0 }}
-            // Kept mounted while collapsed so the conversation survives a
-            // toggle; hidden from assistive tech and tab order at width 0.
-            aria-hidden={!showAIPanel}
-            inert={!showAIPanel}
-          >
-            <div className="h-full" style={{ width: aiWidth }}>
-              <AIPanel
-                messages={aiChat.messages}
-                isStreaming={aiChat.isStreaming}
-                pendingSuggestion={aiChat.pendingSuggestion}
-                error={aiChat.error}
-                onSend={aiChat.send}
-                onStop={aiChat.stop}
-                onAcceptPending={aiChat.acceptPending}
-                onCancelPending={aiChat.cancelPending}
-                onClose={onToggleAIPanel}
-                onOpenAiSettings={onOpenAiSettings}
-              />
+            {/* Preview panel */}
+            <div className="flex flex-col" style={{ flex: `${1 - editorRatio} 1 0` }}>
+              <PreviewView source={editorText} onStatusChange={onPreviewStatusChange} />
             </div>
-          </div>
 
-          {/* Drop overlay */}
-          {isDragOver && (
-            <div className="absolute inset-0 z-30 flex items-center justify-center bg-blue-100/90 dark:bg-blue-950/80">
-              <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-blue-400 px-10 py-8 dark:border-blue-500">
-                <span className="text-3xl">📄</span>
-                <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                  Drop Mermaid file to open
-                </p>
+            {/* Drop overlay */}
+            {isDragOver && (
+              <div className="absolute inset-0 z-30 flex items-center justify-center bg-blue-100/90 dark:bg-blue-950/80">
+                <div className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed border-blue-400 px-10 py-8 dark:border-blue-500">
+                  <span className="text-3xl">📄</span>
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                    Drop Mermaid file to open
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1">
+            <EmptyState isDragOver={isDragOver} />
+          </div>
+        )}
+
+        {/* AI panel resize divider — only reachable while the panel is open,
+            so it is not rendered (and not focusable) when collapsed. */}
+        {showAIPanel && (
+          <hr
+            aria-label="Resize AI panel"
+            aria-orientation="vertical"
+            aria-valuenow={aiWidth}
+            aria-valuemin={MIN_AI_WIDTH}
+            aria-valuemax={MAX_AI_WIDTH}
+            tabIndex={0}
+            onPointerDown={handleAiPointerDown}
+            onPointerMove={handleAiPointerMove}
+            onPointerUp={handleAiPointerUp}
+            onDoubleClick={() => commitAiWidth(DEFAULT_AI_WIDTH)}
+            onKeyDown={handleAiDividerKeyDown}
+            className="m-0 flex w-1 shrink-0 cursor-col-resize items-center justify-center border-0 bg-transparent before:h-8 before:w-0.5 before:rounded-full before:bg-neutral-300 before:transition-colors before:content-[''] hover:bg-blue-500/20 hover:before:bg-blue-500 active:bg-blue-500/30 active:before:bg-blue-600 focus-visible:bg-blue-500/20 dark:before:bg-slate-600 dark:hover:before:bg-blue-400"
+          />
+        )}
+
+        {/* AI panel. The wrapper animates its width between 0 and `aiWidth`
+            while the inner element stays at full width, so the panel slides
+            in from the right instead of its contents reflowing on every
+            frame of the transition. `motion-safe:` leaves the animation out
+            for users who ask the OS to reduce motion. */}
+        <div
+          className="shrink-0 overflow-hidden border-l border-neutral-200 motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out dark:border-slate-700"
+          style={{ width: showAIPanel ? aiWidth : 0 }}
+          // Kept mounted while collapsed so the conversation survives a
+          // toggle; hidden from assistive tech and tab order at width 0.
+          aria-hidden={!showAIPanel}
+          inert={!showAIPanel}
+        >
+          <div className="h-full" style={{ width: aiWidth }}>
+            <AIPanel
+              messages={aiChat.messages}
+              isStreaming={aiChat.isStreaming}
+              pendingSuggestion={aiChat.pendingSuggestion}
+              error={aiChat.error}
+              onSend={onAiSend}
+              onStop={aiChat.stop}
+              onAcceptPending={aiChat.acceptPending}
+              onCancelPending={aiChat.cancelPending}
+              onClose={onToggleAIPanel}
+              onOpenAiSettings={onOpenAiSettings}
+            />
+          </div>
         </div>
-      ) : (
-        <EmptyState isDragOver={isDragOver} />
-      )}
+      </div>
 
       <StatusBar
         fileName={fileName}

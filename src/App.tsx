@@ -130,6 +130,20 @@ export default function App() {
     [fileHandling.loadExample, resetChat]
   );
 
+  // Sending from the empty state has to open a blank document first: the
+  // editor is only mounted once `hasDocument` is true, and without it
+  // `editorRef` is null, so the suggestion would have nowhere to land when the
+  // reply arrives. Uses `fileHandling.newFile` rather than the wrapper above —
+  // the wrapper resets the conversation, which would discard the very message
+  // being sent.
+  const handleAiSend = useCallback(
+    async (text: string) => {
+      if (!fileHandling.hasDocument) await fileHandling.newFile();
+      aiChat.send(text);
+    },
+    [fileHandling.hasDocument, fileHandling.newFile, aiChat.send]
+  );
+
   const handlePreviewStatusChange = useCallback((s: MermaidStatus) => {
     setStatus(s);
   }, []);
@@ -345,6 +359,7 @@ export default function App() {
         onSelectExample={loadExample}
         onExport={fileHandling.exportFile}
         aiChat={aiChat}
+        onAiSend={handleAiSend}
         showAIPanel={showAIPanel}
         onToggleAIPanel={() => setShowAIPanel((prev) => !prev)}
         onOpenAiSettings={() => {
