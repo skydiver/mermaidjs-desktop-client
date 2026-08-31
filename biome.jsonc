@@ -10,6 +10,7 @@
       "!**/src-tauri/target/**",
       "!**/src-tauri/gen/**",
       "!**/coverage/**",
+      "!**/.superpowers/**",
       "!**/pnpm-lock.yaml",
       "!**/*.tsbuildinfo",
       "!**/.DS_Store"

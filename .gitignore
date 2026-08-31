@@ -29,3 +29,6 @@ src-tauri/gen/
 *.njsproj
 *.sln
 *.sw?
+
+# Brainstorming session artifacts (local only)
+.superpowers/
