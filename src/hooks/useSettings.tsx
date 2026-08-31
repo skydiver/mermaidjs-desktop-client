@@ -49,7 +49,16 @@ function defaultAiProviders(): Record<AiProviderId, AiProviderConfig> {
 
 export const DEFAULT_AI_PANEL_WIDTH = 360;
 export const AI_PANEL_WIDTH_MIN = 280;
-export const AI_PANEL_WIDTH_MAX = 600;
+/**
+ * Absolute ceiling for the PERSISTED width. The width the panel may actually
+ * take is half the workspace, computed at render time — but that depends on
+ * the current window, which is unknown here and would change between sessions.
+ * Storing the user's preferred width unclamped (up to this sanity bound) lets
+ * a wide setting survive a spell on a smaller display: the panel is limited to
+ * half the window while it is narrow, and returns to the preferred width when
+ * there is room again.
+ */
+export const AI_PANEL_WIDTH_MAX = 2000;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',

@@ -160,7 +160,14 @@ describe('validateSettings — ai block', () => {
   });
 
   it('clamps aiPanelWidth above the maximum', () => {
-    expect(validateSettings({ aiPanelWidth: 9999 }).aiPanelWidth).toBe(600);
+    expect(validateSettings({ aiPanelWidth: 9999 }).aiPanelWidth).toBe(2000);
+  });
+
+  // The usable width is capped at half the workspace when the panel renders.
+  // The stored value is deliberately NOT clamped to that, so a width chosen on
+  // a large display survives a session on a smaller one.
+  it('keeps a stored width wider than any fixed panel maximum', () => {
+    expect(validateSettings({ aiPanelWidth: 900 }).aiPanelWidth).toBe(900);
   });
 
   it('falls back to the default aiPanelWidth for a non-number', () => {

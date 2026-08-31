@@ -1,4 +1,4 @@
-import { type Ref, useCallback, useRef, useState } from 'react';
+import { type Ref, useCallback, useEffect, useRef, useState } from 'react';
 import type { UseAIChatReturn } from '../hooks/useAIChat';
 import type { MermaidStatus, RenderStatus } from '../hooks/useMermaid';
 import { DEFAULT_SETTINGS, useSettings } from '../hooks/useSettings';
@@ -18,10 +18,14 @@ const MIN_RATIO = 0.2;
 const MAX_RATIO = 0.8;
 const KEYBOARD_RATIO_STEP = 0.02;
 
-// Bounds for the AI panel. Mirrors the clamp in `validate-settings.ts` so a
-// hand-edited `settings.json` and a drag can never disagree about the range.
+// Bounds for the AI panel. The minimum mirrors `validate-settings.ts`; the
+// maximum is proportional — half the workspace — so the ceiling scales with the
+// window instead of being a constant that is generous at 1200px and cramped on
+// a large display. `MIN_AI_WIDTH_MAX` keeps that half from collapsing to
+// something unusable at the 1200px minimum window size.
 const MIN_AI_WIDTH = 280;
-const MAX_AI_WIDTH = 600;
+const MAX_AI_WIDTH_FRACTION = 0.5;
+const MIN_AI_WIDTH_MAX = 600;
 const KEYBOARD_AI_WIDTH_STEP = 16;
 /** Sourced from the settings defaults so "reset" here and a fresh install agree. */
 const DEFAULT_AI_WIDTH = DEFAULT_SETTINGS.aiPanelWidth;
@@ -116,10 +120,6 @@ export default function ContentView({
   const containerRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
-  // Suppresses text selection across the workspace while either divider is
-  // being dragged. State rather than a ref: it has to re-render to apply the
-  // class.
-  const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef(0);
   const startRatioRef = useRef(DEFAULT_RATIO);
 
@@ -158,14 +158,38 @@ export default function ContentView({
   // rightward drag narrows it — width is measured from the container's right
   // edge rather than accumulated from a delta, which keeps the panel pinned
   // to the pointer even if a move event is dropped.
-  const aiWidth = settings.aiPanelWidth;
   const aiDraggingRef = useRef(false);
+  // Drives both the suppressed width transition and the suppressed text
+  // selection, so it has to be state rather than only a ref — a ref would not
+  // re-render to apply the classes. Shared by both dividers: while either is
+  // being dragged the workspace should neither animate nor select text.
+  const [isResizing, setIsResizing] = useState(false);
+
+  // Tracked so the proportional maximum follows a window resize. Falls back to
+  // the viewport before the first measurement, which only matters for the very
+  // first render.
+  const [rowWidth, setRowWidth] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setRowWidth(entry.contentRect.width);
+    });
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, []);
+
+  const maxAiWidth = Math.max(MIN_AI_WIDTH_MAX, Math.round(rowWidth * MAX_AI_WIDTH_FRACTION));
+  // The stored preference is honoured up to what currently fits. Clamping for
+  // display only — rather than writing the smaller value back — means shrinking
+  // the window and widening it again restores the width the user chose.
+  const aiWidth = Math.min(settings.aiPanelWidth, maxAiWidth);
 
   const commitAiWidth = useCallback(
     (width: number) => {
-      updateSettings({ aiPanelWidth: Math.min(MAX_AI_WIDTH, Math.max(MIN_AI_WIDTH, width)) });
+      updateSettings({ aiPanelWidth: Math.min(maxAiWidth, Math.max(MIN_AI_WIDTH, width)) });
     },
-    [updateSettings]
+    [updateSettings, maxAiWidth]
   );
 
   const handleAiPointerDown = useCallback((e: React.PointerEvent<HTMLHRElement>) => {
@@ -334,7 +358,7 @@ export default function ContentView({
             aria-orientation="vertical"
             aria-valuenow={aiWidth}
             aria-valuemin={MIN_AI_WIDTH}
-            aria-valuemax={MAX_AI_WIDTH}
+            aria-valuemax={maxAiWidth}
             tabIndex={0}
             onPointerDown={handleAiPointerDown}
             onPointerMove={handleAiPointerMove}
@@ -351,7 +375,14 @@ export default function ContentView({
             frame of the transition. `motion-safe:` leaves the animation out
             for users who ask the OS to reduce motion. */}
         <div
-          className="relative shrink-0 overflow-hidden border-l border-neutral-200 motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out dark:border-slate-700"
+          className={`relative shrink-0 overflow-hidden border-l border-neutral-200 dark:border-slate-700 ${
+            // The width transition exists for the open/close slide. Left on
+            // during a drag it eases toward the pointer on a 200ms delay, so
+            // the panel visibly lags behind the cursor.
+            isResizing
+              ? ''
+              : 'motion-safe:transition-[width] motion-safe:duration-200 motion-safe:ease-out'
+          }`}
           style={{ width: showAIPanel ? aiWidth : 0 }}
           // Kept mounted while collapsed so the conversation survives a
           // toggle; hidden from assistive tech and tab order at width 0.

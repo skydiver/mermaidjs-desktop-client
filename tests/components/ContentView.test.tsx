@@ -4,6 +4,22 @@ import { describe, expect, it, vi } from 'vitest';
 import ContentView from '../../src/components/ContentView';
 import { DEFAULT_SETTINGS, SettingsContext } from '../../src/hooks/useSettings';
 
+// jsdom does not implement ResizeObserver, which ContentView uses to keep the
+// AI panel's proportional maximum in step with the window. A no-op stub is
+// enough: these tests assert which panes mount, not how they are sized.
+class ResizeObserverStub {
+  observe() {
+    // Never fires: jsdom has no layout, so there is no size change to report.
+  }
+  unobserve() {
+    // Nothing was ever observed.
+  }
+  disconnect() {
+    // Nothing to release.
+  }
+}
+vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+
 // The editor and preview are heavyweight (CodeMirror, Mermaid) and irrelevant
 // to what this file asserts — which pane exists at all. The AI panel is stubbed
 // for the same reason: its own behaviour is covered by useAIChat's tests, while
