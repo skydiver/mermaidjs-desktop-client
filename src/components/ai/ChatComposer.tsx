@@ -29,7 +29,13 @@ export default function ChatComposer({ isStreaming, onSend, onStop }: ChatCompos
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+    // `scrollHeight` covers content plus padding but NOT borders, while
+    // Preflight puts every element in `border-box` — assigning it directly
+    // leaves the field permanently 2px shy of its own content, clipping the
+    // descenders on the last line. `offsetHeight - clientHeight` is exactly
+    // that border, measured rather than hard-coded.
+    const borders = el.offsetHeight - el.clientHeight;
+    el.style.height = `${Math.min(el.scrollHeight + borders, MAX_TEXTAREA_HEIGHT)}px`;
   }, [text]);
 
   const submit = useCallback(() => {
