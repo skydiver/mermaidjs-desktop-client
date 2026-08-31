@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, Loader2, TriangleAlert, Zap } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSettings } from '@/hooks/useSettings';
@@ -284,27 +284,38 @@ function ProviderRow({
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={runTest}
-              disabled={testState.status === 'testing'}
-            >
-              {testState.status === 'testing' && <Loader2 className="size-3.5 animate-spin" />}
-              Test
-            </Button>
+          {/* Result sits to the left of the button and the pair is aligned to
+              the form's right edge, so the row reads as an action on the
+              fields above it rather than a control floating under them. */}
+          <div className="flex items-center justify-end gap-2 pt-0.5">
             {testState.status === 'ok' && (
-              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">OK</span>
+              <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="size-3.5" />
+                Connection OK
+              </span>
             )}
             {testState.status === 'error' && (
               <span
-                className="truncate text-xs text-red-600 dark:text-red-400"
+                className="flex min-w-0 items-center gap-1 text-xs text-red-600 dark:text-red-400"
                 title={testState.message}
               >
-                {testState.message}
+                <TriangleAlert className="size-3.5 shrink-0" />
+                <span className="truncate">{testState.message}</span>
               </span>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={runTest}
+              disabled={testState.status === 'testing'}
+            >
+              {testState.status === 'testing' ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Zap className="size-3.5" />
+              )}
+              Test connection
+            </Button>
           </div>
         </div>
       )}
