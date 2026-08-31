@@ -1,4 +1,4 @@
-import { Sparkles, X } from 'lucide-react';
+import { Settings, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import ChatComposer from '@/components/ai/ChatComposer';
 import ChatMessage, { ChatErrorMessage } from '@/components/ai/ChatMessage';
@@ -91,7 +91,11 @@ export default function AIPanel({
           <p className="text-sm text-neutral-500 dark:text-slate-400">
             No AI provider is configured yet.
           </p>
-          <Button size="sm" onClick={onOpenAiSettings}>
+          {/* Outline rather than primary, matching the Test button in the AI
+              settings section — the filled variant reads as a light slab
+              against the panel's dark background. */}
+          <Button size="sm" variant="outline" onClick={onOpenAiSettings}>
+            <Settings className="size-3.5" />
             Open AI Settings
           </Button>
         </div>
