@@ -1,6 +1,6 @@
 # Mermaid Desktop
 
-A desktop editor for [Mermaid](https://mermaid.js.org/) diagrams. Write markup with syntax highlighting, see it render in real time, and export to SVG or PNG.
+A desktop editor for [Mermaid](https://mermaid.js.org/) diagrams. Describe what you want and let an **AI assistant** draw it, or write the markup yourself with syntax highlighting — either way you see it render in real time, and export to SVG or PNG.
 
 Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), [CodeMirror 6](https://codemirror.net/), and [Mermaid 11](https://mermaid.js.org/).
 
@@ -31,6 +31,27 @@ Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), [CodeM
 
 ## Features
 
+### AI Assistant
+
+> **Experimental.** Results vary a lot by provider and model — replies may be wrong, or produce Mermaid that does not parse.
+
+A collapsible right-hand panel (⌘⇧A) that generates and edits diagrams in conversation. Describe a change, and the assistant rewrites the diagram — its reply is applied to the editor straight away, with **Apply** to keep it or **Cancel** to restore exactly what was there before. Hand-editing the diagram accepts the suggestion implicitly. Each turn sends the current editor content, so the assistant always works from what is actually on screen, including your own edits.
+
+Replies stream in as they are generated, and can be stopped mid-flight. The panel works from the empty state too — asking for a diagram with no document open creates one. Its width is draggable (up to half the workspace) and remembered between sessions; widening it takes space from the preview, never from the editor.
+
+Conversations live in memory only: they are never written to disk, and they are cleared when a different document replaces the current one — a New, an Open, or an example load that you actually go through with.
+
+| Provider          | Needs                     |
+| ----------------- | ------------------------- |
+| Anthropic         | API key + model           |
+| OpenAI            | API key + model           |
+| Ollama            | Base URL + model          |
+| OpenAI Compatible | API key, base URL + model |
+
+Configure any or all of them under **Settings → AI**, and switch between the configured ones from the panel's dropdown. The model is free text, so a provider's newest model works the day it ships without waiting for an app update. Each provider has a **Test connection** button that verifies the settings before you rely on them.
+
+All provider requests are made from the Rust backend, never the webview — the app's `default-src 'self'` content security policy is unchanged. **API keys are stored in the OS keychain** (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux), never in `settings.json`, and are never sent to the frontend after being saved.
+
 ### Editor
 
 - **Syntax highlighting** for Mermaid keywords, arrows, strings, comments, and brackets
@@ -41,7 +62,8 @@ Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), [CodeM
 
 - **Scroll to zoom** — smooth, cursor-anchored (no modifier key required)
 - **Drag to pan** — click and drag anywhere on the canvas
-- **Fit to viewport** — auto-fits on render; manual fit, reset, and step zoom via toolbar
+- **Default view** — every render frames the diagram the same way, either fitted to the viewport or at 100%; set it under **Settings → General**
+- **Zoom toolbar** — step zoom, actual size (100%), and fit to viewport, with a live percentage readout
 - **Diagram theme** — independent light/dark/system setting, separate from the app theme
 
 ### File Management
@@ -63,21 +85,6 @@ Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), [CodeM
 
 PNG exports are clamped to the browser canvas limits — 16,384px per axis and roughly 16.7M pixels of total area. Very large diagrams are scaled down to fit, preserving aspect ratio, instead of producing an empty file.
 
-### AI Assistant
-
-A collapsible right-hand panel (⌘⇧A) that generates and edits diagrams in conversation. Describe a change, and the assistant rewrites the diagram — its reply is applied to the editor straight away, with **Apply** to keep it or **Cancel** to restore exactly what was there before. Hand-editing the diagram accepts the suggestion implicitly. Each turn sends the current editor content, so the assistant always works from what is actually on screen, including your own edits.
-
-| Provider          | Needs                     |
-| ----------------- | ------------------------- |
-| Anthropic         | API key + model           |
-| OpenAI            | API key + model           |
-| Ollama            | Base URL + model          |
-| OpenAI Compatible | API key, base URL + model |
-
-Configure any or all of them under **Settings → AI**, and switch between them from the panel's dropdown. Each has a **Test** button that verifies the credentials before you rely on them.
-
-All provider requests are made from the Rust backend, never the webview — the app's `default-src 'self'` content security policy is unchanged. **API keys are stored in the OS keychain** (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux), never in `settings.json`, and are never sent to the frontend after being saved.
-
 ### Built-in Examples
 
 Seven starter diagrams: Flowchart, Class, Sequence, Entity Relationship, State, Gantt, and Git Graph.
@@ -85,7 +92,7 @@ Seven starter diagrams: Flowchart, Class, Sequence, Entity Relationship, State, 
 ### App
 
 - **Themes** — Light, Dark, or System for both app chrome and diagram rendering
-- **Resizable split pane** — 40/60 default, drag to resize, double-click to reset; focusable and adjustable with arrow keys (Home resets)
+- **Resizable split pane** — drag the divider to resize, double-click to reset
 - **Window state persistence** — size, position, and preferences saved between sessions
 - **Keyboard shortcuts**:
 
