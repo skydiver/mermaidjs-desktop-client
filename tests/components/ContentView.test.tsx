@@ -1,24 +1,46 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ContentView from '../../src/components/ContentView';
 import { DEFAULT_SETTINGS, SettingsContext } from '../../src/hooks/useSettings';
 
-// jsdom does not implement ResizeObserver, which ContentView uses to keep the
-// AI panel's proportional maximum in step with the window. A no-op stub is
-// enough: these tests assert which panes mount, not how they are sized.
+// jsdom does not implement ResizeObserver, and has no layout to feed one even
+// if it did. This stub stands in for both: it reports `stubbedWidth` to every
+// observer on `observe`, and `resizeTo` re-reports a new width — which is how
+// the tests below simulate the split shrinking as the AI panel widens.
+let stubbedWidth = 0;
+const observerCallbacks = new Set<ResizeObserverCallback>();
+
 class ResizeObserverStub {
+  constructor(private callback: ResizeObserverCallback) {
+    observerCallbacks.add(callback);
+  }
   observe() {
-    // Never fires: jsdom has no layout, so there is no size change to report.
+    this.report();
   }
   unobserve() {
-    // Nothing was ever observed.
+    // Single-element observers here; nothing to track per element.
   }
   disconnect() {
-    // Nothing to release.
+    observerCallbacks.delete(this.callback);
+  }
+  private report() {
+    this.callback(
+      [{ contentRect: { width: stubbedWidth } } as ResizeObserverEntry],
+      this as unknown as ResizeObserver
+    );
   }
 }
 vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+
+function resizeTo(width: number) {
+  stubbedWidth = width;
+  act(() => {
+    for (const callback of observerCallbacks) {
+      callback([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver);
+    }
+  });
+}
 
 // The editor and preview are heavyweight (CodeMirror, Mermaid) and irrelevant
 // to what this file asserts — which pane exists at all. The AI panel is stubbed
@@ -47,7 +69,13 @@ const aiChat = {
   reset: vi.fn(),
 };
 
-function renderContentView(overrides: { hasDocument: boolean; showAIPanel: boolean }) {
+function renderContentView(overrides: {
+  hasDocument: boolean;
+  showAIPanel: boolean;
+  splitWidth?: number;
+}) {
+  const { splitWidth = 0, ...props } = overrides;
+  stubbedWidth = splitWidth;
   return render(
     <SettingsContext.Provider
       value={{
@@ -79,7 +107,7 @@ function renderContentView(overrides: { hasDocument: boolean; showAIPanel: boole
         onAiSend={vi.fn()}
         onToggleAIPanel={vi.fn()}
         onOpenAiSettings={vi.fn()}
-        {...overrides}
+        {...props}
       />
     </SettingsContext.Provider>
   );
@@ -99,5 +127,32 @@ describe('ContentView AI panel', () => {
     renderContentView({ hasDocument: false, showAIPanel: true });
     expect(screen.queryByTestId('editor')).toBeNull();
     expect(screen.getByTestId('ai-panel')).toBeDefined();
+  });
+});
+
+describe('ContentView editor/preview split', () => {
+  // Opening or widening the AI panel narrows the split, which used to narrow
+  // the editor with it because the editor's width was recomputed as a fraction
+  // of the split on every render. Only the preview should give up the space.
+  it('keeps the editor at its pixel width when the split narrows', () => {
+    renderContentView({ hasDocument: true, showAIPanel: false, splitWidth: 1600 });
+    const editorPane = screen.getByTestId('editor').parentElement;
+    const initialWidth = editorPane?.style.width;
+    expect(initialWidth).toBe('640px'); // 1600 * DEFAULT_RATIO
+
+    resizeTo(1040); // A 560px AI panel opens.
+
+    expect(editorPane?.style.width).toBe(initialWidth);
+  });
+
+  // The editor cannot hold its width unconditionally: past a point there would
+  // be no preview left to shrink, so it yields to keep the preview's floor.
+  it('gives up width once the preview has hit its floor', () => {
+    renderContentView({ hasDocument: true, showAIPanel: false, splitWidth: 1600 });
+    const editorPane = screen.getByTestId('editor').parentElement;
+
+    resizeTo(700); // 700 - 240 (preview floor) = 460 left for the editor.
+
+    expect(editorPane?.style.width).toBe('460px');
   });
 });

@@ -13,10 +13,20 @@ import Toolbar from './Toolbar';
 
 // ── Constants ───────────────────────────────────────────
 
+// The editor holds a fixed pixel width and the preview takes whatever is left,
+// so resizing the AI panel changes only the diagram area. `DEFAULT_RATIO` is
+// used ONCE, to seed that pixel width from the first measurement — deriving it
+// from the split on every render is what used to drag the editor along
+// whenever the AI panel changed size.
 const DEFAULT_RATIO = 0.4;
-const MIN_RATIO = 0.2;
-const MAX_RATIO = 0.8;
-const KEYBOARD_RATIO_STEP = 0.02;
+// Pane floors, in pixels. Bounding the editor in pixels rather than as a
+// fraction of the split is the other half of the same fix: a fractional
+// ceiling shrinks with the split, so widening the AI panel would still push
+// the editor inward. With a pixel floor for the preview, the panel eats the
+// preview alone until the preview has nothing left to give.
+const MIN_EDITOR_WIDTH = 240;
+const MIN_PREVIEW_WIDTH = 240;
+const KEYBOARD_SPLIT_STEP = 16;
 
 // Bounds for the AI panel. The minimum mirrors `validate-settings.ts`; the
 // maximum is proportional — half the workspace — so the ceiling scales with the
@@ -113,7 +123,11 @@ export default function ContentView({
   onOpenAiSettings,
 }: ContentViewProps) {
   const { settings, updateSettings } = useSettings();
-  const [editorRatio, setEditorRatio] = useState(DEFAULT_RATIO);
+  // Editor width in pixels. `null` until the split has been measured, at which
+  // point it is seeded once at DEFAULT_RATIO of that width and thereafter only
+  // ever changes when the user drags this divider.
+  const [editorWidth, setEditorWidth] = useState<number | null>(null);
+  const [splitWidth, setSplitWidth] = useState(0);
   // `containerRef` spans only the editor/preview split, so the ratio drag is
   // measured against that area alone. `rowRef` spans the split AND the AI
   // panel, giving the panel drag the true right edge of the workspace.
@@ -121,29 +135,65 @@ export default function ContentView({
   const rowRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
   const startXRef = useRef(0);
-  const startRatioRef = useRef(DEFAULT_RATIO);
 
-  const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLHRElement>) => {
-      // Without this the browser begins a text selection under the pointer,
-      // which then extends across the editor and preview for the whole drag.
-      e.preventDefault();
-      draggingRef.current = true;
-      setIsResizing(true);
-      startXRef.current = e.clientX;
-      startRatioRef.current = editorRatio;
-      e.currentTarget.setPointerCapture(e.pointerId);
+  // Measure the split so the editor's width can be seeded and bounded. Keyed on
+  // `hasDocument` because the split is unmounted in the empty state, where
+  // `containerRef` is null.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `hasDocument` is not read in the body — it is the signal that `containerRef` has just been mounted or unmounted, which is exactly when the observer must be re-attached.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      setSplitWidth(width);
+      // Seeded from the first non-zero measurement and never again: later
+      // measurements are the AI panel opening or the window resizing, and
+      // neither should move the editor.
+      if (width > 0) setEditorWidth((current) => current ?? width * DEFAULT_RATIO);
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [hasDocument]);
+
+  // How wide the editor may be right now: never below its own floor, and never
+  // so wide that the preview drops under its floor. Clamping for display only —
+  // rather than writing the smaller value back — means a squeeze from the AI
+  // panel or a narrow window is undone once there is room again.
+  const maxEditorWidth = Math.max(MIN_EDITOR_WIDTH, splitWidth - MIN_PREVIEW_WIDTH);
+  const clampEditorWidth = (width: number) =>
+    Math.min(maxEditorWidth, Math.max(MIN_EDITOR_WIDTH, width));
+
+  const resolvedEditorWidth = splitWidth === 0 ? 0 : clampEditorWidth(editorWidth ?? 0);
+
+  const commitEditorWidth = useCallback(
+    (width: number) => {
+      if (splitWidth === 0) return;
+      setEditorWidth(Math.min(maxEditorWidth, Math.max(MIN_EDITOR_WIDTH, width)));
     },
-    [editorRatio]
+    [splitWidth, maxEditorWidth]
   );
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLHRElement>) => {
-    if (!draggingRef.current || !containerRef.current) return;
-    const containerWidth = containerRef.current.getBoundingClientRect().width;
-    const delta = e.clientX - startXRef.current;
-    const newRatio = startRatioRef.current + delta / containerWidth;
-    setEditorRatio(Math.min(MAX_RATIO, Math.max(MIN_RATIO, newRatio)));
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLHRElement>) => {
+    // Without this the browser begins a text selection under the pointer,
+    // which then extends across the editor and preview for the whole drag.
+    e.preventDefault();
+    draggingRef.current = true;
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    e.currentTarget.setPointerCapture(e.pointerId);
   }, []);
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLHRElement>) => {
+      if (!draggingRef.current || !containerRef.current) return;
+      // Measured from the split's left edge rather than accumulated from a
+      // delta, so a dropped move event cannot leave the pane offset from the
+      // pointer for the rest of the drag.
+      const left = containerRef.current.getBoundingClientRect().left;
+      commitEditorWidth(e.clientX - left);
+    },
+    [commitEditorWidth]
+  );
 
   const handlePointerUp = useCallback(() => {
     draggingRef.current = false;
@@ -151,8 +201,8 @@ export default function ContentView({
   }, []);
 
   const handleDoubleClick = useCallback(() => {
-    setEditorRatio(DEFAULT_RATIO);
-  }, []);
+    commitEditorWidth(splitWidth * DEFAULT_RATIO);
+  }, [commitEditorWidth, splitWidth]);
 
   // AI panel width. Dragged from the divider on the panel's left edge, so a
   // rightward drag narrows it — width is measured from the container's right
@@ -235,24 +285,27 @@ export default function ContentView({
     [aiWidth, commitAiWidth]
   );
 
-  const handleDividerKeyDown = useCallback((e: React.KeyboardEvent<HTMLHRElement>) => {
-    switch (e.key) {
-      case 'ArrowLeft':
-        e.preventDefault();
-        setEditorRatio((prev) => Math.max(MIN_RATIO, prev - KEYBOARD_RATIO_STEP));
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        setEditorRatio((prev) => Math.min(MAX_RATIO, prev + KEYBOARD_RATIO_STEP));
-        break;
-      case 'Home':
-        e.preventDefault();
-        setEditorRatio(DEFAULT_RATIO);
-        break;
-      default:
-        break;
-    }
-  }, []);
+  const handleDividerKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLHRElement>) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          commitEditorWidth(resolvedEditorWidth - KEYBOARD_SPLIT_STEP);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          commitEditorWidth(resolvedEditorWidth + KEYBOARD_SPLIT_STEP);
+          break;
+        case 'Home':
+          e.preventDefault();
+          commitEditorWidth(splitWidth * DEFAULT_RATIO);
+          break;
+        default:
+          break;
+      }
+    },
+    [commitEditorWidth, resolvedEditorWidth, splitWidth]
+  );
 
   return (
     <div className="flex h-screen w-full flex-col bg-white dark:bg-slate-900">
@@ -303,7 +356,7 @@ export default function ContentView({
             {/* Editor panel */}
             <div
               className="flex flex-col border-r border-neutral-200 dark:border-slate-700"
-              style={{ flex: `${editorRatio} 1 0` }}
+              style={{ flex: '0 0 auto', width: resolvedEditorWidth }}
             >
               <EditorView ref={editorRef} initialText={editorText} onChange={onEditorChange} />
             </div>
@@ -315,9 +368,9 @@ export default function ContentView({
             <hr
               aria-label="Resize editor and preview panels"
               aria-orientation="vertical"
-              aria-valuenow={Math.round(editorRatio * 100)}
-              aria-valuemin={Math.round(MIN_RATIO * 100)}
-              aria-valuemax={Math.round(MAX_RATIO * 100)}
+              aria-valuenow={Math.round(resolvedEditorWidth)}
+              aria-valuemin={MIN_EDITOR_WIDTH}
+              aria-valuemax={Math.round(maxEditorWidth)}
               tabIndex={0}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -328,7 +381,9 @@ export default function ContentView({
             />
 
             {/* Preview panel */}
-            <div className="flex flex-col" style={{ flex: `${1 - editorRatio} 1 0` }}>
+            {/* The elastic pane: the AI panel's width comes out of here, so the
+                editor never moves when the panel is resized. */}
+            <div className="flex min-w-0 flex-col" style={{ flex: '1 1 0' }}>
               <PreviewView source={editorText} onStatusChange={onPreviewStatusChange} />
             </div>
 
