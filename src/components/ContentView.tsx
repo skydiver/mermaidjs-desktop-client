@@ -461,6 +461,7 @@ export default function ContentView({
               onStop={aiChat.stop}
               onAcceptPending={aiChat.acceptPending}
               onCancelPending={aiChat.cancelPending}
+              hasDiagram={hasContent}
               onClose={onToggleAIPanel}
               onOpenAiSettings={onOpenAiSettings}
             />

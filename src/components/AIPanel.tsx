@@ -25,6 +25,14 @@ interface AIPanelProps {
   onAcceptPending: () => void;
   onCancelPending: () => void;
   onClose: () => void;
+  /**
+   * Whether the editor already holds a diagram. Only changes the wording of
+   * the empty chat hint: asking for a diagram from nothing and asking for a
+   * change to one already on screen are different requests, and the hint that
+   * suits the first ("paste one to iterate on") is beside the point once the
+   * editor is full.
+   */
+  hasDiagram: boolean;
   /** Opens the Settings dialog to the AI section — used by the empty state's call to action. */
   onOpenAiSettings: () => void;
 }
@@ -41,6 +49,7 @@ export default function AIPanel({
   onAcceptPending,
   onCancelPending,
   onClose,
+  hasDiagram,
   onOpenAiSettings,
 }: AIPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -104,7 +113,9 @@ export default function AIPanel({
         <div className="flex-1 space-y-3 overflow-y-auto p-3">
           {messages.length === 0 && (
             <p className="text-center text-xs text-neutral-400 dark:text-slate-500">
-              Ask for a diagram, or paste one to iterate on.
+              {hasDiagram
+                ? 'Ask for a change to the diagram in the editor.'
+                : 'Ask for a diagram, or paste one to iterate on.'}
             </p>
           )}
           {messages.map((message) => (
