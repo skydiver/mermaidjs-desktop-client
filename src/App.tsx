@@ -111,21 +111,21 @@ export default function App() {
   // New/Open/example load would have it edit one diagram while discussing
   // another. Also drops any pending suggestion, whose snapshot belongs to a
   // buffer that no longer exists.
+  // Only when the document was actually replaced: a cancelled Open dialog or a
+  // declined "discard changes?" leaves the same diagram on screen, and wiping
+  // the conversation there throws away work the user never asked to lose.
   const { reset: resetChat } = aiChat;
   const newFile = useCallback(async () => {
-    await fileHandling.newFile();
-    resetChat();
+    if (await fileHandling.newFile()) resetChat();
   }, [fileHandling.newFile, resetChat]);
 
   const openFile = useCallback(async () => {
-    await fileHandling.openFile();
-    resetChat();
+    if (await fileHandling.openFile()) resetChat();
   }, [fileHandling.openFile, resetChat]);
 
   const loadExample = useCallback(
     async (content: string) => {
-      await fileHandling.loadExample(content);
-      resetChat();
+      if (await fileHandling.loadExample(content)) resetChat();
     },
     [fileHandling.loadExample, resetChat]
   );
