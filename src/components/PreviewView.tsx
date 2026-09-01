@@ -1,4 +1,4 @@
-import { AlertTriangle, Crosshair, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+import { AlertTriangle, Maximize, SquarePercent, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useCanvasTransform } from '../hooks/useCanvasTransform';
 import { type MermaidStatus, useMermaid } from '../hooks/useMermaid';
@@ -98,11 +98,15 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
           <div
             className={`mx-0.5 h-4 w-px ${isDiagramDark ? 'bg-neutral-600' : 'bg-neutral-200'}`}
           />
-          <ZoomButton onClick={resetView} title="Reset zoom" isDark={isDiagramDark}>
-            <RotateCcw className="h-3.5 w-3.5" />
+          {/* A percent sign for the button that sets the readout back to 100,
+              beside corners pushed outward for fit. The undo arrow that used to
+              sit here said "revert" and the crosshair beside it said "centre on
+              a target" — neither described the zoom each button applies. */}
+          <ZoomButton onClick={resetView} title="Actual size (100%)" isDark={isDiagramDark}>
+            <SquarePercent className="h-3.5 w-3.5" />
           </ZoomButton>
           <ZoomButton onClick={fitToViewport} title="Fit to viewport" isDark={isDiagramDark}>
-            <Crosshair className="h-3.5 w-3.5" />
+            <Maximize className="h-3.5 w-3.5" />
           </ZoomButton>
         </div>
       )}
