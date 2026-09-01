@@ -18,7 +18,7 @@ export default function PreviewView({ source = '', onStatusChange }: PreviewView
   const { schedule, status } = useMermaid(containerRef);
   const { isDiagramDark, settings } = useSettings();
   const { displayScale, zoomIn, zoomOut, resetView, fitToViewport, reapplyTransform } =
-    useCanvasTransform(containerRef);
+    useCanvasTransform(containerRef, settings.defaultDiagramView);
 
   // Schedule render when source changes
   useEffect(() => {

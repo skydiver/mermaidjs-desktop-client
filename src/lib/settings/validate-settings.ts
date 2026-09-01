@@ -4,6 +4,7 @@ import {
   type AiSettings,
   type AppSettings,
   DEFAULT_SETTINGS,
+  type DiagramView,
   type ThemePreference,
 } from '@/hooks/useSettings';
 import { AI_PROVIDERS, type AiProviderConfig, type AiProviderId } from '@/lib/ai/types';
@@ -14,6 +15,7 @@ import { CSS_SAFE_FONT_FAMILY_PATTERN } from '@/lib/css-safe-font';
 const INDENT_SIZES = new Set<AppSettings['indentSize']>([2, 4, 8]);
 const INDENT_TYPES = new Set<AppSettings['indentType']>(['space', 'tab']);
 const THEME_VALUES = new Set<ThemePreference>(['system', 'light', 'dark']);
+const DIAGRAM_VIEW_VALUES = new Set<DiagramView>(['fit', 'actual']);
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 24;
 const AI_PROVIDER_IDS = new Set<AiProviderId>(AI_PROVIDERS.map((p) => p.id));
@@ -125,6 +127,11 @@ export function validateSettings(raw: unknown): AppSettings {
     indentType: pickEnum(source.indentType, INDENT_TYPES, DEFAULT_SETTINGS.indentType),
     indentSize: pickIndentSize(source.indentSize),
     showDotGrid: pickBoolean(source.showDotGrid, DEFAULT_SETTINGS.showDotGrid),
+    defaultDiagramView: pickEnum(
+      source.defaultDiagramView,
+      DIAGRAM_VIEW_VALUES,
+      DEFAULT_SETTINGS.defaultDiagramView
+    ),
     aiPanelWidth: pickAiPanelWidth(source.aiPanelWidth),
     ai: pickAiSettings(source.ai),
   };

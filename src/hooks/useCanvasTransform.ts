@@ -1,4 +1,5 @@
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import type { DiagramView } from './useSettings';
 
 // ── Constants ───────────────────────────────────────────
 
@@ -43,7 +44,11 @@ function readNaturalSize(el: Element): { width: number; height: number } | null 
 
 // ── Hook ────────────────────────────────────────────────
 
-export function useCanvasTransform(containerRef: RefObject<HTMLDivElement | null>) {
+export function useCanvasTransform(
+  containerRef: RefObject<HTMLDivElement | null>,
+  /** Which framing a re-rendered diagram returns to. */
+  defaultView: DiagramView = 'fit'
+) {
   const tRef = useRef<Transform>({ x: 0, y: 0, scale: 1 });
   const [displayScale, setDisplayScale] = useState(1);
   const dragRef = useRef({ active: false, lastX: 0, lastY: 0 });
@@ -213,17 +218,23 @@ export function useCanvasTransform(containerRef: RefObject<HTMLDivElement | null
   }, [containerRef, applyTransform]);
 
   // ── Content change handler ─────────────────────
-  // Called by PreviewView when useMermaid re-renders the diagram.
-  // Always fits to viewport — the SVG is fully replaced on each render,
-  // so maintaining a previous transform across renders isn't meaningful.
+  // Called by PreviewView when useMermaid re-renders the diagram. The SVG is
+  // fully replaced on each render, so carrying the previous transform across
+  // renders isn't meaningful — the view returns to the user's chosen framing
+  // instead. Changing that setting changes this callback's identity, which
+  // re-runs PreviewView's effect and reframes the diagram at once.
 
   const reapplyTransform = useCallback(() => {
     const el = getContent();
     if (!el) return;
     // Capture natural size from the fresh SVG before any scaling is applied
     naturalSizeRef.current = readNaturalSize(el);
+    if (defaultView === 'actual') {
+      resetView();
+      return;
+    }
     fitToViewport();
-  }, [getContent, fitToViewport]);
+  }, [getContent, fitToViewport, resetView, defaultView]);
 
   // Cleanup RAF on unmount
   useEffect(() => () => cancelAnimationFrame(rafRef.current), []);

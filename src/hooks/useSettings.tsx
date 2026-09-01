@@ -15,6 +15,13 @@ import { validateSettings } from '../lib/settings/validate-settings';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+/**
+ * How the preview frames a diagram when it is first rendered — and after every
+ * re-render, since Mermaid replaces the SVG wholesale rather than patching it.
+ * `fit` scales it to the viewport; `actual` shows it at 100%, centred.
+ */
+export type DiagramView = 'fit' | 'actual';
+
 export interface AiSettings {
   activeProvider: AiProviderId | null;
   providers: Record<AiProviderId, AiProviderConfig>;
@@ -33,6 +40,8 @@ export interface AppSettings {
   indentType: 'space' | 'tab';
   indentSize: number;
   showDotGrid: boolean;
+  /** How a freshly-rendered diagram is framed: scaled to fit, or at 100%. */
+  defaultDiagramView: DiagramView;
   /** Width in px of the AI panel, clamped to [280, 600] by `validateSettings`. */
   aiPanelWidth: number;
   ai: AiSettings;
@@ -73,6 +82,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   indentType: 'space',
   indentSize: 2,
   showDotGrid: true,
+  defaultDiagramView: 'fit',
   aiPanelWidth: DEFAULT_AI_PANEL_WIDTH,
   ai: {
     activeProvider: null,

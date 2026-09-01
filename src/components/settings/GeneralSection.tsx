@@ -1,6 +1,6 @@
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Switch } from '@/components/ui/switch';
-import { type ThemePreference, useSettings } from '@/hooks/useSettings';
+import { type DiagramView, type ThemePreference, useSettings } from '@/hooks/useSettings';
 import { SettingRow, SubsectionHeader } from './shared';
 
 // ── Constants ────────────────────────────────────────────
@@ -9,6 +9,11 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
   { value: 'system', label: 'System' },
+];
+
+const DIAGRAM_VIEW_OPTIONS: { value: DiagramView; label: string }[] = [
+  { value: 'fit', label: 'Fit' },
+  { value: 'actual', label: '100%' },
 ];
 
 // ── Component ─────────────────────────────────────────────
@@ -33,6 +38,13 @@ export default function GeneralSection() {
               options={THEME_OPTIONS}
               value={settings.diagramTheme}
               onChange={(v) => updateSettings({ diagramTheme: v })}
+            />
+          </SettingRow>
+          <SettingRow label="Default Diagram View">
+            <SegmentedControl
+              options={DIAGRAM_VIEW_OPTIONS}
+              value={settings.defaultDiagramView}
+              onChange={(v) => updateSettings({ defaultDiagramView: v })}
             />
           </SettingRow>
           <SettingRow label="Dot Grid Background">

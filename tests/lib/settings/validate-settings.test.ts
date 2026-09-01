@@ -135,6 +135,7 @@ describe('validateSettings', () => {
       indentType: 'tab' as const,
       indentSize: 4,
       showDotGrid: false,
+      defaultDiagramView: 'actual' as const,
       aiPanelWidth: 420,
       ai: {
         activeProvider: 'anthropic' as const,
@@ -248,5 +249,20 @@ describe('validateSettings — ai block', () => {
   it('falls back the whole providers map when it is not an object', () => {
     const result = validateSettings({ ai: { providers: 'nope' } });
     expect(result.ai.providers).toEqual(DEFAULT_SETTINGS.ai.providers);
+  });
+});
+
+describe('validateSettings defaultDiagramView', () => {
+  it('defaults to fitting the viewport, matching the behaviour before the setting existed', () => {
+    expect(validateSettings({}).defaultDiagramView).toBe('fit');
+  });
+
+  it('keeps a valid stored value', () => {
+    expect(validateSettings({ defaultDiagramView: 'actual' }).defaultDiagramView).toBe('actual');
+  });
+
+  it('falls back to the default for an unknown value', () => {
+    expect(validateSettings({ defaultDiagramView: 'zoomed' }).defaultDiagramView).toBe('fit');
+    expect(validateSettings({ defaultDiagramView: 2 }).defaultDiagramView).toBe('fit');
   });
 });
