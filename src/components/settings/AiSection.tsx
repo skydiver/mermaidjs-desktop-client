@@ -70,6 +70,17 @@ export default function AiSection() {
 
   return (
     <div className="space-y-4">
+      {/* Amber rather than red: the feature works, it is just not settled yet.
+          Sits above everything else in the section so it is read before any
+          provider is set up, not after. */}
+      <div className="flex items-center gap-2.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-200">
+        <TriangleAlert className="size-5 shrink-0" />
+        <p>
+          <span className="font-medium">Experimental.</span> AI diagram generation is still under
+          development — results vary by provider and model, and this settings layout may change.
+        </p>
+      </div>
+
       <div>
         <SubsectionHeader title="AI provider & model" />
         <div className="grid grid-cols-4 gap-3">
