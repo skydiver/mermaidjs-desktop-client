@@ -10,7 +10,7 @@ import type { MermaidStatus } from './hooks/useMermaid';
 import { useSettings } from './hooks/useSettings';
 import { manageAsyncResource } from './lib/async-resource';
 import { debounce } from './lib/debounce';
-import { shouldHandleFileShortcut } from './lib/keyboard-shortcuts';
+import { isModalGated, resolveShortcut } from './lib/keyboard-shortcuts';
 
 const AUTO_SAVE_DEBOUNCE_MS = 1000;
 
@@ -157,33 +157,33 @@ export default function App() {
         return;
       }
 
-      if (!(e.metaKey || e.ctrlKey)) return;
-      if (!shouldHandleFileShortcut(e.key, showSettings || showHelp)) return;
-      switch (e.key) {
-        case 'A':
-          e.preventDefault();
+      // Resolved to a named shortcut rather than switched on `e.key`: that
+      // character is not dependable under modifiers — ⌘⇧A arrives as 'Dead' on
+      // a layout where it starts an accent composition.
+      const shortcut = resolveShortcut(e);
+      if (!shortcut) return;
+      if (isModalGated(shortcut) && (showSettings || showHelp)) return;
+
+      e.preventDefault();
+      switch (shortcut) {
+        case 'toggle-ai':
           setShowAIPanel((prev) => !prev);
           break;
-        case 'n':
-          e.preventDefault();
+        case 'new':
           newFile();
           break;
-        case 'o':
-          e.preventDefault();
+        case 'open':
           openFile();
           break;
-        case 's':
-          e.preventDefault();
+        case 'save':
           fileHandling.saveFile();
           break;
-        case ',':
-          e.preventDefault();
+        case 'settings':
           setShowHelp(false);
           setSettingsSection('general');
           setShowSettings(true);
           break;
-        case '?':
-          e.preventDefault();
+        case 'help':
           setShowSettings(false);
           setShowHelp(true);
           break;
