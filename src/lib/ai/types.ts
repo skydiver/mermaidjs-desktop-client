@@ -56,6 +56,8 @@ export type AiStreamChunk = AiStreamTextDelta | AiStreamDone | AiStreamError;
 export interface AiProviderMeta {
   id: AiProviderId;
   label: string;
+  /** One-line hint shown under the label in the settings provider cards. */
+  description: string;
   /** Whether this provider needs an API key saved in the OS keychain. */
   needsApiKey: boolean;
   /** Whether this provider needs a base URL (self-hosted / compatible endpoints). */
@@ -72,6 +74,7 @@ export const AI_PROVIDERS: AiProviderMeta[] = [
   {
     id: 'anthropic',
     label: 'Anthropic',
+    description: 'Claude models',
     needsApiKey: true,
     needsBaseUrl: false,
     modelPlaceholder: 'claude-sonnet-4-5',
@@ -79,6 +82,7 @@ export const AI_PROVIDERS: AiProviderMeta[] = [
   {
     id: 'openai',
     label: 'OpenAI',
+    description: 'GPT models',
     needsApiKey: true,
     needsBaseUrl: false,
     modelPlaceholder: 'gpt-4o',
@@ -86,6 +90,7 @@ export const AI_PROVIDERS: AiProviderMeta[] = [
   {
     id: 'ollama',
     label: 'Ollama',
+    description: 'Local models',
     needsApiKey: false,
     needsBaseUrl: true,
     defaultBaseUrl: OLLAMA_DEFAULT_BASE_URL,
@@ -94,6 +99,7 @@ export const AI_PROVIDERS: AiProviderMeta[] = [
   {
     id: 'openai-compatible',
     label: 'OpenAI Compatible',
+    description: 'Any OpenAI-style API',
     needsApiKey: true,
     needsBaseUrl: true,
     modelPlaceholder: 'gpt-4o',
