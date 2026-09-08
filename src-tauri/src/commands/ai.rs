@@ -5,6 +5,7 @@
 // and the webview's CSP is never relaxed for AI provider hosts because the
 // webview never talks to them directly.
 
+use std::future::Future;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, PoisonError};
 
@@ -256,6 +257,29 @@ fn build_ai_messages(messages: Vec<ChatMessageInput>, diagram_source: &str) -> V
     ai_messages
 }
 
+/// Runs `future` unless `cancel_token` fires first, returning `None` when it
+/// does.
+///
+/// Cancellation has to *drop* the request future, not merely be observed
+/// alongside it: dropping is what closes the connection and stops the
+/// provider generating. Polling the token instead — the shape this
+/// replaced — left the response body being read to completion after Stop,
+/// so the reply was still generated and still billed, and two sends in
+/// quick succession ran two full streams side by side.
+///
+/// `biased` makes the token win a tie, so a cancel that lands in the same
+/// poll as the final chunk still counts as a cancel.
+async fn run_cancellable<F: Future>(
+    cancel_token: &CancellationToken,
+    future: F,
+) -> Option<F::Output> {
+    tokio::select! {
+        biased;
+        () = cancel_token.cancelled() => None,
+        output = future => Some(output),
+    }
+}
+
 /// Runs the provider call to completion, forwarding chunks to the frontend
 /// as `ai-stream` events tagged with `stream_id`. Spawned as a background
 /// task by `send_ai_message`, which has already returned by the time this
@@ -298,18 +322,27 @@ async fn run_stream(
         }
     });
 
-    let result = ai::send_message(
-        &client,
-        &config.provider,
-        &config.model,
-        config.base_url.as_deref(),
-        &messages,
-        &chunk_tx,
+    let outcome = run_cancellable(
+        &cancel_token,
+        ai::send_message(
+            &client,
+            &config.provider,
+            &config.model,
+            config.base_url.as_deref(),
+            &messages,
+            &chunk_tx,
+        ),
     )
     .await;
     // Dropping the sender lets the forwarder's `recv()` loop end.
     drop(chunk_tx);
     let _ = forwarder.await;
+
+    // `None` means the token fired first: the request future has been
+    // dropped, so there is no result to report and nothing left to emit.
+    let Some(result) = outcome else {
+        return;
+    };
 
     if cancel_token.is_cancelled() {
         return;
@@ -382,6 +415,42 @@ mod tests {
         };
         assert!(latest_user.contains("```mermaid\ngraph TD; A-->B;\n```"));
         assert!(latest_user.ends_with("second question"));
+    }
+
+    // The point of `run_cancellable` is that the request future is DROPPED,
+    // not merely ignored — dropping is what closes the connection and stops
+    // the provider (and the billing). A future that is still alive would
+    // never run this guard's destructor.
+    #[tokio::test]
+    async fn run_cancellable_drops_the_future_when_the_token_fires() {
+        struct DropFlag(Arc<AtomicBool>);
+        impl Drop for DropFlag {
+            fn drop(&mut self) {
+                self.0.store(true, Ordering::SeqCst);
+            }
+        }
+
+        let dropped = Arc::new(AtomicBool::new(false));
+        let token = CancellationToken::new();
+        token.cancel();
+
+        let flag = DropFlag(dropped.clone());
+        let never_finishes = async move {
+            let _guard = flag;
+            std::future::pending::<()>().await;
+        };
+
+        assert!(run_cancellable(&token, never_finishes).await.is_none());
+        assert!(
+            dropped.load(Ordering::SeqCst),
+            "request future was not dropped"
+        );
+    }
+
+    #[tokio::test]
+    async fn run_cancellable_returns_the_output_when_the_token_never_fires() {
+        let token = CancellationToken::new();
+        assert_eq!(run_cancellable(&token, async { 42 }).await, Some(42));
     }
 
     #[test]
