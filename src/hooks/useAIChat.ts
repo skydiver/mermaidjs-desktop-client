@@ -141,6 +141,9 @@ export function useAIChat({
   /** Cancels whatever stream is currently in flight, if any. Used by both `stop()` and `send()` (which must not let a previous stream keep writing into a bubble it no longer owns). */
   const cancelInFlight = useCallback(async () => {
     if (!isStreamingRef.current) return;
+    // Read before `finalizeStream` clears it — the bubble this stream owns
+    // still has to be tidied up afterwards.
+    const assistantId = currentAssistantIdRef.current;
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('cancel_ai_stream');
@@ -150,6 +153,13 @@ export function useAIChat({
       // regardless of whether the backend was actually told to stop.
     }
     finalizeStream();
+    // Drop an empty placeholder bubble, mirroring the `error` branch: a
+    // stream stopped or superseded before its first delta left nothing worth
+    // keeping in the transcript, and an empty assistant turn would otherwise
+    // be sent as history on the next message.
+    if (assistantId) {
+      setMessages((prev) => prev.filter((m) => !(m.id === assistantId && m.content === '')));
+    }
   }, [finalizeStream]);
 
   const stop = useCallback(() => {
@@ -201,10 +211,13 @@ export function useAIChat({
       const assistantId = newId();
       const assistantPlaceholder: AiMessage = { id: assistantId, role: 'assistant', content: '' };
 
-      const history = [...messagesRef.current, userMessage].map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Empty turns are filtered out here as well as being removed from the
+      // transcript: this snapshot is taken before `cancelInFlight` runs, so a
+      // send that supersedes a stream still sees the placeholder it is about
+      // to remove.
+      const history = [...messagesRef.current, userMessage]
+        .filter((m) => m.content.trim().length > 0)
+        .map((m) => ({ role: m.role, content: m.content }));
 
       setMessages((prev) => [...prev, userMessage, assistantPlaceholder]);
 

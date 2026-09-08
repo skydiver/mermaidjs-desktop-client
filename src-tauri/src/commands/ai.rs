@@ -233,6 +233,8 @@ pub fn cancel_ai_stream(cancel_state: State<'_, CancelState>) -> Result<(), Stri
 /// re-embedding a since-changed diagram into them would misrepresent the
 /// conversation.
 fn build_ai_messages(messages: Vec<ChatMessageInput>, diagram_source: &str) -> Vec<Message> {
+    let messages = normalize_turns(messages);
+
     let mut ai_messages = vec![Message::System {
         content: prompt::system_prompt().to_string(),
     }];
@@ -255,6 +257,41 @@ fn build_ai_messages(messages: Vec<ChatMessageInput>, diagram_source: &str) -> V
     }
 
     ai_messages
+}
+
+/// Normalizes the conversation into the shape every provider accepts: no
+/// empty turns, and no two consecutive turns from the same role.
+///
+/// Both malformed shapes are reachable from the UI — stopping a reply
+/// before its first chunk leaves an empty assistant turn behind, and
+/// retrying a failed turn or superseding an in-flight one puts two user
+/// turns in a row. The Anthropic Messages API rejects either with a 400, so
+/// the *next* message fails for a reason that has nothing to do with what
+/// the user typed, while OpenAI tolerates both — exactly the kind of
+/// provider-specific break that manual testing misses. Enforced here rather
+/// than in the frontend because this is the layer that actually builds the
+/// request, so no future caller can reintroduce it.
+fn normalize_turns(messages: Vec<ChatMessageInput>) -> Vec<ChatMessageInput> {
+    let mut normalized: Vec<ChatMessageInput> = Vec::new();
+
+    for message in messages {
+        if message.content.trim().is_empty() {
+            continue;
+        }
+
+        match normalized.last_mut() {
+            // Joined rather than dropped: an unanswered earlier question is
+            // still something the user asked, and discarding it would
+            // quietly change the request the model is answering.
+            Some(previous) if previous.role == message.role => {
+                previous.content.push_str("\n\n");
+                previous.content.push_str(&message.content);
+            }
+            _ => normalized.push(message),
+        }
+    }
+
+    normalized
 }
 
 /// Runs `future` unless `cancel_token` fires first, returning `None` when it
@@ -415,6 +452,88 @@ mod tests {
         };
         assert!(latest_user.contains("```mermaid\ngraph TD; A-->B;\n```"));
         assert!(latest_user.ends_with("second question"));
+    }
+
+    // Stopping a reply before its first chunk leaves an empty assistant
+    // bubble in the transcript; sending it would 400 on Anthropic and make
+    // the *next* message fail for an unrelated-looking reason.
+    #[test]
+    fn build_ai_messages_drops_empty_turns() {
+        let input = vec![
+            ChatMessageInput {
+                role: "user".into(),
+                content: "draw a flowchart".into(),
+            },
+            ChatMessageInput {
+                role: "assistant".into(),
+                content: "   ".into(),
+            },
+        ];
+        let messages = build_ai_messages(input, "");
+
+        assert_eq!(messages.len(), 2, "system prompt + the one real turn");
+        assert!(matches!(messages[1], Message::User { .. }));
+    }
+
+    // Retrying a failed turn, or superseding one still in flight, puts two
+    // user turns in a row — which the Anthropic Messages API rejects.
+    #[test]
+    fn build_ai_messages_merges_consecutive_same_role_turns() {
+        let input = vec![
+            ChatMessageInput {
+                role: "user".into(),
+                content: "first".into(),
+            },
+            ChatMessageInput {
+                role: "user".into(),
+                content: "second".into(),
+            },
+        ];
+        let messages = build_ai_messages(input, "");
+
+        assert_eq!(messages.len(), 2);
+        let Message::User { content } = &messages[1] else {
+            panic!("expected a single merged user message");
+        };
+        assert!(content.contains("first"));
+        assert!(content.ends_with("second"));
+    }
+
+    #[test]
+    fn build_ai_messages_alternates_roles_after_normalizing() {
+        let input = vec![
+            ChatMessageInput {
+                role: "user".into(),
+                content: "a".into(),
+            },
+            ChatMessageInput {
+                role: "assistant".into(),
+                content: String::new(),
+            },
+            ChatMessageInput {
+                role: "user".into(),
+                content: "b".into(),
+            },
+            ChatMessageInput {
+                role: "assistant".into(),
+                content: "answer".into(),
+            },
+            ChatMessageInput {
+                role: "user".into(),
+                content: "c".into(),
+            },
+        ];
+        let messages = build_ai_messages(input, "");
+
+        let roles: Vec<&str> = messages
+            .iter()
+            .map(|m| match m {
+                Message::System { .. } => "system",
+                Message::User { .. } => "user",
+                Message::Assistant { .. } => "assistant",
+            })
+            .collect();
+        assert_eq!(roles, vec!["system", "user", "assistant", "user"]);
     }
 
     // The point of `run_cancellable` is that the request future is DROPPED,

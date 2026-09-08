@@ -292,4 +292,67 @@ describe('useAIChat', () => {
       'This is a simple flowchart with two nodes.'
     );
   });
+  // The `error` branch already dropped an empty bubble; `stop` did not, so a
+  // reply stopped before its first chunk left `{ role: 'assistant',
+  // content: '' }` in the transcript — and sent it as history on the next
+  // message, which the Anthropic Messages API rejects with a 400.
+  it('drops the empty assistant bubble when a reply is stopped before its first chunk', async () => {
+    const { result } = renderHook(
+      () => useAIChat({ getDiagramSource: () => '', applySuggestion: vi.fn() }),
+      { wrapper: wrapperFor(makeSettings()) }
+    );
+
+    await waitForListener();
+    act(() => result.current.send('draw a flowchart'));
+    await waitForSend();
+
+    await act(async () => {
+      result.current.stop();
+    });
+
+    expect(result.current.messages.map((m) => m.role)).toEqual(['user']);
+  });
+
+  it('keeps a partially streamed reply when it is stopped mid-flight', async () => {
+    const { result } = renderHook(
+      () => useAIChat({ getDiagramSource: () => '', applySuggestion: vi.fn() }),
+      { wrapper: wrapperFor(makeSettings()) }
+    );
+
+    await waitForListener();
+    act(() => result.current.send('draw a flowchart'));
+    await waitForSend();
+    emit({ type: 'text-delta', streamId: lastStreamId(), text: 'Here is a' });
+
+    await act(async () => {
+      result.current.stop();
+    });
+
+    expect(result.current.messages.find((m) => m.role === 'assistant')?.content).toBe('Here is a');
+  });
+
+  // The history snapshot is taken before the previous stream is cancelled, so
+  // the placeholder it is about to remove is still in `messagesRef`.
+  it('never sends an empty turn in the history', async () => {
+    const { result } = renderHook(
+      () => useAIChat({ getDiagramSource: () => '', applySuggestion: vi.fn() }),
+      { wrapper: wrapperFor(makeSettings()) }
+    );
+
+    await waitForListener();
+    act(() => result.current.send('first question'));
+    await waitForSend();
+    act(() => result.current.send('second question'));
+
+    await waitFor(() =>
+      expect(invokeMock.mock.calls.filter((c) => c[0] === 'send_ai_message')).toHaveLength(2)
+    );
+
+    const calls = invokeMock.mock.calls.filter((c) => c[0] === 'send_ai_message');
+    const { messages } = calls[calls.length - 1][1] as {
+      messages: { role: string; content: string }[];
+    };
+    expect(messages.every((m) => m.content.trim().length > 0)).toBe(true);
+  });
+
 });
