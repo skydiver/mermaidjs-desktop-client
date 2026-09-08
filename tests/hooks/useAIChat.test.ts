@@ -355,4 +355,44 @@ describe('useAIChat', () => {
     expect(messages.every((m) => m.content.trim().length > 0)).toBe(true);
   });
 
+  // `send` appends whatever it is given, so retrying by re-sending the last
+  // user turn left the same question in the transcript twice — which
+  // Anthropic rejects outright, roles having to alternate.
+  it('retry re-sends the last user turn without duplicating it', async () => {
+    const { result } = renderHook(
+      () => useAIChat({ getDiagramSource: () => '', applySuggestion: vi.fn() }),
+      { wrapper: wrapperFor(makeSettings()) }
+    );
+
+    await waitForListener();
+    act(() => result.current.send('draw a flowchart'));
+    await waitForSend();
+
+    emit({ type: 'error', streamId: lastStreamId(), message: 'Provider is unavailable.' });
+    expect(result.current.error).toBe('Provider is unavailable.');
+
+    act(() => result.current.retry());
+    await waitFor(() =>
+      expect(invokeMock.mock.calls.filter((c) => c[0] === 'send_ai_message')).toHaveLength(2)
+    );
+
+    const calls = invokeMock.mock.calls.filter((c) => c[0] === 'send_ai_message');
+    const { messages } = calls[calls.length - 1][1] as {
+      messages: { role: string; content: string }[];
+    };
+    expect(messages).toEqual([{ role: 'user', content: 'draw a flowchart' }]);
+    expect(result.current.messages.filter((m) => m.role === 'user')).toHaveLength(1);
+  });
+
+  it('retry does nothing when there is no user turn to re-send', async () => {
+    const { result } = renderHook(
+      () => useAIChat({ getDiagramSource: () => '', applySuggestion: vi.fn() }),
+      { wrapper: wrapperFor(makeSettings()) }
+    );
+
+    await waitForListener();
+    act(() => result.current.retry());
+
+    expect(invokeMock.mock.calls.some((c) => c[0] === 'send_ai_message')).toBe(false);
+  });
 });

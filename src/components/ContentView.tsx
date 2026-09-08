@@ -459,6 +459,7 @@ export default function ContentView({
               error={aiChat.error}
               onSend={onAiSend}
               onStop={aiChat.stop}
+              onRetry={aiChat.retry}
               onAcceptPending={aiChat.acceptPending}
               onCancelPending={aiChat.cancelPending}
               hasDiagram={hasContent}

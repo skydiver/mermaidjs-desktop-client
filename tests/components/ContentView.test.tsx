@@ -63,6 +63,7 @@ const aiChat = {
   error: null,
   send: vi.fn(),
   stop: vi.fn(),
+  retry: vi.fn(),
   acceptPending: vi.fn(),
   cancelPending: vi.fn(),
   notifyUserEdit: vi.fn(),

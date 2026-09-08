@@ -22,6 +22,13 @@ interface AIPanelProps {
   error: string | null;
   onSend: (text: string) => void;
   onStop: () => void;
+  /**
+   * Re-sends the last user turn after a failure. A prop rather than
+   * `onSend(lastUserMessage.content)`: `send` appends whatever it is given,
+   * so re-sending from here duplicated the turn — the hook's `retry` drops
+   * the failed one first.
+   */
+  onRetry: () => void;
   onAcceptPending: () => void;
   onCancelPending: () => void;
   onClose: () => void;
@@ -46,6 +53,7 @@ export default function AIPanel({
   error,
   onSend,
   onStop,
+  onRetry,
   onAcceptPending,
   onCancelPending,
   onClose,
@@ -66,11 +74,6 @@ export default function AIPanel({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ block: 'end' });
   }, [messages.length, isStreaming]);
-
-  const lastUserMessage = [...messages].reverse().find((m) => m.role === 'user');
-  const handleRetry = () => {
-    if (lastUserMessage) onSend(lastUserMessage.content);
-  };
 
   return (
     <div className="flex h-full flex-col bg-white dark:bg-slate-900">
@@ -127,7 +130,7 @@ export default function AIPanel({
               onCancel={onCancelPending}
             />
           ))}
-          {error && <ChatErrorMessage message={error} onRetry={handleRetry} />}
+          {error && <ChatErrorMessage message={error} onRetry={onRetry} />}
           <div ref={bottomRef} />
         </div>
       )}

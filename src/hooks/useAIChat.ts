@@ -37,6 +37,8 @@ export interface UseAIChatReturn {
   error: string | null;
   send: (text: string) => void;
   stop: () => void;
+  /** Re-sends the last user turn after a failure, without duplicating it. */
+  retry: () => void;
   acceptPending: () => void;
   cancelPending: () => void;
   notifyUserEdit: () => void;
@@ -348,6 +350,37 @@ export function useAIChat({
     };
   }, [applyPendingFromReply, finalizeStream]);
 
+  /**
+   * Re-sends the last user turn after a failure.
+   *
+   * The failed turn is removed first because `send` always appends the text
+   * it is given: re-sending it as-is would leave the same question in the
+   * transcript twice, which both shows the model a duplicated request and —
+   * since the Anthropic Messages API requires roles to alternate — makes the
+   * retry fail with a second, more confusing error than the one being
+   * retried.
+   */
+  const retry = useCallback(() => {
+    const history = messagesRef.current;
+    let lastUserIndex = -1;
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].role === 'user') {
+        lastUserIndex = i;
+        break;
+      }
+    }
+    if (lastUserIndex === -1) return;
+
+    const { content } = history[lastUserIndex];
+    const truncated = history.slice(0, lastUserIndex);
+    // The ref is written alongside the state because `send` reads it
+    // synchronously, before React has re-rendered this update — leaving it
+    // stale would put the failed turn straight back into the history.
+    messagesRef.current = truncated;
+    setMessages(truncated);
+    send(content);
+  }, [send]);
+
   // Cancel any in-flight stream on unmount so a straggling event never
   // fires into a component that no longer exists. `cancelInFlight` is a
   // stable reference (its own dependency chain bottoms out at `[]`), so
@@ -365,6 +398,7 @@ export function useAIChat({
     error,
     send,
     stop,
+    retry,
     acceptPending,
     cancelPending,
     notifyUserEdit,
