@@ -50,6 +50,8 @@ Conversations live in memory only: they are never written to disk, and they are 
 
 Configure any or all of them under **Settings → AI**, and switch between the configured ones from the panel's dropdown. The model is free text, so a provider's newest model works the day it ships without waiting for an app update. Each provider has a **Test connection** button that verifies the settings before you rely on them.
 
+**What is sent:** each turn sends your messages and the current diagram source to the provider you configured — the same exposure as pasting them into that provider's own app. Ollama is the exception: it runs locally, so nothing leaves your machine.
+
 All provider requests are made from the Rust backend, never the webview — the app's `default-src 'self'` content security policy is unchanged. **API keys are stored in the OS keychain** (Keychain on macOS, Credential Manager on Windows, Secret Service on Linux), never in `settings.json`, and are never sent to the frontend after being saved.
 
 ### Editor
