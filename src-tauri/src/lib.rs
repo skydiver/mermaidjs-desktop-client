@@ -6,6 +6,7 @@ mod keyring;
 mod menu;
 
 use std::sync::Mutex;
+use std::time::Duration;
 
 use tokio_util::sync::CancellationToken;
 
@@ -19,7 +20,20 @@ pub fn run() {
         .manage(PendingFileOpen(Mutex::new(None)))
         // Shared `reqwest::Client` so every AI provider request reuses one
         // connection pool instead of paying TLS/DNS setup per request.
-        .manage(HttpClient(reqwest::Client::new()))
+        //
+        // A connect timeout, but deliberately no total request timeout: a
+        // chat stream is open for as long as the model keeps writing, so a
+        // deadline on the whole request would cut off long replies. An
+        // unreachable host is the case worth bounding — without this it
+        // sits in the OS's own connect retry for well over a minute with
+        // the panel simply spinning. `expect` matches `Client::new()`,
+        // which panics on the same TLS-backend failure.
+        .manage(HttpClient(
+            reqwest::Client::builder()
+                .connect_timeout(Duration::from_secs(10))
+                .build()
+                .expect("TLS backend failed to initialize"),
+        ))
         // Holds the `CancellationToken` for the in-flight AI stream, if any,
         // so `cancel_ai_stream` can stop it and a new `send_ai_message` call
         // can supersede it. `None` means no stream is currently running.
