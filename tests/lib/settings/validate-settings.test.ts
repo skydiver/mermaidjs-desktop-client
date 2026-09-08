@@ -240,6 +240,39 @@ describe('validateSettings — ai block', () => {
     expect(result.ai.providers.ollama.baseUrl).toBe(DEFAULT_SETTINGS.ai.providers.ollama.baseUrl);
   });
 
+  // `baseUrl` is the request URL the stored API key's Authorization header is
+  // attached to, and `settings.json` is writable by any local process — so a
+  // non-HTTP scheme here would be a redirect of a keychain-held credential.
+  it('falls back a baseUrl that is not an http(s) URL', () => {
+    for (const baseUrl of [
+      'file:///etc/passwd',
+      'ftp://example.com',
+      'javascript:alert(1)',
+      'example.com/v1',
+      '',
+    ]) {
+      const result = validateSettings({
+        ai: { providers: { 'openai-compatible': { model: 'gpt-4o', baseUrl } } },
+      });
+      expect(result.ai.providers['openai-compatible'].baseUrl).toBe(
+        DEFAULT_SETTINGS.ai.providers['openai-compatible'].baseUrl
+      );
+    }
+  });
+
+  it('accepts http and https baseUrls', () => {
+    const result = validateSettings({
+      ai: {
+        providers: {
+          ollama: { model: 'llama3.2', baseUrl: 'http://localhost:11434' },
+          'openai-compatible': { model: 'gpt-4o', baseUrl: 'https://api.example.com/v1' },
+        },
+      },
+    });
+    expect(result.ai.providers.ollama.baseUrl).toBe('http://localhost:11434');
+    expect(result.ai.providers['openai-compatible'].baseUrl).toBe('https://api.example.com/v1');
+  });
+
   it('does not invent a baseUrl for a provider whose default has none', () => {
     const result = validateSettings({ ai: { providers: { anthropic: { model: 'x' } } } });
     expect(result.ai.providers.anthropic).toEqual({ model: 'x' });

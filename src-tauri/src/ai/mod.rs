@@ -165,6 +165,26 @@ pub fn requires_api_key(provider_id: &str) -> bool {
     provider_id != "ollama"
 }
 
+/// Rejects a base URL that is not plain HTTP(S).
+///
+/// This value ends up as the request URL that `openai::send` attaches the
+/// stored `Authorization: Bearer <key>` header to, and it reaches us from
+/// `settings.json` — a plain file any local process can write. Without this
+/// check, write access to that file is enough to redirect a keychain-held
+/// key to an arbitrary destination, which is precisely the escalation
+/// storing the key in the keychain is meant to prevent. Checked here, not
+/// only in the frontend validator, because this is the layer that attaches
+/// the credential.
+fn validate_base_url(base_url: &str) -> Result<(), AiError> {
+    if base_url.starts_with("http://") || base_url.starts_with("https://") {
+        return Ok(());
+    }
+
+    Err(AiError::Config(
+        "Base URL must start with http:// or https://".into(),
+    ))
+}
+
 /// Validates that `(provider_id, model, base_url)` is enough to attempt a
 /// request, without making one. Kept separate from `send_message` so
 /// `commands/ai.rs` can reject an obviously-broken config before it even
@@ -189,7 +209,7 @@ pub fn validate_provider_config(
         "openai-compatible" if base_url_missing => Err(AiError::Config(
             "Base URL is required for OpenAI Compatible".into(),
         )),
-        "ollama" | "openai-compatible" => Ok(()),
+        "ollama" | "openai-compatible" => validate_base_url(base_url.unwrap_or("").trim()),
         other => Err(AiError::Config(format!("Unknown AI provider: {other}"))),
     }
 }
@@ -265,6 +285,37 @@ mod tests {
         let err = validate_provider_config("ollama", "llama3", None).unwrap_err();
         assert!(matches!(err, AiError::Config(_)));
         assert!(validate_provider_config("ollama", "llama3", Some("http://localhost:11434")).is_ok());
+    }
+
+    // `settings.json` is writable by any local process, and this URL is what
+    // the stored API key's `Authorization` header is sent to — a non-HTTP
+    // scheme here would be a redirect of that credential.
+    #[test]
+    fn rejects_a_base_url_that_is_not_http() {
+        for base_url in [
+            "file:///etc/passwd",
+            "ftp://example.com",
+            "example.com",
+            "//evil.test",
+        ] {
+            let err = validate_provider_config("openai-compatible", "any-model", Some(base_url))
+                .unwrap_err();
+            assert!(
+                matches!(err, AiError::Config(_)),
+                "expected {base_url} to be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn accepts_http_and_https_base_urls() {
+        assert!(validate_provider_config(
+            "openai-compatible",
+            "m",
+            Some("https://api.example.com/v1")
+        )
+        .is_ok());
+        assert!(validate_provider_config("ollama", "m", Some("http://localhost:11434")).is_ok());
     }
 
     #[test]

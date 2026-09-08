@@ -60,6 +60,28 @@ function pickAiPanelWidth(value: unknown): number {
   return Math.min(AI_PANEL_WIDTH_MAX, Math.max(AI_PANEL_WIDTH_MIN, value));
 }
 
+/**
+ * Whether `value` is an absolute HTTP(S) URL.
+ *
+ * `baseUrl` is the one field here that becomes an outgoing request URL — and
+ * `openai::send` attaches the keychain-held `Authorization: Bearer <key>`
+ * header to it. Since `settings.json` is a plain file any local process can
+ * write (see `useSettings.tsx`), leaving it unchecked would make write access
+ * to that file enough to redirect a stored API key somewhere else, with no
+ * cue beyond a base URL the user has no reason to re-read. Rust re-checks it
+ * at the point the credential is actually attached.
+ */
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    // Not a parseable absolute URL — a relative path or plain hostname
+    // cannot be requested, so it is no more usable than a malformed one.
+    return false;
+  }
+}
+
 function pickProviderConfig(value: unknown, fallback: AiProviderConfig): AiProviderConfig {
   if (!isPlainObject(value)) return fallback;
 
@@ -69,7 +91,8 @@ function pickProviderConfig(value: unknown, fallback: AiProviderConfig): AiProvi
   // when neither the persisted value nor the fallback provides a string, so
   // a provider that doesn't use one never gets a spurious empty baseUrl.
   const rawBaseUrl = 'baseUrl' in value ? value.baseUrl : undefined;
-  const baseUrl = typeof rawBaseUrl === 'string' ? rawBaseUrl : fallback.baseUrl;
+  const baseUrl =
+    typeof rawBaseUrl === 'string' && isHttpUrl(rawBaseUrl) ? rawBaseUrl : fallback.baseUrl;
 
   return baseUrl === undefined ? { model } : { model, baseUrl };
 }
