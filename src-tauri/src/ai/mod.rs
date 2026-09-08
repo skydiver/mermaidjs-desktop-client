@@ -232,9 +232,7 @@ pub async fn send_message(
         "openai" => {
             openai::send(
                 client,
-                openai::OPENAI_API_URL,
-                "openai",
-                "OpenAI",
+                &openai::Endpoint::openai(),
                 model,
                 messages,
                 chunk_tx,
@@ -247,9 +245,7 @@ pub async fn send_message(
             let base_url = base_url.expect("validated above");
             openai::send(
                 client,
-                base_url,
-                "openai-compatible",
-                "OpenAI Compatible",
+                &openai::Endpoint::compatible(base_url),
                 model,
                 messages,
                 chunk_tx,

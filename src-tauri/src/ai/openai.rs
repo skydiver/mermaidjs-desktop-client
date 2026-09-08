@@ -30,37 +30,87 @@ use crate::keyring;
 
 pub const OPENAI_API_URL: &str = "https://api.openai.com/v1/chat/completions";
 
+/// Everything that differs between the first-party `openai` provider and a
+/// generic OpenAI-compatible server. Grouped into a struct rather than
+/// passed as four adjacent `&str` parameters, which are easy to transpose
+/// at a call site and impossible for the compiler to tell apart.
+pub struct Endpoint<'a> {
+    /// Full chat-completions URL to POST to.
+    pub api_url: &'a str,
+    /// Keychain entry the API key is stored under.
+    pub keyring_service: &'a str,
+    /// Provider name as it appears in user-facing error messages.
+    pub display_name: &'a str,
+    /// Request field that caps the generated tokens.
+    pub token_limit_field: &'a str,
+}
+
+impl<'a> Endpoint<'a> {
+    /// OpenAI itself.
+    ///
+    /// `max_completion_tokens`, not `max_tokens`: OpenAI deprecated the
+    /// latter, and its reasoning models return a 400 (`Unsupported
+    /// parameter: 'max_tokens' is not supported with this model`) rather
+    /// than ignoring it. The model field is free text — deliberately, so a
+    /// new model works the day it ships — so a user typing a current
+    /// reasoning model name would otherwise hit a hard failure.
+    pub const fn openai() -> Self {
+        Self {
+            api_url: OPENAI_API_URL,
+            keyring_service: "openai",
+            display_name: "OpenAI",
+            token_limit_field: "max_completion_tokens",
+        }
+    }
+
+    /// Any OpenAI-compatible server, reached at `base_url`.
+    ///
+    /// Keeps `max_tokens`: plenty of gateways still accept only the
+    /// original field, and none of them are the reasoning models that
+    /// forced the change above.
+    pub const fn compatible(base_url: &'a str) -> Self {
+        Self {
+            api_url: base_url,
+            keyring_service: "openai-compatible",
+            display_name: "OpenAI Compatible",
+            token_limit_field: "max_tokens",
+        }
+    }
+}
+
 /// Upper bound on tokens generated per request. Generous enough to give a
 /// full Mermaid diagram plus explanation room, including on reasoning
 /// models that spend a chunk of the budget on chain-of-thought before the
 /// final answer.
 const MAX_TOKENS: u32 = 8192;
 
-/// `api_url` and `keyring_service`/`display_name` are the only things that
-/// differ between the plain `openai` provider and `openai-compatible`
-/// (`ai::mod::send_message` supplies OpenAI's own constants for the
-/// former); everything below is otherwise identical for both.
+/// One wire implementation for both OpenAI providers — `endpoint` carries
+/// everything that differs between them (`ai::mod::send_message` picks
+/// which one), and the request/parse path below is identical for both.
 pub async fn send(
     client: &Client,
-    api_url: &str,
-    keyring_service: &str,
-    display_name: &str,
+    endpoint: &Endpoint<'_>,
     model: &str,
     messages: &[Message],
     chunk_tx: &UnboundedSender<StreamChunk>,
 ) -> Result<AiResponse, AiError> {
-    let api_key = keyring::get_api_key(keyring_service)
+    let api_key = keyring::get_api_key(endpoint.keyring_service)
         .map_err(AiError::Request)?
         .ok_or_else(|| {
             AiError::Auth(format!(
-                "No {display_name} API key stored — add one in Settings"
+                "No {} API key stored — add one in Settings",
+                endpoint.display_name
             ))
         })?;
 
     let response = client
-        .post(api_url)
+        .post(endpoint.api_url)
         .header("Authorization", format!("Bearer {api_key}"))
-        .json(&build_request_body(messages, model))
+        .json(&build_request_body(
+            messages,
+            model,
+            endpoint.token_limit_field,
+        ))
         .send()
         .await
         .map_err(|e| AiError::Request(e.to_string()))?;
@@ -77,7 +127,7 @@ pub async fn send(
     Ok(acc.into())
 }
 
-fn build_request_body(messages: &[Message], model: &str) -> Value {
+fn build_request_body(messages: &[Message], model: &str, token_limit_field: &str) -> Value {
     let api_messages: Vec<Value> = messages
         .iter()
         .map(|message| match message {
@@ -87,13 +137,18 @@ fn build_request_body(messages: &[Message], model: &str) -> Value {
         })
         .collect();
 
-    json!({
+    let mut body = json!({
         "model": model,
         "stream": true,
         "stream_options": { "include_usage": true },
-        "max_tokens": MAX_TOKENS,
         "messages": api_messages,
-    })
+    });
+
+    body.as_object_mut()
+        .expect("built from a json! object literal")
+        .insert(token_limit_field.to_string(), json!(MAX_TOKENS));
+
+    body
 }
 
 #[derive(Default)]
@@ -177,6 +232,27 @@ fn apply_event(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn openai_caps_output_with_max_completion_tokens() {
+        let body = build_request_body(&[], "o3", Endpoint::openai().token_limit_field);
+        assert_eq!(body["max_completion_tokens"], json!(MAX_TOKENS));
+        assert!(
+            body.get("max_tokens").is_none(),
+            "OpenAI's reasoning models reject max_tokens outright"
+        );
+    }
+
+    #[test]
+    fn openai_compatible_keeps_max_tokens() {
+        let body = build_request_body(
+            &[],
+            "local-model",
+            Endpoint::compatible("http://x").token_limit_field,
+        );
+        assert_eq!(body["max_tokens"], json!(MAX_TOKENS));
+        assert!(body.get("max_completion_tokens").is_none());
+    }
     use tokio::sync::mpsc;
 
     fn bare(data: &str) -> SseEvent {
