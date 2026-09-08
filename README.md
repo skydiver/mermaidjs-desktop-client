@@ -21,8 +21,18 @@ Built with [Tauri 2](https://tauri.app/), [React 19](https://react.dev/), [CodeM
       <br><sub>Live editing with syntax highlighting</sub>
     </td>
     <td align="center">
+      <img src=".github/assets/screenshot-ai-panel.png" alt="AI assistant generating a sequence diagram" width="100%" />
+      <br><sub>Describe your diagram — the AI generates it</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
       <img src=".github/assets/screenshot-settings.png" alt="Settings dialog" width="100%" />
       <br><sub>Fully configurable editor</sub>
+    </td>
+    <td align="center">
+      <img src=".github/assets/screenshot-ai-settings.png" alt="AI provider settings" width="100%" />
+      <br><sub>Use your own account and model</sub>
     </td>
   </tr>
 </table>
