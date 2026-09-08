@@ -44,6 +44,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    // `.tsx` too: component tests need JSX in the test file itself.
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
   },
 });

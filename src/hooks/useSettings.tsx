@@ -7,12 +7,25 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { AI_PROVIDERS, type AiProviderConfig, type AiProviderId } from '../lib/ai/types';
 import { debounce } from '../lib/debounce';
 import { validateSettings } from '../lib/settings/validate-settings';
 
 // ── Types ───────────────────────────────────────────────
 
 export type ThemePreference = 'system' | 'light' | 'dark';
+
+/**
+ * How the preview frames a diagram when it is first rendered — and after every
+ * re-render, since Mermaid replaces the SVG wholesale rather than patching it.
+ * `fit` scales it to the viewport; `actual` shows it at 100%, centred.
+ */
+export type DiagramView = 'fit' | 'actual';
+
+export interface AiSettings {
+  activeProvider: AiProviderId | null;
+  providers: Record<AiProviderId, AiProviderConfig>;
+}
 
 export interface AppSettings {
   theme: ThemePreference;
@@ -27,7 +40,34 @@ export interface AppSettings {
   indentType: 'space' | 'tab';
   indentSize: number;
   showDotGrid: boolean;
+  /** How a freshly-rendered diagram is framed: scaled to fit, or at 100%. */
+  defaultDiagramView: DiagramView;
+  /** Width in px of the AI panel, clamped to [280, 600] by `validateSettings`. */
+  aiPanelWidth: number;
+  ai: AiSettings;
 }
+
+// Built from `AI_PROVIDERS` rather than listed by hand, so a provider added
+// to that metadata array is automatically represented here — the two lists
+// cannot silently drift apart.
+function defaultAiProviders(): Record<AiProviderId, AiProviderConfig> {
+  return Object.fromEntries(
+    AI_PROVIDERS.map((meta) => [meta.id, { model: '', baseUrl: meta.defaultBaseUrl }])
+  ) as Record<AiProviderId, AiProviderConfig>;
+}
+
+export const DEFAULT_AI_PANEL_WIDTH = 360;
+export const AI_PANEL_WIDTH_MIN = 280;
+/**
+ * Absolute ceiling for the PERSISTED width. The width the panel may actually
+ * take is half the workspace, computed at render time — but that depends on
+ * the current window, which is unknown here and would change between sessions.
+ * Storing the user's preferred width unclamped (up to this sanity bound) lets
+ * a wide setting survive a spell on a smaller display: the panel is limited to
+ * half the window while it is narrow, and returns to the preferred width when
+ * there is room again.
+ */
+export const AI_PANEL_WIDTH_MAX = 2000;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
@@ -42,6 +82,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   indentType: 'space',
   indentSize: 2,
   showDotGrid: true,
+  defaultDiagramView: 'fit',
+  aiPanelWidth: DEFAULT_AI_PANEL_WIDTH,
+  ai: {
+    activeProvider: null,
+    providers: defaultAiProviders(),
+  },
 };
 
 export interface SettingsContextValue {
@@ -53,7 +99,11 @@ export interface SettingsContextValue {
 
 // ── Context ─────────────────────────────────────────────
 
-const SettingsContext = createContext<SettingsContextValue | null>(null);
+// Exported (not just `useSettings`) so tests can supply a context value
+// directly via `<SettingsContext.Provider>`, bypassing `SettingsProvider`'s
+// async store load — useful for hooks like `useAIChat` that only need a
+// fixed `settings.ai` snapshot rather than the full persistence lifecycle.
+export const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function useSettings(): SettingsContextValue {
   const ctx = useContext(SettingsContext);

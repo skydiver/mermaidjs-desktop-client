@@ -135,7 +135,167 @@ describe('validateSettings', () => {
       indentType: 'tab' as const,
       indentSize: 4,
       showDotGrid: false,
+      defaultDiagramView: 'actual' as const,
+      aiPanelWidth: 420,
+      ai: {
+        activeProvider: 'anthropic' as const,
+        providers: {
+          anthropic: { model: 'claude-sonnet-4-5' },
+          openai: { model: 'gpt-4o' },
+          ollama: { model: 'llama3.2', baseUrl: 'http://localhost:11434' },
+          'openai-compatible': { model: 'gpt-4o', baseUrl: 'https://example.com/v1' },
+        },
+      },
     };
     expect(validateSettings(full)).toEqual(full);
+  });
+});
+
+describe('validateSettings — ai block', () => {
+  it('defaults aiPanelWidth when missing', () => {
+    expect(validateSettings({}).aiPanelWidth).toBe(DEFAULT_SETTINGS.aiPanelWidth);
+  });
+
+  it('clamps aiPanelWidth below the minimum', () => {
+    expect(validateSettings({ aiPanelWidth: 10 }).aiPanelWidth).toBe(280);
+  });
+
+  it('clamps aiPanelWidth above the maximum', () => {
+    expect(validateSettings({ aiPanelWidth: 9999 }).aiPanelWidth).toBe(2000);
+  });
+
+  // The usable width is capped at half the workspace when the panel renders.
+  // The stored value is deliberately NOT clamped to that, so a width chosen on
+  // a large display survives a session on a smaller one.
+  it('keeps a stored width wider than any fixed panel maximum', () => {
+    expect(validateSettings({ aiPanelWidth: 900 }).aiPanelWidth).toBe(900);
+  });
+
+  it('falls back to the default aiPanelWidth for a non-number', () => {
+    expect(validateSettings({ aiPanelWidth: 'wide' }).aiPanelWidth).toBe(
+      DEFAULT_SETTINGS.aiPanelWidth
+    );
+  });
+
+  it('accepts a width within range unchanged', () => {
+    expect(validateSettings({ aiPanelWidth: 450 }).aiPanelWidth).toBe(450);
+  });
+
+  it('defaults the whole ai block when missing', () => {
+    expect(validateSettings({}).ai).toEqual(DEFAULT_SETTINGS.ai);
+  });
+
+  it('defaults ai when it is not an object', () => {
+    expect(validateSettings({ ai: 'nope' }).ai).toEqual(DEFAULT_SETTINGS.ai);
+  });
+
+  it('narrows activeProvider to a known provider id', () => {
+    expect(validateSettings({ ai: { activeProvider: 'openai' } }).ai.activeProvider).toBe('openai');
+  });
+
+  it('falls back activeProvider to null for an unknown provider id', () => {
+    expect(validateSettings({ ai: { activeProvider: 'gemini' } }).ai.activeProvider).toBeNull();
+  });
+
+  it('drops an unknown provider key from ai.providers rather than passing it through', () => {
+    const result = validateSettings({
+      ai: { providers: { gemini: { model: 'gemini-pro' } } },
+    });
+    expect(result.ai.providers).not.toHaveProperty('gemini');
+    expect(result.ai.providers).toEqual(DEFAULT_SETTINGS.ai.providers);
+  });
+
+  it('validates each provider config independently, keeping valid siblings', () => {
+    const result = validateSettings({
+      ai: {
+        providers: {
+          anthropic: { model: 'claude-sonnet-4-5' },
+          openai: { model: 42 },
+        },
+      },
+    });
+    expect(result.ai.providers.anthropic).toEqual({ model: 'claude-sonnet-4-5' });
+    expect(result.ai.providers.openai.model).toBe(DEFAULT_SETTINGS.ai.providers.openai.model);
+  });
+
+  it('rejects a non-string model, falling back to the default for that provider', () => {
+    const result = validateSettings({ ai: { providers: { ollama: { model: 123 } } } });
+    expect(result.ai.providers.ollama.model).toBe(DEFAULT_SETTINGS.ai.providers.ollama.model);
+  });
+
+  it('preserves a valid baseUrl for a provider that uses one', () => {
+    const result = validateSettings({
+      ai: { providers: { ollama: { model: 'llama3.2', baseUrl: 'http://localhost:9999' } } },
+    });
+    expect(result.ai.providers.ollama).toEqual({
+      model: 'llama3.2',
+      baseUrl: 'http://localhost:9999',
+    });
+  });
+
+  it('falls back a non-string baseUrl to the provider default', () => {
+    const result = validateSettings({
+      ai: { providers: { ollama: { model: 'llama3.2', baseUrl: 42 } } },
+    });
+    expect(result.ai.providers.ollama.baseUrl).toBe(DEFAULT_SETTINGS.ai.providers.ollama.baseUrl);
+  });
+
+  // `baseUrl` is the request URL the stored API key's Authorization header is
+  // attached to, and `settings.json` is writable by any local process — so a
+  // non-HTTP scheme here would be a redirect of a keychain-held credential.
+  it('falls back a baseUrl that is not an http(s) URL', () => {
+    for (const baseUrl of [
+      'file:///etc/passwd',
+      'ftp://example.com',
+      'javascript:alert(1)',
+      'example.com/v1',
+      '',
+    ]) {
+      const result = validateSettings({
+        ai: { providers: { 'openai-compatible': { model: 'gpt-4o', baseUrl } } },
+      });
+      expect(result.ai.providers['openai-compatible'].baseUrl).toBe(
+        DEFAULT_SETTINGS.ai.providers['openai-compatible'].baseUrl
+      );
+    }
+  });
+
+  it('accepts http and https baseUrls', () => {
+    const result = validateSettings({
+      ai: {
+        providers: {
+          ollama: { model: 'llama3.2', baseUrl: 'http://localhost:11434' },
+          'openai-compatible': { model: 'gpt-4o', baseUrl: 'https://api.example.com/v1' },
+        },
+      },
+    });
+    expect(result.ai.providers.ollama.baseUrl).toBe('http://localhost:11434');
+    expect(result.ai.providers['openai-compatible'].baseUrl).toBe('https://api.example.com/v1');
+  });
+
+  it('does not invent a baseUrl for a provider whose default has none', () => {
+    const result = validateSettings({ ai: { providers: { anthropic: { model: 'x' } } } });
+    expect(result.ai.providers.anthropic).toEqual({ model: 'x' });
+    expect(result.ai.providers.anthropic).not.toHaveProperty('baseUrl');
+  });
+
+  it('falls back the whole providers map when it is not an object', () => {
+    const result = validateSettings({ ai: { providers: 'nope' } });
+    expect(result.ai.providers).toEqual(DEFAULT_SETTINGS.ai.providers);
+  });
+});
+
+describe('validateSettings defaultDiagramView', () => {
+  it('defaults to fitting the viewport, matching the behaviour before the setting existed', () => {
+    expect(validateSettings({}).defaultDiagramView).toBe('fit');
+  });
+
+  it('keeps a valid stored value', () => {
+    expect(validateSettings({ defaultDiagramView: 'actual' }).defaultDiagramView).toBe('actual');
+  });
+
+  it('falls back to the default for an unknown value', () => {
+    expect(validateSettings({ defaultDiagramView: 'zoomed' }).defaultDiagramView).toBe('fit');
+    expect(validateSettings({ defaultDiagramView: 2 }).defaultDiagramView).toBe('fit');
   });
 });

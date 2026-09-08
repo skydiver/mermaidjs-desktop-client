@@ -1,4 +1,13 @@
-import { type AppSettings, DEFAULT_SETTINGS, type ThemePreference } from '@/hooks/useSettings';
+import {
+  AI_PANEL_WIDTH_MAX,
+  AI_PANEL_WIDTH_MIN,
+  type AiSettings,
+  type AppSettings,
+  DEFAULT_SETTINGS,
+  type DiagramView,
+  type ThemePreference,
+} from '@/hooks/useSettings';
+import { AI_PROVIDERS, type AiProviderConfig, type AiProviderId } from '@/lib/ai/types';
 import { CSS_SAFE_FONT_FAMILY_PATTERN } from '@/lib/css-safe-font';
 
 // ── Constants ───────────────────────────────────────────
@@ -6,8 +15,10 @@ import { CSS_SAFE_FONT_FAMILY_PATTERN } from '@/lib/css-safe-font';
 const INDENT_SIZES = new Set<AppSettings['indentSize']>([2, 4, 8]);
 const INDENT_TYPES = new Set<AppSettings['indentType']>(['space', 'tab']);
 const THEME_VALUES = new Set<ThemePreference>(['system', 'light', 'dark']);
+const DIAGRAM_VIEW_VALUES = new Set<DiagramView>(['fit', 'actual']);
 const FONT_SIZE_MIN = 10;
 const FONT_SIZE_MAX = 24;
+const AI_PROVIDER_IDS = new Set<AiProviderId>(AI_PROVIDERS.map((p) => p.id));
 
 // ── Helpers ─────────────────────────────────────────────
 
@@ -44,6 +55,76 @@ function pickFontFamily(value: unknown): string {
   return CSS_SAFE_FONT_FAMILY_PATTERN.test(value) ? value : DEFAULT_SETTINGS.editorFontFamily;
 }
 
+function pickAiPanelWidth(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_SETTINGS.aiPanelWidth;
+  return Math.min(AI_PANEL_WIDTH_MAX, Math.max(AI_PANEL_WIDTH_MIN, value));
+}
+
+/**
+ * Whether `value` is an absolute HTTP(S) URL.
+ *
+ * `baseUrl` is the one field here that becomes an outgoing request URL — and
+ * `openai::send` attaches the keychain-held `Authorization: Bearer <key>`
+ * header to it. Since `settings.json` is a plain file any local process can
+ * write (see `useSettings.tsx`), leaving it unchecked would make write access
+ * to that file enough to redirect a stored API key somewhere else, with no
+ * cue beyond a base URL the user has no reason to re-read. Rust re-checks it
+ * at the point the credential is actually attached.
+ */
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    // Not a parseable absolute URL — a relative path or plain hostname
+    // cannot be requested, so it is no more usable than a malformed one.
+    return false;
+  }
+}
+
+function pickProviderConfig(value: unknown, fallback: AiProviderConfig): AiProviderConfig {
+  if (!isPlainObject(value)) return fallback;
+
+  const model = typeof value.model === 'string' ? value.model : fallback.model;
+
+  // `baseUrl` is optional — omitted entirely (rather than defaulted to `''`)
+  // when neither the persisted value nor the fallback provides a string, so
+  // a provider that doesn't use one never gets a spurious empty baseUrl.
+  const rawBaseUrl = 'baseUrl' in value ? value.baseUrl : undefined;
+  const baseUrl =
+    typeof rawBaseUrl === 'string' && isHttpUrl(rawBaseUrl) ? rawBaseUrl : fallback.baseUrl;
+
+  return baseUrl === undefined ? { model } : { model, baseUrl };
+}
+
+/**
+ * Validates `settings.ai`. Unknown provider keys are dropped and each of the
+ * four known providers is validated independently against its own default —
+ * a malformed entry for one provider cannot corrupt another's config nor
+ * silently smuggle an unrecognized provider id through to application code
+ * that assumes exactly the four known ids.
+ */
+function pickAiSettings(value: unknown): AiSettings {
+  const fallback = DEFAULT_SETTINGS.ai;
+  const source = isPlainObject(value) ? value : {};
+
+  const activeProvider =
+    typeof source.activeProvider === 'string' &&
+    AI_PROVIDER_IDS.has(source.activeProvider as AiProviderId)
+      ? (source.activeProvider as AiProviderId)
+      : null;
+
+  const rawProviders = isPlainObject(source.providers) ? source.providers : {};
+  const providers = Object.fromEntries(
+    AI_PROVIDERS.map((meta) => [
+      meta.id,
+      pickProviderConfig(rawProviders[meta.id], fallback.providers[meta.id]),
+    ])
+  ) as AiSettings['providers'];
+
+  return { activeProvider, providers };
+}
+
 // ── Validation ──────────────────────────────────────────
 
 /**
@@ -69,5 +150,12 @@ export function validateSettings(raw: unknown): AppSettings {
     indentType: pickEnum(source.indentType, INDENT_TYPES, DEFAULT_SETTINGS.indentType),
     indentSize: pickIndentSize(source.indentSize),
     showDotGrid: pickBoolean(source.showDotGrid, DEFAULT_SETTINGS.showDotGrid),
+    defaultDiagramView: pickEnum(
+      source.defaultDiagramView,
+      DIAGRAM_VIEW_VALUES,
+      DEFAULT_SETTINGS.defaultDiagramView
+    ),
+    aiPanelWidth: pickAiPanelWidth(source.aiPanelWidth),
+    ai: pickAiSettings(source.ai),
   };
 }

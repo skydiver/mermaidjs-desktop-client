@@ -21,6 +21,7 @@ const SHORTCUT_GROUPS = [
   {
     title: 'General',
     shortcuts: [
+      { keys: '⌘ ⇧ A', description: 'Toggle AI assistant' },
       { keys: '⌘ ,', description: 'Settings' },
       { keys: 'F1', description: 'Help' },
     ],

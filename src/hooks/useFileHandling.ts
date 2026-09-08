@@ -27,12 +27,26 @@ export interface UseFileHandlingReturn {
   hasDocument: boolean;
   lastSavedAt: Date | null;
   markDirty: () => void;
-  newFile: () => Promise<void>;
-  openFile: () => Promise<void>;
-  openFilePath: (path: string) => Promise<void>;
+  /**
+   * Each of these resolves to whether the document was actually replaced.
+   * `false` covers every path that leaves the current diagram untouched: a
+   * cancelled dialog, a declined "discard changes?", a rejected or unreadable
+   * file. Callers need to tell those apart from a real replacement — App
+   * clears the AI conversation on a new document, and cancelling must not.
+   */
+  newFile: () => Promise<boolean>;
+  openFile: () => Promise<boolean>;
+  openFilePath: (path: string) => Promise<boolean>;
   saveFile: () => Promise<void>;
   exportFile: (format: ExportFormat) => Promise<void>;
-  loadExample: (content: string) => Promise<void>;
+  loadExample: (content: string) => Promise<boolean>;
+  /**
+   * Replace editor content with an AI suggestion (or with the snapshot a
+   * cancelled suggestion restores). Unlike `replaceContent`, this marks the
+   * document dirty: an applied suggestion is a real change to the diagram
+   * and must be saveable, and must re-arm auto-save exactly as typing does.
+   */
+  applyAiSuggestion: (content: string) => void;
   /** Replace editor content without marking dirty (for external reload) */
   reloadContent: (content: string) => void;
 }
@@ -105,12 +119,13 @@ export function useFileHandling({
   const newFile = useCallback(async () => {
     if (isDirtyRef.current) {
       const proceed = await confirmDiscard('Discard the current diagram and start fresh?');
-      if (!proceed) return;
+      if (!proceed) return false;
     }
     setHasDocument(true);
     replaceContent('');
     setFilePath(null);
     setLastSavedAt(null);
+    return true;
   }, [replaceContent]);
 
   // Shared entry point for all three ways a file gets opened: the Open
@@ -126,7 +141,7 @@ export function useFileHandling({
             title: 'File Too Large',
             body: `"${path}" is ${formatBytes(info.size)}, which is above the ${formatBytes(MAX_OPEN_FILE_BYTES)} limit for diagram source. Choose a smaller file.`,
           });
-          return;
+          return false;
         }
 
         const content = await readTextFile(path);
@@ -135,18 +150,20 @@ export function useFileHandling({
             title: 'File Does Not Look Like Text',
             body: `"${path}" does not look like a text-based diagram file and was not opened.`,
           });
-          return;
+          return false;
         }
 
         replaceContent(content);
         setHasDocument(true);
         setFilePath(path);
         setLastSavedAt(null);
+        return true;
       } catch (error) {
         await reportError('Failed to open file', error, {
           title: 'Unable to Open File',
           body: `Could not open "${path}".`,
         });
+        return false;
       }
     },
     [replaceContent]
@@ -155,22 +172,23 @@ export function useFileHandling({
   const openFile = useCallback(async () => {
     try {
       const selected = await showOpenDialog({ filters: DIALOG_FILTERS });
-      if (!selected) return;
+      if (!selected) return false;
 
       const path = Array.isArray(selected) ? selected[0] : selected;
-      if (!path) return;
+      if (!path) return false;
 
       if (isDirtyRef.current) {
         const proceed = await confirmDiscard('Replace the current diagram with the selected file?');
-        if (!proceed) return;
+        if (!proceed) return false;
       }
 
-      await openFilePath(path);
+      return await openFilePath(path);
     } catch (error) {
       await reportError('Failed to open diagram', error, {
         title: 'Unable to Open File',
         body: 'Could not open the selected file.',
       });
+      return false;
     }
   }, [openFilePath]);
 
@@ -223,16 +241,31 @@ export function useFileHandling({
     [editorRef, isDiagramDark]
   );
 
+  // Deliberately does NOT go through `replaceContent`: that helper arms
+  // `suppressDirtyRef` and clears the dirty flag, which is right for opening
+  // a file or loading an example (the buffer then matches its source), but
+  // wrong here — an AI suggestion is an unsaved modification like any other.
+  // Writing straight to the editor lets CodeMirror's update listener fire
+  // normally, so `App`'s change handler marks the document dirty and re-arms
+  // auto-save on the same path a keystroke takes.
+  const applyAiSuggestion = useCallback(
+    (content: string) => {
+      editorRef.current?.replaceContent(content);
+    },
+    [editorRef]
+  );
+
   const loadExample = useCallback(
     async (content: string) => {
       if (isDirtyRef.current) {
         const proceed = await confirmDiscard('Replace the current diagram with this example?');
-        if (!proceed) return;
+        if (!proceed) return false;
       }
       setHasDocument(true);
       replaceContent(content);
       setFilePath(null);
       setLastSavedAt(null);
+      return true;
     },
     [replaceContent]
   );
@@ -250,6 +283,7 @@ export function useFileHandling({
     saveFile,
     exportFile,
     loadExample,
+    applyAiSuggestion,
     reloadContent: replaceContent,
   };
 }
