@@ -1,0 +1,109 @@
+name: Release
+
+# Builds installers on every supported platform and attaches them to a draft
+# GitHub release, so users do not need Rust, Node, pnpm or the WebKitGTK
+# development headers just to run the app.
+#
+# Triggered by pushing a version tag (`git tag v3.2.0 && git push --tags`);
+# `workflow_dispatch` is kept for dry runs against a branch.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# tauri-action creates the release and uploads assets.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      # One platform failing should not throw away the other three builds —
+      # a partial draft release is still useful and can be topped up by
+      # re-running a single job.
+      fail-fast: false
+      matrix:
+        include:
+          # One macOS job producing a universal (arm64 + x86_64) binary
+          # rather than a job per architecture. The obvious alternative,
+          # a `macos-13` Intel leg, is not viable: that image was retired
+          # on 2025-12-04 and the label now queues forever instead of
+          # failing, and GitHub drops x86_64 macOS entirely in Fall 2027.
+          # `universal-apple-darwin` is not a rustup target, hence the
+          # separate `rust_targets` — both real targets must be installed
+          # for lipo to have something to merge.
+          - platform: macos-latest
+            target: universal-apple-darwin
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
+            bundles: app,dmg
+          # Built on 22.04 rather than 24.04 deliberately: glibc is forward
+          # compatible, so a deb linked here installs on 22.04 *and* 24.04
+          # derivatives (Mint 22, Pop!_OS, …). The reverse is not true.
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            rust_targets: x86_64-unknown-linux-gnu
+            bundles: deb,appimage
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            rust_targets: x86_64-pc-windows-msvc
+            bundles: nsis,msi
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          # webkit2gtk-4.1 is the Tauri v2 requirement; 4.0 is pulled in too
+          # because some transitive tooling on jammy still probes for it.
+          # patchelf and librsvg2 are needed by the AppImage bundler only.
+          sudo apt-get install -y \
+            libwebkit2gtk-4.0-dev \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            patchelf
+
+      # pnpm 10 matches this repo's lockfileVersion 9.0. pnpm 11 tightened
+      # build-script approval (ERR_PNPM_IGNORED_BUILDS on msw's postinstall)
+      # and would fail --frozen-lockfile here.
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
+
+      # Without this every job recompiles the full Tauri dependency tree
+      # (~5 minutes on the Linux runner, considerably worse on macOS).
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Mermaid Desktop __VERSION__'
+          releaseDraft: true
+          prerelease: false
+          # `--bundles` is required because tauri.conf.json pins
+          # `bundle.targets` to ["app"] for the local macOS `pnpm dist`
+          # script; without the override the non-macOS jobs produce no
+          # installer at all.
+          args: --target ${{ matrix.target }} --bundles ${{ matrix.bundles }}
